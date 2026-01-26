@@ -1,0 +1,15 @@
+meta {
+  name: healthz
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://{{host}}:{{port}}/healthz
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
