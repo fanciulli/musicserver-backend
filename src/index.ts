@@ -5,12 +5,12 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { fastify } from "fastify";
-import { RouteController } from "./routes/routeController";
+import { loadEnvFile } from "node:process";
+import { musicServerInstance } from "./music_server";
 
-const fastifyInstance = fastify({ logger: true });
+async function run() {
+  loadEnvFile();
 
-const motd = () => {
   console.log('888b     d888                   d8b.               .d8888b.');
   console.log('8888b   d8888                   Y8P               d88P  Y88b')
   console.log('88888b.d88888                                     Y88b.')
@@ -20,20 +20,8 @@ const motd = () => {
   console.log('888   \"   888 Y88b 888      X88 888 Y88b.         Y88b  d88P Y8b.     888      Y8bd8P  Y8b.     888 ')
   console.log('888       888  \"Y88888  88888P\' 888  \"Y8888P       \"Y8888P\"   \"Y8888  888       Y88P    \"Y8888  888')
   console.log('');
+
+  await musicServerInstance.start();
 }
 
-const start = async () => {
-  const rc = new RouteController();
-  await rc.registerRoutes(fastifyInstance);
-
-  // Run the server!
-  fastifyInstance.listen({ port: 3000 }, (err) => {
-    if (err) {
-      fastifyInstance.log.error(err);
-      process.exit(1);
-    }
-  });
-};
-
-motd();
-start();
+run();

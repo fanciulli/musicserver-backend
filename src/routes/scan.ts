@@ -1,5 +1,5 @@
 /*
- * Created on Wed Jan 28 2026
+ * Created on Sun Feb 01 2026
  *
  * Author: Massimiliano Fanciulli
  *
@@ -10,15 +10,18 @@ import { HttpMethods } from "../misc/constants";
 import { musicServerInstance } from "../music_server";
 import { MusicSourcePlugin } from "../types/plugins/music_sources";
 
-export class BrowseRoute extends Route {
+export class ScanRoute extends Route {
   method = HttpMethods.POST;
-  url = "/browse";
+  url = "/scan";
   schema = undefined;
   handler = async (request: any, response: any) => {
     const pluginManager = musicServerInstance.getPluginManager();
-    const plugin = pluginManager.getPlugin('music_sources', 'filesystem-music-source') as MusicSourcePlugin;
-    const songs = await plugin.browse();
+    const plugin = pluginManager.getPlugin(
+      "music_sources",
+      "filesystem-music-source",
+    ) as MusicSourcePlugin;
+    await plugin.scan();
 
-    response.send(songs);
+    response.send({ status: "Scan completed" });
   };
 }

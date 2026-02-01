@@ -5,9 +5,11 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { IRoute, Route } from "../types/route";
+import { Route } from "../types/route";
 import { HealthzRoute } from "./healthz";
 import { BrowseRoute } from "./browse";
+import { ScanRoute } from "./scan";
+import { StreamRoute } from "./stream";
 
 export class RouteController {
   /**
@@ -17,8 +19,15 @@ export class RouteController {
   async registerRoutes(fastifyInstance) {
     await this.registerRoute(fastifyInstance, new HealthzRoute());
     await this.registerRoute(fastifyInstance, new BrowseRoute());
+    await this.registerRoute(fastifyInstance, new ScanRoute());
+    await this.registerRoute(fastifyInstance, new StreamRoute());
   }
 
+  /**
+   * Registers a route, based on the class passed as parameter
+   * @param fastifyInstance The instance of Fastify to add the route to.
+   * @param routeClass The Route definition.
+   */
   async registerRoute(fastifyInstance, routeClass: Route) {
     fastifyInstance.route({
       method: routeClass.method,

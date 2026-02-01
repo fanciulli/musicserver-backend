@@ -1,3 +1,10 @@
+/*
+ * Created on Fri Jan 30 2026
+ *
+ * Author: Massimiliano Fanciulli
+ *
+ * GitHub: https://github.com/fanciulli
+ */
 import { HttpMethods } from "../misc/constants";
 
 export interface IRoute {
@@ -6,10 +13,8 @@ export interface IRoute {
     handler: (request: any, response: any) => any;
 }
 
-abstract class Route implements IRoute {
+export abstract class Route implements IRoute {
     method: HttpMethods = HttpMethods.GET;
     abstract url: String;
     abstract handler: (request: any, response: any) => any;
 }
-
-export { Route };

@@ -1,5 +1,5 @@
 /*
- * Created on Wed Jan 28 2026
+ * Created on Sun Feb 01 2026
  *
  * Author: Massimiliano Fanciulli
  *
@@ -10,15 +10,15 @@ import { HttpMethods } from "../misc/constants";
 import { musicServerInstance } from "../music_server";
 import { MusicSourcePlugin } from "../types/plugins/music_sources";
 
-export class BrowseRoute extends Route {
-  method = HttpMethods.POST;
-  url = "/browse";
+export class StreamRoute extends Route {
+  method = HttpMethods.GET;
+  url = "/stream";
   schema = undefined;
   handler = async (request: any, response: any) => {
     const pluginManager = musicServerInstance.getPluginManager();
     const plugin = pluginManager.getPlugin('music_sources', 'filesystem-music-source') as MusicSourcePlugin;
-    const songs = await plugin.browse();
+    const stream = await plugin.stream('7');
 
-    response.send(songs);
+    await response.header('Content-Type', 'application/octet-stream').send(stream);
   };
 }
