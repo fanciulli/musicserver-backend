@@ -10,15 +10,32 @@ import { HttpMethods } from "../misc/constants";
 import { musicServerInstance } from "../music_server";
 import { MusicSourcePlugin } from "../types/plugins/music_sources";
 
+const schema: object = {
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: {
+      id: { type: "string" },
+    },
+  },
+};
+
 export class StreamRoute extends Route {
   method = HttpMethods.GET;
-  url = "/stream";
-  schema = undefined;
+  url = "/stream/:id";
+  schema = schema;
   handler = async (request: any, response: any) => {
     const pluginManager = musicServerInstance.getPluginManager();
-    const plugin = pluginManager.getPlugin('music_sources', 'filesystem-music-source') as MusicSourcePlugin;
-    const stream = await plugin.stream('7');
+    const plugin = pluginManager.getPlugin(
+      "music_sources",
+      "filesystem-music-source",
+    ) as MusicSourcePlugin;
 
-    await response.header('Content-Type', 'application/octet-stream').send(stream);
+    try {
+      const stream = await plugin.stream(request.params.id);
+      return stream;
+    } catch (error) {
+      response.status(404).send({ error: "Song not found" });
+    }
   };
 }

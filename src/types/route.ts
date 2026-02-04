@@ -15,6 +15,7 @@ export interface IRoute {
 
 export abstract class Route implements IRoute {
     method: HttpMethods = HttpMethods.GET;
+    schema: object = {};
     abstract url: String;
     abstract handler: (request: any, response: any) => any;
 }

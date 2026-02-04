@@ -32,6 +32,7 @@ export class RouteController {
     fastifyInstance.route({
       method: routeClass.method,
       url: routeClass.url,
+      schema: routeClass.schema,
       handler: routeClass.handler,
     });
   }
