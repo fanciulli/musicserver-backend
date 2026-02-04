@@ -12,7 +12,10 @@ import { MusicSourcePlugin } from "../../../types/plugins/music_sources";
 import { Song } from "../../../types/music/song";
 
 const listFiles = async (parentFolder: string): Promise<string[]> => {
-  const dirListing = await readdir(parentFolder, { withFileTypes: true });
+  const dirListing = await readdir(parentFolder, {
+    withFileTypes: true,
+    recursive: true,
+  });
 
   const files = dirListing
     .filter((item) => {
@@ -36,7 +39,7 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
 
   scan = async (): Promise<void> => {
     this.#database.clear();
-    const files = await listFiles(".");
+    const files = await listFiles(process.env.PLUGIN_FSS_FOLDER);
     let index = 1;
     for (let file of files) {
       const song = new FilesystemMusicSong();

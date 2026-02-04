@@ -9,21 +9,12 @@ import { Route } from "../types/route";
 import { HttpMethods } from "../misc/constants";
 import { musicServerInstance } from "../music_server";
 import { MusicSourcePlugin } from "../types/plugins/music_sources";
-
-const schema: object = {
-  params: {
-    type: "object",
-    required: ["id"],
-    properties: {
-      id: { type: "string" },
-    },
-  },
-};
+import { StreamSchema } from "../types/api/stream";
 
 export class StreamRoute extends Route {
   method = HttpMethods.GET;
   url = "/stream/:id";
-  schema = schema;
+  schema = StreamSchema;
   handler = async (request: any, response: any) => {
     const pluginManager = musicServerInstance.getPluginManager();
     const plugin = pluginManager.getPlugin(
