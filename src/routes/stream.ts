@@ -7,7 +7,7 @@
  */
 import { Route } from "../types/route";
 import { HttpMethods } from "../misc/constants";
-import { musicServerInstance } from "../music_server";
+import { musicServerInstance } from "../server/music_server";
 import { MusicSourcePlugin } from "../types/plugins/music_sources";
 import { StreamSchema } from "../types/api/stream";
 
