@@ -16,5 +16,9 @@
     "fastify": "^5.7.1",
     "globals": "^17.1.0",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "mysql2": "^3.16.3",
+    "sequelize": "^6.37.7"
   }
 }
