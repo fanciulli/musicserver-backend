@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npx tsc -p tsconfig.json; node dist/index.js"
+    "start": "npx tsc -p tsconfig.json; cd dist; node index.js"
   },
   "author": "Massimiliano Fanciulli",
   "license": "ISC",
@@ -16,5 +16,9 @@
     "fastify": "^5.7.1",
     "globals": "^17.1.0",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "mysql2": "^3.16.3",
+    "sequelize": "^6.37.7"
   }
 }

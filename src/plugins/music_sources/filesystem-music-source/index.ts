@@ -33,6 +33,7 @@ class FilesystemMusicSong extends Song {
 
 export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   id: string = "filesystem-music-source";
+  name: string = "Filesystem Music Source";
   category: string = "music_source";
 
   #database: Map<string, Song> = new Map();
