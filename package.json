@@ -10,7 +10,7 @@
   "author": "Massimiliano Fanciulli",
   "license": "ISC",
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^25.0.10",
     "eslint": "^9.39.2",
     "fastify": "^5.7.1",
