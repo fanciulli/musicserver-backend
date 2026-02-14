@@ -17,12 +17,19 @@ export class BrowseRoute extends Route {
   schema = BrowseSchema;
   handler = async (request: any, response: any) => {
     const pluginManager = musicServerInstance.getPluginManager();
-    const plugin = pluginManager.getPlugin(
-      "music_sources",
-      "filesystem-music-source",
-    ) as MusicSourcePlugin;
-    const songs = await plugin.browse();
 
-    response.send(songs);
+    const path = request.body.path;
+    if (path === "/") {
+      const plugins = pluginManager.getPluginsInCategory("music_sources");
+      response.send(plugins);
+    } else {
+      const plugin = pluginManager.getPlugin(
+        "music_sources",
+        "filesystem-music-source",
+      ) as MusicSourcePlugin;
+      const songs = await plugin.browse();
+
+      response.send(songs);
+    }
   };
 }
