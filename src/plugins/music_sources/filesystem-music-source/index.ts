@@ -7,9 +7,14 @@
  */
 import { createReadStream } from "fs";
 import { Readable } from "stream";
-const { readdir, Dirent } = require("node:fs/promises");
+import { readdir } from "node:fs/promises";
 import { MusicSourcePlugin } from "../../../types/plugins/music_sources";
 import { Song } from "../../../types/music/song";
+import path from "path";
+// @ts-expect-error moduleResolution:nodenext issue 54523
+import { v4 as uuidv4 } from "uuid";
+// @ts-expect-error moduleResolution:nodenext issue 54523
+import { IAudioMetadata, parseFile } from "music-metadata";
 
 const listFiles = async (parentFolder: string): Promise<string[]> => {
   const dirListing = await readdir(parentFolder, {
@@ -22,7 +27,7 @@ const listFiles = async (parentFolder: string): Promise<string[]> => {
       return item.isDirectory() == false;
     })
     .map((file) => {
-      return file.name;
+      return path.join(file.parentPath, file.name);
     });
   return files;
 };
@@ -42,13 +47,26 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     this.#database.clear();
     const files = await listFiles(process.env.PLUGIN_FSS_FOLDER);
     let index = 1;
-    for (let file of files) {
-      const song = new FilesystemMusicSong();
-      song.id = "" + index++;
-      song.title = "Song no. " + index;
-      song.artist = "Unknown Artist";
-      song.filepath = file;
-      this.#database.set(song.id, song);
+    for (let filePath of files) {
+      try {
+        console.log(filePath);
+        const fileMetadata: IAudioMetadata = await parseFile(filePath);
+
+        console.log(fileMetadata);
+        const song = new FilesystemMusicSong();
+        song.id = uuidv4();
+        song.title = fileMetadata.common.title;
+        song.artist = fileMetadata.common.albumartist;
+        song.album = fileMetadata.common.album;
+        song.trackNumber = fileMetadata.common.track?.no;
+        song.diskNumber = fileMetadata.common.disk?.no;
+        song.filepath = filePath;
+
+        song.sampleRate = fileMetadata.format.sampleRate;
+        song.bitRate = fileMetadata.format.bitrate;
+        song.duration = fileMetadata.format.duration;
+        this.#database.set(song.id, song);
+      } catch {}
     }
   };
   browse = async (): Promise<Array<Song>> => {
