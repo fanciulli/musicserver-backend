@@ -76,7 +76,6 @@ class PluginList {
         plugin.id,
       );
 
-      console.log(result);
       if (result && result.status === PluginStatus.STARTED) {
         await plugin.start();
       } else {

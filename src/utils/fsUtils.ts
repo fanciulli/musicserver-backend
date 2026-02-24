@@ -5,8 +5,8 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-
 import { readdir } from "fs/promises";
+import path from "path";
 
 export async function listFiles(parentFolder: string): Promise<string[]> {
   const dirListing = await readdir(parentFolder, {
@@ -19,7 +19,7 @@ export async function listFiles(parentFolder: string): Promise<string[]> {
       return item.isDirectory() == false;
     })
     .map((file) => {
-      return file.name;
+      return path.join(file.parentPath, file.name);
     });
   return files;
 }

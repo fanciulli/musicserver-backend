@@ -23,7 +23,7 @@ export class Database {
     const modelFiles = await listFiles(folder);
 
     for (const modelFile of modelFiles) {
-      const modelModule = await import(path.join(folder, modelFile));
+      const modelModule = await import(modelFile);
       modelModule.init(this.client);
     }
   }
