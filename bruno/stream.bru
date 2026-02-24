@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: http://{{host}}:{{port}}/stream
+  url: http://{{host}}:{{port}}/stream?id=filesystem-music-source://albums/201/3
   body: none
   auth: inherit
+}
+
+params:query {
+  id: filesystem-music-source://albums/201/3
 }
 
 settings {

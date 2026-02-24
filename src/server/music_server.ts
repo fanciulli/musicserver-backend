@@ -5,11 +5,12 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { PluginManager } from "../plugins/pluginManager";
-import { fastify, FastifyInstance } from "fastify";
-import { RouteController } from "../routes/routeController";
-import { Database } from "./database";
-import { Logger } from "./logging";
+import { PluginManager } from "../plugins/pluginManager.js";
+import { fastify } from "fastify";
+import type { FastifyInstance } from "fastify";
+import { RouteController } from "../routes/routeController.js";
+import { Database } from "./database.js";
+import { Logger } from "./logging.js";
 
 class MusicServer {
   #initDone: Boolean = false;

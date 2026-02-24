@@ -5,11 +5,11 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { Route } from "../types/route";
-import { HealthzRoute } from "./healthz";
-import { BrowseRoute } from "./browse";
-import { ScanRoute } from "./scan";
-import { StreamRoute } from "./stream";
+import { Route } from "../types/route.js";
+import { HealthzRoute } from "./healthz.js";
+import { BrowseRoute } from "./browse.js";
+import { ScanRoute } from "./scan.js";
+import { StreamRoute } from "./stream.js";
 
 export class RouteController {
   /**

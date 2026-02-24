@@ -6,7 +6,7 @@
  * GitHub: https://github.com/fanciulli
  */
 export const StreamSchema = {
-  params: {
+  query: {
     properties: {
       id: { type: "string" },
     },
