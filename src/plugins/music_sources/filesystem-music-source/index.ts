@@ -9,13 +9,18 @@ import { createReadStream } from "fs";
 import { Readable } from "stream";
 import { MusicSourcePlugin } from "../../../types/plugins/music_sources.js";
 import { BrowseResponse, BrowseType } from "../../../types/api/browse.js";
-import { AlbumDbModel } from "../../../types/db/album.js";
 import { SongDbModel } from "../../../types/db/song.js";
 import { Folder } from "../../../types/api/folder.js";
 import { musicServerInstance } from "../../../server/music_server.js";
 import { Db } from "mongodb";
-import { Song } from "../../../types/api/song.js";
 import { FileSystemScan } from "./scan.js";
+import { extractPathSections } from "../../../utils/pathUtils.js";
+import {
+  browseAlbums,
+  browseArtists,
+  browsePluginRoot,
+  browseSongs,
+} from "./browse.js";
 
 export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   id: string = "filesystem-music-source";
@@ -31,6 +36,9 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     const artistsFolder = new Folder();
     artistsFolder.name = "Artists";
 
+    const songsFolder = new Folder();
+    songsFolder.name = "Songs";
+
     this.#browseRoot = [
       new BrowseResponse(
         `${this.id}://albums`,
@@ -42,6 +50,7 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
         BrowseType.FOLDER,
         artistsFolder,
       ),
+      new BrowseResponse(`${this.id}://songs`, BrowseType.FOLDER, songsFolder),
     ];
   }
 
@@ -51,58 +60,27 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   }
 
   async browse(path: string): Promise<Array<BrowseResponse>> {
-    if (path === `${this.id}://`) {
-      return this.#browseRoot;
-    } else if (path.startsWith(`${this.id}://albums`)) {
-      return this.#browseAlbums(path);
-    } else {
+    const pathSections = extractPathSections(this.id, path);
+    if (!pathSections) {
       return [];
     }
-  }
 
-  #browseAlbums = async (path: string): Promise<Array<BrowseResponse>> => {
-    const database: Db = musicServerInstance.getDatabase().client;
-    const resp = [];
-    switch (path) {
-      case `${this.id}://albums`:
-        const albums = await AlbumDbModel.findAlbumsByPluginId(
-          database,
-          this.id,
-        );
-
-        for (let album of albums) {
-          const folder = new Folder();
-          folder.name = album.name;
-
-          resp.push(
-            new BrowseResponse(
-              `${path}/${album.id}`,
-              BrowseType.FOLDER,
-              folder,
-            ),
-          );
-        }
-        return resp;
-
-      default:
-        const albumId = path.split("/").slice(-1)[0];
-        const songs = await SongDbModel.findSongsByAlbumId(
-          database,
-          albumId,
-          this.id,
-        );
-
-        for (let song of songs) {
-          const data = await Song.fromDbModel(song);
-          data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
-
-          resp.push(
-            new BrowseResponse(`${path}/${song.id}`, BrowseType.SONG, data),
-          );
-        }
-        return resp;
+    if (pathSections.length === 0) {
+      return browsePluginRoot(this.#browseRoot);
     }
-  };
+
+    const [section] = pathSections;
+    switch (section) {
+      case "albums":
+        return browseAlbums(this.id, pathSections);
+      case "artists":
+        return browseArtists(this.id, pathSections);
+      case "songs":
+        return browseSongs(this.id, pathSections);
+      default:
+        return [];
+    }
+  }
 
   async stream(path: string): Promise<Readable> {
     const database: Db = musicServerInstance.getDatabase().client;

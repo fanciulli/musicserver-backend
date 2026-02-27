@@ -52,6 +52,21 @@ export class AlbumDbModel {
       })
       .toArray();
   }
+
+  static async findAlbumsByStartingLetter(
+    db: Db,
+    pluginId: string,
+    letter: string,
+  ): Promise<Array<AlbumDbModel>> {
+    const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
+
+    return await collection
+      .find({
+        pluginId: pluginId,
+        name: { $regex: `^${letter}.*`, $options: "i" },
+      })
+      .toArray();
+  }
 }
 
 export function init(db: Db): void {}
