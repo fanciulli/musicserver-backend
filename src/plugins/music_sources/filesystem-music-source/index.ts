@@ -21,11 +21,11 @@ import {
   browsePluginRoot,
   browseSongs,
 } from "./browse.js";
+import { PLUGIN_ID, PLUGIN_NAME } from "./constants.js";
 
 export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
-  id: string = "filesystem-music-source";
-  name: string = "Filesystem Music Source";
-  category: string = "music_source";
+  id: string = PLUGIN_ID;
+  name: string = PLUGIN_NAME;
   #browseRoot: Array<BrowseResponse>;
 
   constructor() {
@@ -84,21 +84,13 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
 
   async stream(path: string): Promise<Readable> {
     const database: Db = musicServerInstance.getDatabase().client;
-    const id = this.#extractSongIdFromPath(path);
+    const id = path.split("/").slice(-1)[0];
     const song = await SongDbModel.findById(database, id);
     if (song) {
       const stream = createReadStream(song.metadata["filePath"]);
       return stream;
     } else {
       throw new Error("Song not found");
-    }
-  }
-
-  #extractSongIdFromPath(path: string): string {
-    if (path.startsWith(`${this.id}://albums`)) {
-      return path.split("/").slice(-1)[0];
-    } else {
-      return "";
     }
   }
 }

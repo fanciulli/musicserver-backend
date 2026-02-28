@@ -1,3 +1,10 @@
+/*
+ * Created on Sat Feb 28 2026
+ *
+ * Author: Massimiliano Fanciulli
+ *
+ * GitHub: https://github.com/fanciulli
+ */
 import { Folder } from "../../../types/api/folder.js";
 import { BrowseType, BrowseResponse } from "../../../types/api/browse.js";
 
@@ -41,4 +48,30 @@ export function createBrowseReponseFolderForLetters(
   }
 
   return resp;
+}
+
+/**
+ * Returns true when the path section matches one of the configured letters.
+ *
+ * @param pathSection Path segment to validate.
+ * @param letters Collection of valid letters.
+ * @returns True if the section is a valid letter.
+ */
+export function isLetterSection(
+  pathSection: string,
+  letters: string[],
+): boolean {
+  return letters.includes(pathSection.toUpperCase());
+}
+
+/**
+ * Returns true when the path section is a valid UUID.
+ *
+ * @param pathSection Path segment to validate.
+ * @returns True if the section is a UUID.
+ */
+export function isUuidSection(pathSection: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    pathSection,
+  );
 }

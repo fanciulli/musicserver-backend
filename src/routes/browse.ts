@@ -8,9 +8,17 @@
 import { Route } from "../types/route.js";
 import { HttpMethods } from "../misc/constants.js";
 import { musicServerInstance } from "../server/music_server.js";
-import { MusicSourcePlugin } from "../types/plugins/music_sources.js";
-import { BrowseSchema } from "../types/api/browse.js";
+import {
+  MUSIC_SOURCE_PLUGIN_CATEGORY,
+  MusicSourcePlugin,
+} from "../types/plugins/music_sources.js";
+import {
+  BrowseResponse,
+  BrowseSchema,
+  BrowseType,
+} from "../types/api/browse.js";
 import { Plugin } from "../types/plugins/plugin.js";
+import { Folder } from "../types/api/folder.js";
 
 export class BrowseRoute extends Route {
   method = HttpMethods.POST;
@@ -20,7 +28,7 @@ export class BrowseRoute extends Route {
     const pluginManager = musicServerInstance.getPluginManager();
 
     const path = request.body.path;
-    if (path === "/") {
+    if (path === "/" || path === "") {
       await this.browserRoot(request, response);
     } else {
       await this.browsePathInPlugin(request, response);
@@ -29,15 +37,19 @@ export class BrowseRoute extends Route {
 
   browserRoot = async (request: any, response: any) => {
     const pluginManager = musicServerInstance.getPluginManager();
-    const plugins: Array<Plugin> =
-      pluginManager.getPluginsInCategory("music_sources");
+    const plugins: Array<Plugin> = pluginManager.getPluginsInCategory(
+      MUSIC_SOURCE_PLUGIN_CATEGORY,
+    );
 
     const resp = [];
     for (let plugin of plugins) {
-      resp.push({
-        name: plugin.name,
-        id: `${plugin.id}://`,
-      });
+      console.log(plugin);
+      const pluginFolder = new Folder();
+      pluginFolder.name = plugin.name;
+
+      resp.push(
+        new BrowseResponse(`${plugin.id}://`, BrowseType.FOLDER, pluginFolder),
+      );
     }
     response.send(resp);
   };

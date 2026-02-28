@@ -67,6 +67,21 @@ export class AlbumDbModel {
       })
       .toArray();
   }
+
+  static async findAlbumsByArtistId(
+    db: Db,
+    pluginId: string,
+    artistId: string,
+  ): Promise<Array<AlbumDbModel>> {
+    const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
+
+    return await collection
+      .find({
+        pluginId: pluginId,
+        artists: artistId,
+      })
+      .toArray();
+  }
 }
 
 export function init(db: Db): void {}

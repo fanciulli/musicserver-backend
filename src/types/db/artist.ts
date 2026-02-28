@@ -35,6 +35,47 @@ export class ArtistDbModel {
     return (await collection.find(filter)).toArray();
   }
 
+  static async findArtistsByPluginId(
+    db: Db,
+    pluginId: string,
+  ): Promise<Array<ArtistDbModel>> {
+    const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
+
+    return await collection
+      .find({
+        pluginId: pluginId,
+      })
+      .toArray();
+  }
+
+  static async findArtistsByStartingLetter(
+    db: Db,
+    pluginId: string,
+    letter: string,
+  ): Promise<Array<ArtistDbModel>> {
+    const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
+
+    return await collection
+      .find({
+        pluginId: pluginId,
+        name: { $regex: `^${letter}.*`, $options: "i" },
+      })
+      .toArray();
+  }
+
+  static async findArtistById(
+    db: Db,
+    pluginId: string,
+    id: string,
+  ): Promise<ArtistDbModel> {
+    const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
+
+    return await collection.findOne({
+      id: id,
+      pluginId: pluginId,
+    });
+  }
+
   async insert(db: Db): Promise<void> {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
 

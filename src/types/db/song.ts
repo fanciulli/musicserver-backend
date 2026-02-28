@@ -28,6 +28,18 @@ export class SongDbModel {
     });
   }
 
+  static async findByIdAndPluginId(
+    db: Db,
+    id: string,
+    pluginId: string,
+  ): Promise<SongDbModel> {
+    const collection = db.collection<SongDbModel>(COLLECTION_NAME);
+    return await collection.findOne({
+      id: id,
+      pluginId: pluginId,
+    });
+  }
+
   static async find(
     db: Db,
     name: string,
@@ -51,6 +63,55 @@ export class SongDbModel {
       .find(
         {
           albumId: albumId,
+          pluginId: pluginId,
+        },
+        {},
+      )
+      .toArray();
+  }
+
+  static async findSongsByPluginId(
+    db: Db,
+    pluginId: string,
+  ): Promise<Array<SongDbModel>> {
+    const collection = db.collection<SongDbModel>(COLLECTION_NAME);
+    return await collection
+      .find(
+        {
+          pluginId: pluginId,
+        },
+        {},
+      )
+      .toArray();
+  }
+
+  static async findSongsByStartingLetter(
+    db: Db,
+    pluginId: string,
+    letter: string,
+  ): Promise<Array<SongDbModel>> {
+    const collection = db.collection<SongDbModel>(COLLECTION_NAME);
+    return await collection
+      .find(
+        {
+          pluginId: pluginId,
+          name: { $regex: `^${letter}.*`, $options: "i" },
+        },
+        {},
+      )
+      .toArray();
+  }
+
+  static async findSongsByArtistId(
+    db: Db,
+    artistId: string,
+    pluginId: string,
+  ): Promise<Array<SongDbModel>> {
+    const collection = db.collection<SongDbModel>(COLLECTION_NAME);
+    return await collection
+      .find(
+        {
+          artistsId: artistId,
           pluginId: pluginId,
         },
         {},
