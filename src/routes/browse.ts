@@ -28,6 +28,7 @@ export class BrowseRoute extends Route {
     const pluginManager = musicServerInstance.getPluginManager();
 
     const path = request.body.path;
+    console.log(path);
     if (path === "/" || path === "") {
       await this.browserRoot(request, response);
     } else {
@@ -43,7 +44,6 @@ export class BrowseRoute extends Route {
 
     const resp = [];
     for (let plugin of plugins) {
-      console.log(plugin);
       const pluginFolder = new Folder();
       pluginFolder.name = plugin.name;
 
@@ -58,6 +58,7 @@ export class BrowseRoute extends Route {
     const pluginManager = musicServerInstance.getPluginManager();
 
     const path = request.body.path;
+
     const pluginId = path.substring(0, path.indexOf(":"));
     const plugin = pluginManager.getPlugin(
       "music_sources",

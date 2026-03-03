@@ -62,18 +62,18 @@ export async function browseAlbums(
     }
 
     case 4: {
-      const letter = sections[1];
+      const scope = sections[1];
       const albumId = sections[2];
       const songId = sections[3];
 
       if (
-        isLetterSection(letter, letters) &&
+        (scope === "ALL" || isLetterSection(scope, letters)) &&
         isUuidSection(albumId) &&
         isUuidSection(songId)
       ) {
-        return browseAlbumsByLetterAlbumIdAndSongId(
+        return browseSongByScopedPathAndSongId(
           pluginId,
-          letter,
+          `${pluginId}://albums/${scope}/${albumId}`,
           albumId,
           songId,
         );
@@ -128,15 +128,6 @@ export async function browseAlbumsByLetter(
   return createAlbumsFolderResponses(albumsPath, albums);
 }
 
-export async function browseAlbumsByLetterAlbumIdAndSongId(
-  _pluginId: string,
-  _letter: string,
-  _albumId: string,
-  _songId: string,
-): Promise<BrowseResponse[]> {
-  return [];
-}
-
 async function browseSongsByAlbumId(
   pluginId: string,
   albumId: string,
@@ -182,4 +173,28 @@ function createAlbumsFolderResponses(
   }
 
   return resp;
+}
+
+async function browseSongByScopedPathAndSongId(
+  pluginId: string,
+  pathPrefix: string,
+  albumId: string,
+  songId: string,
+): Promise<BrowseResponse[]> {
+  const database: Db = musicServerInstance.getDatabase().client;
+  const song = await SongDbModel.findByIdAndPluginId(
+    database,
+    songId,
+    pluginId,
+  );
+  if (!song || song.albumId !== albumId) {
+    return [];
+  }
+
+  const data = Song.fromDbModel(song);
+  data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
+
+  return [
+    new BrowseResponse(`${pathPrefix}/${song.id}`, BrowseType.SONG, data),
+  ];
 }

@@ -82,6 +82,30 @@ export async function browseArtists(
       return [];
     }
 
+    case 5: {
+      const scope = sections[1];
+      const artistId = sections[2];
+      const albumId = sections[3];
+      const songId = sections[4];
+
+      if (
+        (scope === "ALL" || isLetterSection(scope, letters)) &&
+        isUuidSection(artistId) &&
+        isUuidSection(albumId) &&
+        isUuidSection(songId)
+      ) {
+        return browseSongByArtistAlbumAndSongId(
+          pluginId,
+          scope,
+          artistId,
+          albumId,
+          songId,
+        );
+      }
+
+      return [];
+    }
+
     default:
       return [];
   }
@@ -210,4 +234,33 @@ function createArtistsFolderResponses(
   }
 
   return resp;
+}
+
+async function browseSongByArtistAlbumAndSongId(
+  pluginId: string,
+  scope: string,
+  artistId: string,
+  albumId: string,
+  songId: string,
+): Promise<BrowseResponse[]> {
+  const database: Db = musicServerInstance.getDatabase().client;
+  const song = await SongDbModel.findByIdAndPluginId(
+    database,
+    songId,
+    pluginId,
+  );
+  if (!song || song.albumId !== albumId || !song.artistsId.includes(artistId)) {
+    return [];
+  }
+
+  const data = Song.fromDbModel(song);
+  data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
+
+  return [
+    new BrowseResponse(
+      `${pluginId}://artists/${scope}/${artistId}/${albumId}/${song.id}`,
+      BrowseType.SONG,
+      data,
+    ),
+  ];
 }

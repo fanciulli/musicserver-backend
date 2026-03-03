@@ -10,7 +10,6 @@ import {
   browseAlbums,
   browseAlbumsAll,
   browseAlbumsByLetter,
-  browseAlbumsByLetterAlbumIdAndSongId,
   browseAlbumsRoot,
 } from "./albumsBrowse.js";
 import {
@@ -38,7 +37,6 @@ export {
   browseAlbums,
   browseAlbumsAll,
   browseAlbumsByLetter,
-  browseAlbumsByLetterAlbumIdAndSongId,
   browseAlbumsRoot,
   browseArtists,
   browseArtistsAll,
