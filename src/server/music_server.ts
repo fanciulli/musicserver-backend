@@ -46,7 +46,7 @@ class MusicServer {
     await rc.registerRoutes(this.#fastifyInstance);
 
     // Run the server!
-    this.#fastifyInstance.listen({ port: 3000 }, (err) => {
+    this.#fastifyInstance.listen({ port: 3000, host: "0.0.0.0" }, (err) => {
       if (err) {
         this.#fastifyInstance.log.error(err);
         process.exit(1);
