@@ -28,7 +28,6 @@ export class BrowseRoute extends Route {
     const pluginManager = musicServerInstance.getPluginManager();
 
     const path = request.body.path;
-    console.log(path);
     if (path === "/" || path === "") {
       await this.browserRoot(request, response);
     } else {
