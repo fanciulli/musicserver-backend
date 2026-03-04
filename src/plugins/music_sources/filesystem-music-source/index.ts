@@ -7,84 +7,90 @@
  */
 import { createReadStream } from "fs";
 import { Readable } from "stream";
-import { readdir } from "node:fs/promises";
-import { MusicSourcePlugin } from "../../../types/plugins/music_sources";
-import { Song } from "../../../types/music/song";
-import path from "path";
-// @ts-expect-error moduleResolution:nodenext issue 54523
-import { v4 as uuidv4 } from "uuid";
-// @ts-expect-error moduleResolution:nodenext issue 54523
-import { IAudioMetadata, parseFile } from "music-metadata";
-
-const listFiles = async (parentFolder: string): Promise<string[]> => {
-  const dirListing = await readdir(parentFolder, {
-    withFileTypes: true,
-    recursive: true,
-  });
-
-  const files = dirListing
-    .filter((item) => {
-      return item.isDirectory() == false;
-    })
-    .map((file) => {
-      return path.join(file.parentPath, file.name);
-    });
-  return files;
-};
-
-class FilesystemMusicSong extends Song {
-  filepath: string;
-}
+import { MusicSourcePlugin } from "../../../types/plugins/music_sources.js";
+import { BrowseResponse, BrowseType } from "../../../types/api/browse.js";
+import { SongDbModel } from "../../../types/db/song.js";
+import { Folder } from "../../../types/api/folder.js";
+import { musicServerInstance } from "../../../server/music_server.js";
+import { Db } from "mongodb";
+import { FileSystemScan } from "./scan.js";
+import { extractPathSections } from "../../../utils/pathUtils.js";
+import {
+  browseAlbums,
+  browseArtists,
+  browsePluginRoot,
+  browseSongs,
+} from "./browse.js";
+import { PLUGIN_ID, PLUGIN_NAME } from "./constants.js";
 
 export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
-  id: string = "filesystem-music-source";
-  name: string = "Filesystem Music Source";
-  category: string = "music_source";
+  id: string = PLUGIN_ID;
+  name: string = PLUGIN_NAME;
+  #browseRoot: Array<BrowseResponse>;
 
-  #database: Map<string, Song> = new Map();
+  constructor() {
+    super();
+    const albumsFolder = new Folder();
+    albumsFolder.name = "Albums";
 
-  scan = async (): Promise<void> => {
-    this.#database.clear();
-    const files = await listFiles(process.env.PLUGIN_FSS_FOLDER);
-    let index = 1;
-    for (let filePath of files) {
-      try {
-        console.log(filePath);
-        const fileMetadata: IAudioMetadata = await parseFile(filePath);
+    const artistsFolder = new Folder();
+    artistsFolder.name = "Artists";
 
-        console.log(fileMetadata);
-        const song = new FilesystemMusicSong();
-        song.id = uuidv4();
-        song.title = fileMetadata.common.title;
-        song.artist = fileMetadata.common.albumartist;
-        song.album = fileMetadata.common.album;
-        song.trackNumber = fileMetadata.common.track?.no;
-        song.diskNumber = fileMetadata.common.disk?.no;
-        song.filepath = filePath;
+    const songsFolder = new Folder();
+    songsFolder.name = "Songs";
 
-        song.sampleRate = fileMetadata.format.sampleRate;
-        song.bitRate = fileMetadata.format.bitrate;
-        song.duration = fileMetadata.format.duration;
-        this.#database.set(song.id, song);
-      } catch {}
+    this.#browseRoot = [
+      new BrowseResponse(
+        `${this.id}://albums`,
+        BrowseType.FOLDER,
+        albumsFolder,
+      ),
+      new BrowseResponse(
+        `${this.id}://artists`,
+        BrowseType.FOLDER,
+        artistsFolder,
+      ),
+      new BrowseResponse(`${this.id}://songs`, BrowseType.FOLDER, songsFolder),
+    ];
+  }
+
+  async scan(): Promise<void> {
+    const database: Db = musicServerInstance.getDatabase().client;
+    await FileSystemScan.scan(database, this.id);
+  }
+
+  async browse(path: string): Promise<Array<BrowseResponse>> {
+    const pathSections = extractPathSections(this.id, path);
+    if (!pathSections) {
+      return [];
     }
-  };
-  browse = async (): Promise<Array<Song>> => {
-    let response: Array<Song> = [];
-    for (let song of this.#database.values()) {
-      response.push(song);
+
+    if (pathSections.length === 0) {
+      return browsePluginRoot(this.#browseRoot);
     }
-    return response;
-  };
 
-  stream = async (id: string): Promise<Readable> => {
-    const song = this.#database.get(id) as FilesystemMusicSong;
+    const [section] = pathSections;
+    switch (section) {
+      case "albums":
+        return browseAlbums(this.id, pathSections);
+      case "artists":
+        return browseArtists(this.id, pathSections);
+      case "songs":
+        return browseSongs(this.id, pathSections);
+      default:
+        return [];
+    }
+  }
 
+  async stream(path: string): Promise<Readable> {
+    const database: Db = musicServerInstance.getDatabase().client;
+    const id = path.split("/").slice(-1)[0];
+    const song = await SongDbModel.findById(database, id);
     if (song) {
-      const stream = createReadStream(song.filepath);
+      const stream = createReadStream(song.metadata["filePath"]);
       return stream;
     } else {
       throw new Error("Song not found");
     }
-  };
+  }
 }

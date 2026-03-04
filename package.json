@@ -4,23 +4,29 @@
   "description": "A music server with pluggable capbilities",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "start": "npx tsc -p tsconfig.json; cd dist; node index.js"
   },
   "author": "Massimiliano Fanciulli",
   "license": "ISC",
+  "type": "module",
+  "imports": {
+    "#types/*": "./dist/types/*.js"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.0.10",
+    "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^10.0.0",
     "fastify": "^5.7.1",
     "globals": "^17.1.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
+    "mongodb": "^7.1.0",
     "music-metadata": "^11.12.0",
-    "mysql2": "^3.16.3",
-    "sequelize": "^6.37.7",
     "uuid": "^13.0.0"
   }
 }

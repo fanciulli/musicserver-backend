@@ -5,17 +5,17 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { HttpMethods } from "../misc/constants";
+import { HttpMethods } from "../misc/constants.js";
 
 export interface IRoute {
-    method: HttpMethods;
-    url: String;
-    handler: (request: any, response: any) => any;
+  method: HttpMethods;
+  url: String;
+  handler: (request: any, response: any) => any;
 }
 
 export abstract class Route implements IRoute {
-    method: HttpMethods = HttpMethods.GET;
-    schema: object = {};
-    abstract url: String;
-    abstract handler: (request: any, response: any) => any;
+  method: HttpMethods = HttpMethods.GET;
+  schema: object = {};
+  abstract url: String;
+  abstract handler: (request: any, response: any) => any;
 }

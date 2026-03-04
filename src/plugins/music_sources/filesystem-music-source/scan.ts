@@ -1,0 +1,136 @@
+/*
+ * Created on Tue Feb 24 2026
+ *
+ * Author: Massimiliano Fanciulli
+ *
+ * GitHub: https://github.com/fanciulli
+ */
+import { AlbumDbModel } from "../../../types/db/album.js";
+import { ArtistDbModel } from "../../../types/db/artist.js";
+import { SongDbModel } from "../../../types/db/song.js";
+import type { Db } from "mongodb";
+import { listFiles } from "../../../utils/fsUtils.js";
+import { parseFile, type IAudioMetadata } from "music-metadata";
+import { v4 } from "uuid";
+
+export class FileSystemScan {
+  static async scan(db: Db, pluginId: string): Promise<void> {
+    await ArtistDbModel.deleteAll(db, pluginId);
+    await AlbumDbModel.deleteAll(db, pluginId);
+    await SongDbModel.deleteAll(db, pluginId);
+
+    const files = await listFiles(process.env.PLUGIN_FSS_FOLDER);
+    for (let filePath of files) {
+      try {
+        const fileMetadata: IAudioMetadata = await parseFile(filePath);
+
+        const artists = await FileSystemScan.#upsertArtits(
+          db,
+          pluginId,
+          fileMetadata,
+        );
+        const album = await FileSystemScan.#upsertAlbum(
+          db,
+          pluginId,
+          fileMetadata,
+          artists,
+        );
+        await FileSystemScan.#upsertSong(
+          db,
+          pluginId,
+          fileMetadata,
+          album,
+          artists,
+          filePath,
+        );
+      } catch (ex) {}
+    }
+  }
+
+  static async #upsertAlbum(
+    db: Db,
+    pluginId: string,
+    fileMetadata: IAudioMetadata,
+    artists: ArtistDbModel[],
+  ): Promise<AlbumDbModel> {
+    const name = fileMetadata.common?.album;
+
+    if (name) {
+      const albumInDb = await AlbumDbModel.find(db, name, pluginId);
+      if (albumInDb) {
+        return albumInDb;
+      } else {
+        const album = new AlbumDbModel();
+        album.id = v4();
+        album.name = name;
+        album.pluginId = pluginId;
+        album.artists = artists.map((artist) => artist.id);
+        album.insert(db);
+        return album;
+      }
+    } else {
+      return;
+    }
+  }
+
+  static async #upsertArtits(
+    db: Db,
+    pluginId: string,
+    fileMetadata: IAudioMetadata,
+  ): Promise<Array<ArtistDbModel>> {
+    const artists = fileMetadata.common?.albumartists;
+
+    if (artists) {
+      const dbArtists = [];
+      for (let artist of artists) {
+        const artistInDb = await ArtistDbModel.find(db, artist, pluginId); // TODO: introduce cache
+        if (artistInDb) {
+          dbArtists.push(artistInDb);
+        } else {
+          const dbArtist = new ArtistDbModel();
+          dbArtist.id = v4();
+          dbArtist.name = artist;
+          dbArtist.pluginId = pluginId;
+
+          await dbArtist.insert(db);
+          dbArtists.push(dbArtist);
+        }
+      }
+
+      return dbArtists;
+    } else {
+      return [];
+    }
+  }
+
+  static async #upsertSong(
+    db: Db,
+    pluginId: string,
+    fileMetadata: IAudioMetadata,
+    album: AlbumDbModel,
+    artists: ArtistDbModel[],
+    filePath: string,
+  ) {
+    const songName = fileMetadata.common?.title;
+
+    const songInDb = await SongDbModel.find(db, songName, pluginId);
+    if (!songInDb) {
+      const song = new SongDbModel();
+      song.name = songName;
+      song.id = v4();
+      song.pluginId = pluginId;
+      song.album = album.name;
+      song.albumId = album.id;
+      song.artist = artists.map((artist) => artist.name).join(", ");
+      song.artistsId = album.artists;
+      song.trackNumber = fileMetadata.common.track?.no;
+      song.diskNumber = fileMetadata.common.disk?.no;
+      // song.duration =
+      song.metadata = {
+        filePath: filePath,
+      };
+
+      await song.insert(db);
+    }
+  }
+}

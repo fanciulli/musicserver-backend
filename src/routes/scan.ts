@@ -5,10 +5,10 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { Route } from "../types/route";
-import { HttpMethods } from "../misc/constants";
-import { musicServerInstance } from "../server/music_server";
-import { MusicSourcePlugin } from "../types/plugins/music_sources";
+import { Route } from "../types/route.js";
+import { HttpMethods } from "../misc/constants.js";
+import { musicServerInstance } from "../server/music_server.js";
+import { MusicSourcePlugin } from "../types/plugins/music_sources.js";
 
 export class ScanRoute extends Route {
   method = HttpMethods.POST;

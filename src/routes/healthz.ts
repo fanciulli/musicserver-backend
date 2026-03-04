@@ -5,14 +5,14 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { Route } from "../types/route";
+import { Route } from "../types/route.js";
 
 const healthzHandler = async (request: any, reply: any) => {
   reply.status(200).send({ status: "OK" });
 };
 
 export class HealthzRoute extends Route {
-  url = '/healthz';
+  url = "/healthz";
   schema = undefined;
   handler = healthzHandler;
 }

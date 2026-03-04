@@ -5,25 +5,17 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { Sequelize } from "sequelize";
-import { listFiles } from "../utils/fsUtils";
+import { MongoClient, Db } from "mongodb";
+import { listFiles } from "../utils/fsUtils.js";
 import path from "node:path";
 
 export class Database {
-  #client: Sequelize;
+  client: Db;
 
-  async connect(): Promise<Boolean> {
-    this.#client = new Sequelize("music_server_schema", "root", "passwd", {
-      host: "localhost",
-      dialect: "mysql",
-    });
-
-    try {
-      await this.#client.authenticate();
-      return true;
-    } catch (error) {
-      return false;
-    }
+  async connect(): Promise<void> {
+    const uri = "mongodb://localhost:27017";
+    const mongoClient = new MongoClient(uri);
+    this.client = mongoClient.db("music-server");
   }
 
   async #initModels(): Promise<void> {
@@ -31,28 +23,18 @@ export class Database {
     const modelFiles = await listFiles(folder);
 
     for (const modelFile of modelFiles) {
-      const modelModule = await import(path.join(folder, modelFile));
-      modelModule.default.init(this.#client);
+      const modelModule = await import(modelFile);
+      modelModule.init(this.client);
     }
   }
 
   async start(): Promise<Boolean> {
-    const connected = await this.connect();
-    if (connected) {
-      await this.#initModels();
-      await this.#client.sync({ alter: true });
-      return true;
-    } else {
-      console.log("Cannot connect to database");
-      return false;
-    }
+    await this.connect();
+    await this.#initModels();
+    return true;
   }
 
   async disconnect(): Promise<void> {
-    await this.#client.close();
-  }
-
-  getModels() {
-    return this.#client?.models;
+    await this.client.client.close();
   }
 }
