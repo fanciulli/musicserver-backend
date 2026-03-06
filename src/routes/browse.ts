@@ -19,6 +19,8 @@ import {
 } from "../types/api/browse.js";
 import { Plugin } from "../types/plugins/plugin.js";
 import { Folder } from "../types/api/folder.js";
+import { PluginDBModel, PluginStatus } from "../types/db/plugin.js";
+import { extractPluginId } from "../utils/pathUtils.js";
 
 export class BrowseRoute extends Route {
   method = HttpMethods.POST;
@@ -29,20 +31,31 @@ export class BrowseRoute extends Route {
 
     const path = request.body.path;
     if (path === "/" || path === "") {
-      await this.browserRoot(request, response);
+      const root = await this.browserRoot();
+      response.send(root);
     } else {
       await this.browsePathInPlugin(request, response);
     }
   };
 
-  browserRoot = async (request: any, response: any) => {
+  browserRoot = async () => {
     const pluginManager = musicServerInstance.getPluginManager();
+    const database = musicServerInstance.getDatabase();
     const plugins: Array<Plugin> = pluginManager.getPluginsInCategory(
       MUSIC_SOURCE_PLUGIN_CATEGORY,
     );
 
     const resp = [];
     for (let plugin of plugins) {
+      const pluginRecord = await PluginDBModel.find(
+        database.client,
+        plugin.category,
+        plugin.id,
+      );
+      if (pluginRecord?.status !== PluginStatus.STARTED) {
+        continue;
+      }
+
       const pluginFolder = new Folder();
       pluginFolder.name = plugin.name;
 
@@ -50,19 +63,35 @@ export class BrowseRoute extends Route {
         new BrowseResponse(`${plugin.id}://`, BrowseType.FOLDER, pluginFolder),
       );
     }
-    response.send(resp);
+    return resp;
   };
 
   browsePathInPlugin = async (request: any, response: any) => {
     const pluginManager = musicServerInstance.getPluginManager();
+    const database = musicServerInstance.getDatabase();
 
     const path = request.body.path;
-
-    const pluginId = path.substring(0, path.indexOf(":"));
+    const pluginId = extractPluginId(path);
     const plugin = pluginManager.getPlugin(
       "music_sources",
       pluginId,
     ) as MusicSourcePlugin;
+
+    if (plugin === undefined) {
+      response.status(404).send({ error: `Plugin ${pluginId} not found` });
+      return;
+    }
+
+    const pluginRecord = await PluginDBModel.find(
+      database.client,
+      plugin.category,
+      plugin.id,
+    );
+    if (pluginRecord?.status !== PluginStatus.STARTED) {
+      response.status(409).send({ error: `Plugin ${pluginId} is not started` });
+      return;
+    }
+
     const songs = await plugin.browse(path);
 
     response.send(songs);

@@ -90,13 +90,11 @@ class PluginList {
 export class PluginManager {
   #pluginsFolder: string = ".";
   #plugins: Map<string, PluginList> = new Map();
-  #database?: Database;
   #logger?: Logger;
 
   constructor(pluginsFolder: string) {
     this.#pluginsFolder = pluginsFolder;
     this.#logger = musicServerInstance.getLogger();
-    this.#database = musicServerInstance.getDatabase();
   }
 
   async loadPlugins(): Promise<void> {
@@ -126,7 +124,19 @@ export class PluginManager {
     return plugins ? plugins : [];
   }
 
-  getPlugin = (category: string, name: string): Plugin | undefined => {
+  getAllPlugins(): Array<Plugin> {
+    const plugins: Array<Plugin> = [];
+    for (let pluginList of this.#plugins.values()) {
+      plugins.push(...pluginList.getAll());
+    }
+    return plugins;
+  }
+
+  getPlugin(category: string, name: string): Plugin | undefined {
     return this.#plugins.get(category)?.get(name);
-  };
+  }
+
+  getPluginById(id: string): Plugin | undefined {
+    return this.getAllPlugins().find((pluginItem) => pluginItem.id === id);
+  }
 }

@@ -32,3 +32,15 @@ export function extractPathSections(
 
   return remainder.split("/").filter((section) => section.length > 0);
 }
+
+/**
+ * Extracts the plugin id from a given uri.
+ *
+ * Expected input format is `<pluginId>://...`.
+ *
+ * @param uri The uri from which to extract the plugin id.
+ * @returns The extracted plugin id.
+ */
+export function extractPluginId(uri: string): string {
+  return uri.substring(0, uri.indexOf(":"));
+}
