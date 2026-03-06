@@ -29,7 +29,7 @@ class MusicServer {
       const database_connected = await this.#startDatabase();
       if (database_connected === false) {
         this.#logger.error(
-          "Exiting application because connection to datbaae failed",
+          "Exiting application because connection to database failed",
         );
         process.exit(1);
       }

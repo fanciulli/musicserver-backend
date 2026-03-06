@@ -9,9 +9,6 @@
   "author": "Massimiliano Fanciulli",
   "license": "ISC",
   "type": "module",
-  "imports": {
-    "#types/*": "./dist/types/*.js"
-  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.0.10",

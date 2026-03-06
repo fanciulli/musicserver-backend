@@ -7,10 +7,10 @@
  */
 import { Db } from "mongodb";
 import { BrowseResponse, BrowseType } from "../../../types/api/browse.js";
-import { Folder } from "../../../types/api/folder.js";
 import { Song } from "../../../types/api/song.js";
 import { AlbumDbModel } from "../../../types/db/album.js";
 import { SongDbModel } from "../../../types/db/song.js";
+import { BrowseUtils } from "../../../utils/browseUtils.js";
 import { letters } from "../../../misc/constants.js";
 import { musicServerInstance } from "../../../server/music_server.js";
 import {
@@ -110,7 +110,7 @@ export async function browseAlbumsAll(
   const albums = await AlbumDbModel.findAlbumsByPluginId(database, pluginId);
   const albumsPath = `${pluginId}://albums/ALL`;
 
-  return createAlbumsFolderResponses(albumsPath, albums);
+  return BrowseUtils.createAlbumsFolderResponses(albumsPath, albums);
 }
 
 export async function browseAlbumsByLetter(
@@ -125,7 +125,7 @@ export async function browseAlbumsByLetter(
   );
   const albumsPath = `${pluginId}://albums/${letter}`;
 
-  return createAlbumsFolderResponses(albumsPath, albums);
+  return BrowseUtils.createAlbumsFolderResponses(albumsPath, albums);
 }
 
 async function browseSongsByAlbumId(
@@ -147,28 +147,6 @@ async function browseSongsByAlbumId(
 
     resp.push(
       new BrowseResponse(`${pathPrefix}/${song.id}`, BrowseType.SONG, data),
-    );
-  }
-
-  return resp;
-}
-
-function createAlbumsFolderResponses(
-  pathPrefix: string,
-  albums: AlbumDbModel[],
-): BrowseResponse[] {
-  const resp = [];
-
-  for (let album of albums) {
-    const folder = new Folder();
-    folder.name = album.name;
-
-    resp.push(
-      new BrowseResponse(
-        `${pathPrefix}/${album.id}`,
-        BrowseType.FOLDER,
-        folder,
-      ),
     );
   }
 

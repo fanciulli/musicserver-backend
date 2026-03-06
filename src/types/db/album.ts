@@ -18,7 +18,7 @@ export class AlbumDbModel {
   static async deleteAll(db: Db, pluginId: string) {
     const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
 
-    await collection.deleteMany({});
+    await collection.deleteMany({ pluginId: pluginId });
   }
 
   static async find(

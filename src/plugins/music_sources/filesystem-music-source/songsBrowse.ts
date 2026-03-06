@@ -9,6 +9,7 @@ import { Db } from "mongodb";
 import { BrowseResponse, BrowseType } from "../../../types/api/browse.js";
 import { Song } from "../../../types/api/song.js";
 import { SongDbModel } from "../../../types/db/song.js";
+import { BrowseUtils } from "../../../utils/browseUtils.js";
 import { letters } from "../../../misc/constants.js";
 import { musicServerInstance } from "../../../server/music_server.js";
 import {
@@ -83,7 +84,10 @@ export async function browseSongsAll(
   const database: Db = musicServerInstance.getDatabase().client;
   const songs = await SongDbModel.findSongsByPluginId(database, pluginId);
 
-  return createSongsBrowseResponses(`${pluginId}://songs/ALL`, songs);
+  return BrowseUtils.createSongsBrowseResponses(
+    `${pluginId}://songs/ALL`,
+    songs,
+  );
 }
 
 export async function browseSongsByLetter(
@@ -97,7 +101,10 @@ export async function browseSongsByLetter(
     letter,
   );
 
-  return createSongsBrowseResponses(`${pluginId}://songs/${letter}`, songs);
+  return BrowseUtils.createSongsBrowseResponses(
+    `${pluginId}://songs/${letter}`,
+    songs,
+  );
 }
 
 export async function browseSongsAllAndSongId(
@@ -140,22 +147,4 @@ async function browseSongsByScopeAndSongId(
       data,
     ),
   ];
-}
-
-function createSongsBrowseResponses(
-  pathPrefix: string,
-  songs: SongDbModel[],
-): BrowseResponse[] {
-  const resp = [];
-
-  for (let song of songs) {
-    const data = Song.fromDbModel(song);
-    data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
-
-    resp.push(
-      new BrowseResponse(`${pathPrefix}/${song.id}`, BrowseType.SONG, data),
-    );
-  }
-
-  return resp;
 }

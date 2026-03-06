@@ -15,12 +15,9 @@ import { musicServerInstance } from "../../../server/music_server.js";
 import { Db } from "mongodb";
 import { FileSystemScan } from "./scan.js";
 import { extractPathSections } from "../../../utils/pathUtils.js";
-import {
-  browseAlbums,
-  browseArtists,
-  browsePluginRoot,
-  browseSongs,
-} from "./browse.js";
+import { browseAlbums } from "./albumsBrowse.js";
+import { browseArtists } from "./artistsBrowse.js";
+import { browseSongs } from "./songsBrowse.js";
 import { PLUGIN_ID, PLUGIN_NAME } from "./constants.js";
 
 export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
@@ -66,7 +63,7 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     }
 
     if (pathSections.length === 0) {
-      return browsePluginRoot(this.#browseRoot);
+      return this.#browseRoot;
     }
 
     const [section] = pathSections;
