@@ -6,10 +6,17 @@ meta {
 
 post {
   url: http://{{host}}:{{port}}/scan
-  body: none
+  body: json
   auth: inherit
+}
+
+body:json {
+  {
+    "id":"filesystem-music-source"
+  }
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

@@ -11,6 +11,7 @@ import { v4 } from "uuid";
 export enum PluginStatus {
   LOADED = "loaded",
   STARTED = "started",
+  STOPPED = "stopped",
   ERROR = "error",
   DISABLED = "disabled",
 }
@@ -47,18 +48,43 @@ export class PluginDBModel {
       name: name,
       pluginId: pluginId,
     };
-    const doc = {
-      $set: {
-        id: v4(),
-        name: name,
-        pluginCategory: pluginCategory,
-        pluginId: pluginId,
-        status: PluginStatus.STARTED,
-      },
-    };
-    await collection.updateOne(filter, doc, { upsert: true });
 
-    return await collection.findOne(filter);
+    const pluginInDb = await this.find(db, pluginCategory, pluginId);
+    if (!pluginInDb) {
+      const doc = {
+        $set: {
+          id: v4(),
+          name: name,
+          pluginCategory: pluginCategory,
+          pluginId: pluginId,
+          status: PluginStatus.STOPPED,
+        },
+      };
+      await collection.updateOne(filter, doc, { upsert: true });
+      return await collection.findOne(filter);
+    } else {
+      return pluginInDb;
+    }
+  }
+
+  static async setStatus(
+    db: Db,
+    category: string,
+    id: string,
+    status: PluginStatus,
+  ): Promise<void> {
+    const collection = db.collection<PluginDBModel>(COLLECTION_NAME);
+    await collection.updateOne(
+      {
+        pluginCategory: category,
+        pluginId: id,
+      },
+      {
+        $set: {
+          status,
+        },
+      },
+    );
   }
 }
 
