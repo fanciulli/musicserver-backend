@@ -6,9 +6,10 @@
  * GitHub: https://github.com/fanciulli
  */
 export const ScanSchema = {
-  query: {
+  body: {
     properties: {
       id: { type: "string" },
     },
+    required: ["id"],
   },
 };

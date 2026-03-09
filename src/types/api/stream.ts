@@ -10,5 +10,6 @@ export const StreamSchema = {
     properties: {
       id: { type: "string" },
     },
+    required: ["id"],
   },
 };
