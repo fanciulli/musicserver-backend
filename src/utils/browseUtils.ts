@@ -17,7 +17,7 @@ export class BrowseUtils {
     pathPrefix: string,
     albums: AlbumDbModel[],
   ): BrowseResponse[] {
-    const resp = [];
+    const resp: BrowseResponse[] = [];
 
     for (let album of albums) {
       const folder = new Folder();
@@ -39,7 +39,7 @@ export class BrowseUtils {
     pathPrefix: string,
     artists: ArtistDbModel[],
   ): BrowseResponse[] {
-    const resp = [];
+    const resp: BrowseResponse[] = [];
 
     for (let artist of artists) {
       const folder = new Folder();
@@ -61,7 +61,7 @@ export class BrowseUtils {
     pathPrefix: string,
     songs: SongDbModel[],
   ): BrowseResponse[] {
-    const resp = [];
+    const resp: BrowseResponse[] = [];
 
     for (let song of songs) {
       const data = Song.fromDbModel(song);
