@@ -11,7 +11,6 @@ import { BrowseRoute } from "./browse.js";
 import { ScanRoute } from "./scan.js";
 import { StreamRoute } from "./stream.js";
 import { PluginStartRoute, PluginStopRoute, PluginsRoute } from "./plugins.js";
-import { AdminRoute } from "./admin.js";
 
 export class RouteController {
   /**
@@ -26,7 +25,6 @@ export class RouteController {
     await this.registerRoute(fastifyInstance, new PluginsRoute());
     await this.registerRoute(fastifyInstance, new PluginStopRoute());
     await this.registerRoute(fastifyInstance, new PluginStartRoute());
-    await this.registerRoute(fastifyInstance, new AdminRoute());
   }
 
   /**
