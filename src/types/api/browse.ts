@@ -14,6 +14,7 @@ export const BrowseSchema = {
     properties: {
       path: { type: "string" },
     },
+    required: ["path"],
   },
   response: {
     200: {
