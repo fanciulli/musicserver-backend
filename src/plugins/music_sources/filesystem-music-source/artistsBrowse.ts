@@ -7,11 +7,11 @@
  */
 import { Db } from "mongodb";
 import { BrowseResponse, BrowseType } from "../../../types/api/browse.js";
-import { Folder } from "../../../types/api/folder.js";
 import { Song } from "../../../types/api/song.js";
 import { AlbumDbModel } from "../../../types/db/album.js";
 import { ArtistDbModel } from "../../../types/db/artist.js";
 import { SongDbModel } from "../../../types/db/song.js";
+import { BrowseUtils } from "../../../utils/browseUtils.js";
 import { letters } from "../../../misc/constants.js";
 import { musicServerInstance } from "../../../server/music_server.js";
 import {
@@ -134,7 +134,7 @@ export async function browseArtistsAll(
   const artists = await ArtistDbModel.findArtistsByPluginId(database, pluginId);
   const artistsPath = `${pluginId}://artists/ALL`;
 
-  return createArtistsFolderResponses(artistsPath, artists);
+  return BrowseUtils.createArtistsFolderResponses(artistsPath, artists);
 }
 
 export async function browseArtistsByLetter(
@@ -149,7 +149,7 @@ export async function browseArtistsByLetter(
   );
   const artistsPath = `${pluginId}://artists/${letter}`;
 
-  return createArtistsFolderResponses(artistsPath, artists);
+  return BrowseUtils.createArtistsFolderResponses(artistsPath, artists);
 }
 
 async function browseSongsByAlbumId(
@@ -189,51 +189,7 @@ async function browseAlbumsByArtistId(
     artistId,
   );
 
-  return createAlbumsFolderResponses(pathPrefix, albums);
-}
-
-function createAlbumsFolderResponses(
-  pathPrefix: string,
-  albums: AlbumDbModel[],
-): BrowseResponse[] {
-  const resp = [];
-
-  for (let album of albums) {
-    const folder = new Folder();
-    folder.name = album.name;
-
-    resp.push(
-      new BrowseResponse(
-        `${pathPrefix}/${album.id}`,
-        BrowseType.FOLDER,
-        folder,
-      ),
-    );
-  }
-
-  return resp;
-}
-
-function createArtistsFolderResponses(
-  pathPrefix: string,
-  artists: ArtistDbModel[],
-): BrowseResponse[] {
-  const resp = [];
-
-  for (let artist of artists) {
-    const folder = new Folder();
-    folder.name = artist.name;
-
-    resp.push(
-      new BrowseResponse(
-        `${pathPrefix}/${artist.id}`,
-        BrowseType.FOLDER,
-        folder,
-      ),
-    );
-  }
-
-  return resp;
+  return BrowseUtils.createAlbumsFolderResponses(pathPrefix, albums);
 }
 
 async function browseSongByArtistAlbumAndSongId(

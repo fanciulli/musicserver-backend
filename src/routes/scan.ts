@@ -10,11 +10,12 @@ import { HttpMethods } from "../misc/constants.js";
 import { musicServerInstance } from "../server/music_server.js";
 import { MusicSourcePlugin } from "../types/plugins/music_sources.js";
 import { PluginDBModel, PluginStatus } from "../types/db/plugin.js";
+import { ScanSchema } from "../types/api/scan.js";
 
 export class ScanRoute extends Route {
   method = HttpMethods.POST;
   url = "/scan";
-  schema = undefined;
+  schema = ScanSchema;
   handler = async (request: any, response: any) => {
     const pluginManager = musicServerInstance.getPluginManager();
     const database = musicServerInstance.getDatabase();

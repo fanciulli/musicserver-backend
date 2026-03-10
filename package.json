@@ -4,25 +4,26 @@
   "description": "A music server with pluggable capbilities",
   "main": "index.js",
   "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "start": "npx tsc -p tsconfig.json; cd dist; node index.js"
   },
   "author": "Massimiliano Fanciulli",
   "license": "ISC",
   "type": "module",
-  "imports": {
-    "#types/*": "./dist/types/*.js"
-  },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@types/node": "^25.0.10",
-    "eslint": "^10.0.0",
-    "fastify": "^5.7.1",
-    "globals": "^17.1.0",
-    "typescript": "^5.9.3"
+    "@eslint/js": "10.0.1",
+    "@types/node": "25.3.5",
+    "@vitest/coverage-v8": "4.0.18",
+    "eslint": "10.0.3",
+    "globals": "17.4.0",
+    "typescript": "5.9.3",
+    "vitest": "4.0.18"
   },
   "dependencies": {
-    "mongodb": "^7.1.0",
-    "music-metadata": "^11.12.0",
-    "uuid": "^13.0.0"
+    "mongodb": "7.1.0",
+    "music-metadata": "11.12.1",
+    "uuid": "13.0.0",
+    "fastify": "5.8.1"
   }
 }

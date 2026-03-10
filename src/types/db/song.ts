@@ -128,7 +128,7 @@ export class SongDbModel {
   static async deleteAll(db: Db, pluginId: string) {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
 
-    await collection.deleteMany({});
+    await collection.deleteMany({ pluginId: pluginId });
   }
 }
 
