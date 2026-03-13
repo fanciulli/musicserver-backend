@@ -17,4 +17,5 @@ export abstract class MusicSourcePlugin extends Plugin {
   abstract scan(): Promise<void>;
   abstract browse(path: string): Promise<Array<BrowseResponse>>;
   abstract stream(id: string): Promise<Readable>;
+  abstract getAlbumArt(uri: string): Promise<Uint8Array>;
 }

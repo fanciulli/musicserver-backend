@@ -10,6 +10,7 @@ import { HealthzRoute } from "./healthz.js";
 import { BrowseRoute } from "./browse.js";
 import { ScanRoute } from "./scan.js";
 import { StreamRoute } from "./stream.js";
+import { AlbumArtRoute } from "./albumArt.js";
 import { PluginStartRoute, PluginStopRoute, PluginsRoute } from "./plugins.js";
 
 export class RouteController {
@@ -22,6 +23,7 @@ export class RouteController {
     await this.registerRoute(fastifyInstance, new BrowseRoute());
     await this.registerRoute(fastifyInstance, new ScanRoute());
     await this.registerRoute(fastifyInstance, new StreamRoute());
+    await this.registerRoute(fastifyInstance, new AlbumArtRoute());
     await this.registerRoute(fastifyInstance, new PluginsRoute());
     await this.registerRoute(fastifyInstance, new PluginStopRoute());
     await this.registerRoute(fastifyInstance, new PluginStartRoute());

@@ -19,6 +19,7 @@ import { browseAlbums } from "./albumsBrowse.js";
 import { browseArtists } from "./artistsBrowse.js";
 import { browseSongs } from "./songsBrowse.js";
 import { PLUGIN_ID, PLUGIN_NAME } from "./constants.js";
+import { parseFile } from "music-metadata";
 
 export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   id: string = PLUGIN_ID;
@@ -89,5 +90,23 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     } else {
       throw new Error("Song not found");
     }
+  }
+
+  async getAlbumArt(uri: string): Promise<Uint8Array> {
+    const database: Db = musicServerInstance.getDatabase().client;
+    const id = uri.split("/").slice(-1)[0];
+    const song = await SongDbModel.findById(database, id);
+
+    if (!song) {
+      throw new Error("Song not found");
+    }
+
+    const fileMetadata = await parseFile(song.metadata["filePath"] as string);
+    const coverArts = fileMetadata.common?.picture;
+    if (!coverArts || coverArts.length === 0) {
+      throw new Error("Album art not found");
+    }
+
+    return coverArts[0].data;
   }
 }
