@@ -1,0 +1,421 @@
+openapi: 3.0.3
+info:
+  title: Music Server API
+  description: >
+    REST API for the Music Server – a self-hosted, plugin-based music streaming
+    server built on Fastify and MongoDB.
+  version: 0.0.1
+  license:
+    name: ISC
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+tags:
+  - name: Health
+    description: Server health checks
+  - name: Library
+    description: Music library browsing, scanning and streaming
+  - name: Plugins
+    description: Plugin lifecycle management
+
+paths:
+
+  /healthz:
+    get:
+      summary: Health check
+      description: Returns the operational status of the server.
+      operationId: getHealth
+      tags: [Health]
+      responses:
+        "200":
+          description: Server is up and running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: OK
+
+  /browse:
+    post:
+      summary: Browse the music library
+      description: >
+        Navigates the music library hierarchy.
+        Calling with `"/"` (or an empty string) returns the list of active
+        music-source plugins as top-level folders.
+        Providing a plugin-scoped URI (e.g. `filesystem-music-source://albums/A`)
+        delegates to the corresponding plugin.
+      operationId: browse
+      tags: [Library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrowseRequest"
+            examples:
+              root:
+                summary: Root – list all music sources
+                value:
+                  path: "/"
+              plugin_root:
+                summary: Plugin root
+                value:
+                  path: "filesystem-music-source://"
+              nested:
+                summary: Navigate into an album
+                value:
+                  path: "filesystem-music-source://albums/A/550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "200":
+          description: List of folders and/or songs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BrowseItem"
+              example:
+                - id: "filesystem-music-source://"
+                  type: folder
+                  metadata:
+                    name: "Filesystem Music Source"
+                - id: "filesystem-music-source://albums/A/uuid-1/uuid-2"
+                  type: song
+                  metadata:
+                    title: "My Song"
+                    artist: "Some Artist"
+                    album: "Some Album"
+                    duration: 213
+                    trackNumber: 3
+
+  /scan:
+    post:
+      summary: Scan a music source plugin
+      description: >
+        Triggers a full library scan for the specified plugin.
+        The plugin indexes all music files and persists the results in MongoDB.
+      operationId: scan
+      tags: [Library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanRequest"
+            example:
+              id: "filesystem-music-source"
+      responses:
+        "200":
+          description: Scan completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              example:
+                status: "Scan completed"
+
+  /stream:
+    get:
+      summary: Stream an audio file
+      description: Streams the audio file identified by the given song ID.
+      operationId: stream
+      tags: [Library]
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Song UUID as returned by `/browse`
+          schema:
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "200":
+          description: Binary audio stream
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+            audio/flac:
+              schema:
+                type: string
+                format: binary
+            audio/wav:
+              schema:
+                type: string
+                format: binary
+            audio/aac:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Song not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Song not found"
+
+  /albumart:
+    get:
+      summary: Get album cover art
+      description: Returns the cover art image for the specified album.
+      operationId: getAlbumArt
+      tags: [Library]
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Album URI or UUID
+          schema:
+            type: string
+          example: "filesystem-music-source://albumart/550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "200":
+          description: Binary image data
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Album art not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Album art not found"
+
+  /plugins:
+    get:
+      summary: List all plugins
+      description: Returns all registered plugins and their current lifecycle status.
+      operationId: listPlugins
+      tags: [Plugins]
+      responses:
+        "200":
+          description: List of plugins
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PluginInfo"
+              example:
+                - id: "filesystem-music-source"
+                  name: "Filesystem Music Source"
+                  category: "music_sources"
+                  status: "started"
+
+  /plugins/start:
+    post:
+      summary: Start a plugin
+      description: Starts a previously stopped or loaded plugin.
+      operationId: startPlugin
+      tags: [Plugins]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PluginActionRequest"
+            example:
+              pluginId: "filesystem-music-source"
+      responses:
+        "200":
+          description: Plugin started successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              example:
+                status: "Plugin started"
+        "404":
+          description: Plugin not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Plugin filesystem-music-source not found"
+
+  /plugins/stop:
+    post:
+      summary: Stop a plugin
+      description: Stops a currently running plugin.
+      operationId: stopPlugin
+      tags: [Plugins]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PluginActionRequest"
+            example:
+              pluginId: "filesystem-music-source"
+      responses:
+        "200":
+          description: Plugin stopped successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              example:
+                status: "Plugin stopped"
+        "404":
+          description: Plugin not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Plugin filesystem-music-source not found"
+
+components:
+  schemas:
+
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: OK
+
+    BrowseRequest:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+          description: >
+            Path to browse. Use `"/"` or `""` for the root (returns all active
+            plugins).  Use a plugin-scoped URI such as
+            `filesystem-music-source://albums/A` to navigate within a plugin.
+          example: "/"
+
+    SongMetadata:
+      type: object
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        artist:
+          type: string
+        artistsId:
+          type: array
+          items:
+            type: string
+            format: uuid
+        album:
+          type: string
+        albumId:
+          type: string
+          format: uuid
+        duration:
+          type: number
+          description: Duration in seconds
+        format:
+          $ref: "#/components/schemas/AudioFormat"
+        trackNumber:
+          type: integer
+        diskNumber:
+          type: integer
+        sampleRate:
+          type: number
+          description: Sample rate in Hz
+        bitRate:
+          type: number
+          description: Bit rate in kbps
+
+    FolderMetadata:
+      type: object
+      properties:
+        name:
+          type: string
+
+    BrowseItem:
+      type: object
+      required: [id, type]
+      properties:
+        id:
+          type: string
+          description: Unique identifier / URI for this item
+          example: "filesystem-music-source://albums/A/uuid-123"
+        type:
+          type: string
+          enum: [folder, song]
+          description: Whether this item is a navigable folder or a playable song
+        metadata:
+          oneOf:
+            - $ref: "#/components/schemas/FolderMetadata"
+            - $ref: "#/components/schemas/SongMetadata"
+
+    AudioFormat:
+      type: string
+      enum: [MP3, FLAC, WAV, AAC]
+      description: Audio file format
+
+    ScanRequest:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          description: Plugin ID to scan
+          example: "filesystem-music-source"
+
+    PluginInfo:
+      type: object
+      required: [id, name, category, status]
+      properties:
+        id:
+          type: string
+          description: Unique plugin identifier
+          example: "filesystem-music-source"
+        name:
+          type: string
+          description: Human-readable plugin name
+          example: "Filesystem Music Source"
+        category:
+          type: string
+          description: Plugin category
+          example: "music_sources"
+        status:
+          type: string
+          enum: [loaded, started, stopped, error, disabled, unknown]
+          description: >
+            Current lifecycle status of the plugin.
+            Only plugins with status `started` respond to library requests.
+
+    PluginActionRequest:
+      type: object
+      required: [pluginId]
+      properties:
+        pluginId:
+          type: string
+          description: Plugin ID to act upon
+          example: "filesystem-music-source"
+
+    StatusResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: "Plugin started"
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: "Plugin not found"
