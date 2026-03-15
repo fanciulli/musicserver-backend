@@ -33,13 +33,22 @@ Providing a plugin-scoped URI (e.g. `filesystem-music-source://albums/A`) delega
 
 **Response `200`** – array of `BrowseItem` objects
 
+When called with `"/"`, the response lists the active music-source plugins as top-level folders:
+
 ```json
 [
   {
     "id": "filesystem-music-source://",
     "type": "folder",
     "metadata": { "name": "Filesystem Music Source" }
-  },
+  }
+]
+```
+
+When called with a plugin-scoped URI (e.g. `filesystem-music-source://albums/`), the response contains the items inside that path:
+
+```json
+[
   {
     "id": "filesystem-music-source://albums/A/uuid-123/uuid-456",
     "type": "song",
@@ -58,8 +67,8 @@ Providing a plugin-scoped URI (e.g. `filesystem-music-source://albums/A`) delega
 
 ### `POST /scan`
 
-Triggers a full library scan for the specified plugin.
-The plugin indexes all music files and persists the results in MongoDB.
+Triggers a content scan for the specified plugin.
+The plugin discovers and indexes its sources and persists the results.
 
 **Request body**
 
