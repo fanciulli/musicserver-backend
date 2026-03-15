@@ -19,7 +19,7 @@ import { browseAlbums } from "./albumsBrowse.js";
 import { browseArtists } from "./artistsBrowse.js";
 import { browseSongs } from "./songsBrowse.js";
 import { PLUGIN_ID, PLUGIN_NAME } from "./constants.js";
-import { parseFile } from "music-metadata";
+import { AlbumDbModel } from "../../../types/db/album.js";
 
 export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   id: string = PLUGIN_ID;
@@ -92,21 +92,24 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     }
   }
 
-  async getAlbumArt(uri: string): Promise<Uint8Array> {
+  async getAlbumArt(uri: string): Promise<Buffer<ArrayBuffer>> {
     const database: Db = musicServerInstance.getDatabase().client;
     const id = uri.split("/").slice(-1)[0];
     const song = await SongDbModel.findById(database, id);
+    let albumId = undefined;
 
+    console.log("Searching for id " + id);
     if (!song) {
-      throw new Error("Song not found");
+      albumId = id; // Trying if the id is an album id
+    } else {
+      albumId = song.albumId;
     }
 
-    const fileMetadata = await parseFile(song.metadata["filePath"] as string);
-    const coverArts = fileMetadata.common?.picture;
-    if (!coverArts || coverArts.length === 0) {
-      throw new Error("Album art not found");
+    const albumCover = await AlbumDbModel.findCoverById(database, albumId);
+    if (!albumCover) {
+      throw new Error("Identifier is not a Album nor a Song.");
+    } else {
+      return Buffer.from(albumCover, "base64");
     }
-
-    return coverArts[0].data;
   }
 }
