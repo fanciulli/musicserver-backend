@@ -20,6 +20,7 @@ import {
 import { Plugin } from "../types/plugins/plugin.js";
 import { Folder } from "../types/api/folder.js";
 import { PluginDBModel, PluginStatus } from "../types/db/plugin.js";
+import { getPluginById } from "../utils/musicSourcePluginResolver.js";
 import { extractPluginId } from "../utils/pathUtils.js";
 
 export class BrowseRoute extends Route {
@@ -67,30 +68,17 @@ export class BrowseRoute extends Route {
   };
 
   browsePathInPlugin = async (request: any, response: any) => {
-    const pluginManager = musicServerInstance.getPluginManager();
-    const database = musicServerInstance.getDatabase();
-
     const path = request.body.path;
     const pluginId = extractPluginId(path);
-    const plugin = pluginManager.getPlugin(
-      "music_sources",
-      pluginId,
-    ) as MusicSourcePlugin;
-
-    if (plugin === undefined) {
-      response.status(404).send({ error: `Plugin ${pluginId} not found` });
+    const pluginResult = await getPluginById(pluginId);
+    if (pluginResult.error) {
+      response
+        .status(pluginResult.error.status)
+        .send({ error: pluginResult.error.message });
       return;
     }
 
-    const pluginRecord = await PluginDBModel.find(
-      database.client,
-      plugin.category,
-      plugin.id,
-    );
-    if (pluginRecord?.status !== PluginStatus.STARTED) {
-      response.status(409).send({ error: `Plugin ${pluginId} is not started` });
-      return;
-    }
+    const plugin = pluginResult.plugin as MusicSourcePlugin;
 
     const songs = await plugin.browse(path);
 

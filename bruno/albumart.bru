@@ -1,0 +1,20 @@
+meta {
+  name: albumartart
+  type: http
+  seq: 8
+}
+
+get {
+  url: http://{{host}}:{{port}}/albumart?id=filesystem-music-source://songs/4bed1d6c-2b03-414d-aae3-226ded95ec56
+  body: none
+  auth: inherit
+}
+
+params:query {
+  id: filesystem-music-source://songs/4bed1d6c-2b03-414d-aae3-226ded95ec56
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

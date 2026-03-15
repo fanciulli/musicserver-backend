@@ -10,11 +10,18 @@ import { ArtistDbModel } from "../../../types/db/artist.js";
 import { SongDbModel } from "../../../types/db/song.js";
 import type { Db } from "mongodb";
 import { listFiles } from "../../../utils/fsUtils.js";
-import { parseFile, type IAudioMetadata } from "music-metadata";
+import {
+  CouldNotDetermineFileTypeError,
+  parseFile,
+  UnsupportedFileTypeError,
+  type IAudioMetadata,
+} from "music-metadata";
 import { v4 } from "uuid";
+import { musicServerInstance } from "../../../server/music_server.js";
 
 export class FileSystemScan {
   static async scan(db: Db, pluginId: string): Promise<void> {
+    const logger = musicServerInstance.getLogger();
     await ArtistDbModel.deleteAll(db, pluginId);
     await AlbumDbModel.deleteAll(db, pluginId);
     await SongDbModel.deleteAll(db, pluginId);
@@ -43,7 +50,19 @@ export class FileSystemScan {
           artists,
           filePath,
         );
-      } catch (ex) {}
+      } catch (ex) {
+        if (ex instanceof UnsupportedFileTypeError) {
+          logger.info(
+            `Skipping file ${filePath} because of and unsupported format`,
+          );
+        } else if (ex instanceof CouldNotDetermineFileTypeError) {
+          logger.info(
+            `Skipping file ${filePath} because its file type cannot be determined`,
+          );
+        } else {
+          logger.error(ex);
+        }
+      }
     }
   }
 
@@ -58,6 +77,13 @@ export class FileSystemScan {
     if (name) {
       const albumInDb = await AlbumDbModel.find(db, name, pluginId);
       if (albumInDb) {
+        if (albumInDb.cover === undefined) {
+          const coverImage = fileMetadata.common?.picture?.[0]?.data;
+          if (coverImage) {
+            albumInDb.cover = Buffer.from(coverImage).toString("base64");
+            await albumInDb.update(db);
+          }
+        }
         return albumInDb;
       } else {
         const album = new AlbumDbModel();
@@ -65,6 +91,10 @@ export class FileSystemScan {
         album.name = name;
         album.pluginId = pluginId;
         album.artists = artists.map((artist) => artist.id);
+        const coverImage = fileMetadata.common?.picture?.[0]?.data;
+        if (coverImage) {
+          album.cover = Buffer.from(coverImage).toString("base64");
+        }
         album.insert(db);
         return album;
       }
@@ -119,10 +149,10 @@ export class FileSystemScan {
       song.name = songName;
       song.id = v4();
       song.pluginId = pluginId;
-      song.album = album.name;
-      song.albumId = album.id;
+      song.album = album?.name;
+      song.albumId = album?.id;
       song.artist = artists.map((artist) => artist.name).join(", ");
-      song.artistsId = album.artists;
+      song.artistsId = album?.artists;
       song.trackNumber = fileMetadata.common.track?.no;
       song.diskNumber = fileMetadata.common.disk?.no;
       // song.duration =

@@ -14,7 +14,12 @@ export class Database {
 
   async connect(): Promise<void> {
     const uri = "mongodb://localhost:27017";
-    const mongoClient = new MongoClient(uri);
+    const mongoClient = new MongoClient(uri, {
+      connectTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 5000,
+    });
+    await mongoClient.connect();
+
     this.client = mongoClient.db("music-server");
   }
 
@@ -29,9 +34,13 @@ export class Database {
   }
 
   async start(): Promise<Boolean> {
-    await this.connect();
-    await this.#initModels();
-    return true;
+    try {
+      await this.connect();
+      await this.#initModels();
+      return true;
+    } catch (err) {
+      return false;
+    }
   }
 
   async disconnect(): Promise<void> {

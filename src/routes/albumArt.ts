@@ -1,5 +1,5 @@
 /*
- * Created on Sun Feb 01 2026
+ * Created on Fri Mar 13 2026
  *
  * Author: Massimiliano Fanciulli
  *
@@ -7,17 +7,17 @@
  */
 import { Route } from "../types/route.js";
 import { HttpMethods } from "../misc/constants.js";
-import { StreamSchema } from "../types/api/stream.js";
+import { AlbumArtSchema } from "../types/api/albumArt.js";
 import { getPluginById } from "../utils/musicSourcePluginResolver.js";
 import { extractPluginId } from "../utils/pathUtils.js";
 
-export class StreamRoute extends Route {
+export class AlbumArtRoute extends Route {
   method = HttpMethods.GET;
-  url = "/stream";
-  schema = StreamSchema;
+  url = "/albumart";
+  schema = AlbumArtSchema;
   handler = async (request: any, response: any) => {
-    const streamId = request.query.id;
-    const pluginId = extractPluginId(streamId);
+    const uri = request.query.id;
+    const pluginId = extractPluginId(uri);
     const pluginResult = await getPluginById(pluginId);
     if (pluginResult.error) {
       response
@@ -28,10 +28,11 @@ export class StreamRoute extends Route {
 
     try {
       const plugin = pluginResult.plugin;
-      const stream = await plugin.stream(streamId);
+      const stream = await plugin.getAlbumArt(uri);
+      response.header("content-type", "application/octet-stream");
       return response.send(stream);
     } catch (error) {
-      response.status(404).send({ error: "Song not found" });
+      response.status(404).send({ error: "Album art not found" });
     }
   };
 }

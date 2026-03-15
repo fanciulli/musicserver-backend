@@ -14,6 +14,17 @@ export class AlbumDbModel {
   name: string;
   pluginId: string;
   artists: string[];
+  cover?: string = undefined;
+
+  static fromJson(json: Partial<AlbumDbModel>): AlbumDbModel {
+    const album = new AlbumDbModel();
+    album.id = json.id ?? "";
+    album.name = json.name ?? "";
+    album.pluginId = json.pluginId ?? "";
+    album.artists = json.artists ?? [];
+    album.cover = json.cover;
+    return album;
+  }
 
   static async deleteAll(db: Db, pluginId: string) {
     const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
@@ -28,16 +39,80 @@ export class AlbumDbModel {
   ): Promise<AlbumDbModel> {
     const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
 
-    return await collection.findOne({
-      name: name,
-      pluginId: pluginId,
-    });
+    const album = await collection.findOne(
+      {
+        name: name,
+        pluginId: pluginId,
+      },
+      {
+        projection: {
+          cover: 0,
+        },
+      },
+    );
+
+    return album ? AlbumDbModel.fromJson(album) : undefined;
+  }
+
+  static async findById(db: Db, id: string): Promise<AlbumDbModel> {
+    const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
+    const album = await collection.findOne(
+      {
+        id: id,
+      },
+      {
+        projection: {
+          cover: 0,
+        },
+      },
+    );
+
+    return album ? AlbumDbModel.fromJson(album) : undefined;
+  }
+
+  static async findCoverById(db: Db, id: string): Promise<string | undefined> {
+    const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
+    const album = await collection.findOne(
+      {
+        id: id,
+      },
+      {
+        projection: {
+          cover: 1,
+          _id: 0,
+        },
+      },
+    );
+
+    return album?.cover;
+  }
+
+  static async updateCoverById(
+    db: Db,
+    id: string,
+    cover: string,
+  ): Promise<void> {
+    const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
+    await collection.updateOne(
+      { id: id },
+      { $set: { cover: cover } },
+      { ignoreUndefined: true },
+    );
   }
 
   async insert(db: Db): Promise<void> {
     const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
 
-    await collection.insertOne(this);
+    await collection.insertOne(this, { ignoreUndefined: true });
+  }
+
+  async update(db: Db): Promise<void> {
+    const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
+    await collection.updateOne(
+      { id: this.id },
+      { $set: this },
+      { ignoreUndefined: true },
+    );
   }
 
   static async findAlbumsByPluginId(
@@ -46,11 +121,13 @@ export class AlbumDbModel {
   ): Promise<Array<AlbumDbModel>> {
     const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
 
-    return await collection
+    const albums = await collection
       .find({
         pluginId: pluginId,
       })
       .toArray();
+
+    return albums.map((album) => AlbumDbModel.fromJson(album));
   }
 
   static async findAlbumsByStartingLetter(
@@ -60,12 +137,14 @@ export class AlbumDbModel {
   ): Promise<Array<AlbumDbModel>> {
     const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
 
-    return await collection
+    const albums = await collection
       .find({
         pluginId: pluginId,
         name: { $regex: `^${letter}.*`, $options: "i" },
       })
       .toArray();
+
+    return albums.map((album) => AlbumDbModel.fromJson(album));
   }
 
   static async findAlbumsByArtistId(
@@ -75,12 +154,14 @@ export class AlbumDbModel {
   ): Promise<Array<AlbumDbModel>> {
     const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
 
-    return await collection
+    const albums = await collection
       .find({
         pluginId: pluginId,
         artists: artistId,
       })
       .toArray();
+
+    return albums.map((album) => AlbumDbModel.fromJson(album));
   }
 }
 
