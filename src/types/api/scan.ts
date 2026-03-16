@@ -7,6 +7,7 @@
  */
 export const ScanSchema = {
   body: {
+    type: "object",
     properties: {
       id: { type: "string" },
     },

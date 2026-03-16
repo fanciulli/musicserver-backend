@@ -7,6 +7,7 @@
  */
 export const StreamSchema = {
   query: {
+    type: "object",
     properties: {
       id: { type: "string" },
     },

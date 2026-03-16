@@ -7,6 +7,7 @@
  */
 export const AlbumArtSchema = {
   query: {
+    type: "object",
     properties: {
       id: { type: "string" },
     },
