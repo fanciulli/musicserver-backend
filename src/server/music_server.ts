@@ -11,6 +11,8 @@ import type { FastifyInstance } from "fastify";
 import { RouteController } from "../routes/routeController.js";
 import { Database } from "./database.js";
 import { Logger } from "./logging.js";
+import { join } from "path";
+import pino from "pino";
 
 class MusicServer {
   #initDone: Boolean = false;
@@ -40,7 +42,21 @@ class MusicServer {
   }
 
   async #startFastify() {
-    this.#fastifyInstance = fastify({ logger: true });
+    const transport = pino.transport({
+      target: "pino-roll",
+      options: {
+        file: join("logs", "fastify"),
+        size: 1,
+        frequency: "daily",
+        mkdir: true,
+        limit: { count: 1 },
+        dateFormat: "yyyy-MM-dd-hh",
+      },
+    });
+
+    const logger = pino(transport);
+
+    this.#fastifyInstance = fastify({ loggerInstance: logger });
 
     const rc = new RouteController();
     await rc.registerRoutes(this.#fastifyInstance);
