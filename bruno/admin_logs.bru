@@ -1,0 +1,20 @@
+meta {
+  name: admin logs
+  type: http
+  seq: 9
+}
+
+get {
+  url: http://{{host}}:{{port}}/admin/logs?id=fastify
+  body: none
+  auth: inherit
+}
+
+params:query {
+  id: fastify
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -12,6 +12,7 @@ import { RouteController } from "../routes/routeController.js";
 import { Database } from "./database.js";
 import { Logger } from "./logging.js";
 import { join } from "path";
+import { rm } from "node:fs/promises";
 import pino from "pino";
 
 class MusicServer {
@@ -24,6 +25,8 @@ class MusicServer {
   async start(): Promise<void> {
     if (!this.#initDone) {
       this.#initDone = true;
+
+      await rm("logs", { force: true, recursive: true });
 
       this.#logger = new Logger();
       this.#logger.info("Starting Music Server");
@@ -49,8 +52,7 @@ class MusicServer {
         size: 1,
         frequency: "daily",
         mkdir: true,
-        limit: { count: 1 },
-        dateFormat: "yyyy-MM-dd-hh",
+        dateFormat: "yyyy-MM-dd",
       },
     });
 

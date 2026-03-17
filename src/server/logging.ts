@@ -15,8 +15,7 @@ const transport = pino.transport({
     size: 1,
     frequency: "daily",
     mkdir: true,
-    limit: { count: 1 },
-    dateFormat: "yyyy-MM-dd-hh",
+    dateFormat: "yyyy-MM-dd",
   },
 });
 
