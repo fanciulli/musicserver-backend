@@ -11,6 +11,9 @@ import type { FastifyInstance } from "fastify";
 import { RouteController } from "../routes/routeController.js";
 import { Database } from "./database.js";
 import { Logger } from "./logging.js";
+import { join } from "path";
+import { rm } from "node:fs/promises";
+import pino from "pino";
 
 class MusicServer {
   #initDone: Boolean = false;
@@ -22,6 +25,8 @@ class MusicServer {
   async start(): Promise<void> {
     if (!this.#initDone) {
       this.#initDone = true;
+
+      await rm("logs", { force: true, recursive: true });
 
       this.#logger = new Logger();
       this.#logger.info("Starting Music Server");
@@ -40,7 +45,20 @@ class MusicServer {
   }
 
   async #startFastify() {
-    this.#fastifyInstance = fastify({ logger: true });
+    const transport = pino.transport({
+      target: "pino-roll",
+      options: {
+        file: join("logs", "fastify"),
+        size: 1,
+        frequency: "daily",
+        mkdir: true,
+        dateFormat: "yyyy-MM-dd",
+      },
+    });
+
+    const logger = pino(transport);
+
+    this.#fastifyInstance = fastify({ loggerInstance: logger });
 
     const rc = new RouteController();
     await rc.registerRoutes(this.#fastifyInstance);

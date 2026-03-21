@@ -5,14 +5,18 @@
  *
  * GitHub: https://github.com/fanciulli
  */
+import { musicServerInstance } from "../../server/music_server.js";
+
 export abstract class Plugin {
   abstract id: string;
   abstract name: string;
   abstract category: string;
   start: () => Promise<void> = async () => {
-    console.log("Starting plugin " + this.category + "/" + this.id);
+    const logger = musicServerInstance.getLogger();
+    logger.info("Starting plugin " + this.category + "/" + this.id);
   };
   stop: () => Promise<void> = async () => {
-    console.log("Stopping plugin " + this.category + "/" + this.id);
+    const logger = musicServerInstance.getLogger();
+    logger.info("Stopping plugin " + this.category + "/" + this.id);
   };
 }
