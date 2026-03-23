@@ -12,6 +12,7 @@ import path from "node:path";
 import { Database } from "../server/database.js";
 import { Logger } from "../server/logging.js";
 import { PluginDBModel, PluginStatus } from "../types/db/plugin.js";
+import { Context } from "../types/context.js";
 
 const listFolders = async (parentFolder: string): Promise<string[]> => {
   const dirListing = await readdir(parentFolder, { withFileTypes: true });
@@ -52,7 +53,7 @@ class PluginList {
       const pluginIndexFile = path.join(folderPath, pluginDir, "index.js");
       const pluginModule = await import(pluginIndexFile);
       const pluginClass = pluginModule.default;
-      const pluginInstance: Plugin = new pluginClass();
+      const pluginInstance: Plugin = new pluginClass(Context.create());
 
       PluginDBModel.assertPluginIsRegisteredInDB(
         this.#database.client,

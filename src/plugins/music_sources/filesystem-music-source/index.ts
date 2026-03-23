@@ -11,7 +11,6 @@ import { MusicSourcePlugin } from "../../../types/plugins/music_sources.js";
 import { BrowseResponse, BrowseType } from "../../../types/api/browse.js";
 import { SongDbModel } from "../../../types/db/song.js";
 import { Folder } from "../../../types/api/folder.js";
-import { musicServerInstance } from "../../../server/music_server.js";
 import { Db } from "mongodb";
 import { FileSystemScan } from "./scan.js";
 import { extractPathSections } from "../../../utils/pathUtils.js";
@@ -20,14 +19,15 @@ import { browseArtists } from "./artistsBrowse.js";
 import { browseSongs } from "./songsBrowse.js";
 import { PLUGIN_ID, PLUGIN_NAME } from "./constants.js";
 import { AlbumDbModel } from "../../../types/db/album.js";
+import type { Context } from "../../../types/context.js";
 
 export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   id: string = PLUGIN_ID;
   name: string = PLUGIN_NAME;
   #browseRoot: Array<BrowseResponse>;
 
-  constructor() {
-    super();
+  constructor(context: Context) {
+    super(context);
     const albumsFolder = new Folder();
     albumsFolder.name = "Albums";
 
@@ -53,7 +53,7 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   }
 
   async scan(): Promise<void> {
-    const database: Db = musicServerInstance.getDatabase().client;
+    const database: Db = this.context.database.client;
     await FileSystemScan.scan(database, this.id);
   }
 
@@ -81,7 +81,7 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   }
 
   async stream(path: string): Promise<Readable> {
-    const database: Db = musicServerInstance.getDatabase().client;
+    const database: Db = this.context.database.client;
     const id = path.split("/").slice(-1)[0];
     const song = await SongDbModel.findById(database, id);
     if (song) {
@@ -93,12 +93,12 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   }
 
   async getAlbumArt(uri: string): Promise<Buffer<ArrayBuffer>> {
-    const database: Db = musicServerInstance.getDatabase().client;
+    const database: Db = this.context.database.client;
     const id = uri.split("/").slice(-1)[0];
     const song = await SongDbModel.findById(database, id);
     let albumId = undefined;
 
-    console.log("Searching for id " + id);
+    this.context.logger.info("Searching for id " + id);
     if (!song) {
       albumId = id; // Trying if the id is an album id
     } else {
