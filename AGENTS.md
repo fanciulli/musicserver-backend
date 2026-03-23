@@ -1,3 +1,8 @@
+General
+
+- Use English as language for all generated text, unless specified.
+- Use camelCase names for files.
+
 Code review
 
 - All the files must have the template header.

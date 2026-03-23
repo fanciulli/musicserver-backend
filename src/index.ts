@@ -6,7 +6,7 @@
  * GitHub: https://github.com/fanciulli
  */
 import { loadEnvFile } from "node:process";
-import { musicServerInstance } from "./server/music_server.js";
+import { musicServerInstance } from "./server/musicServer.js";
 
 async function run() {
   loadEnvFile();
@@ -31,7 +31,7 @@ async function run() {
   );
   console.log("");
 
-  await musicServerInstance.start();
+  await musicServerInstance.run();
 }
 
 run();

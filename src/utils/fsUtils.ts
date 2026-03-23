@@ -8,6 +8,20 @@
 import { readdir } from "fs/promises";
 import path from "path";
 
+export async function listFolderNames(parentFolder: string): Promise<string[]> {
+  const dirListing = await readdir(parentFolder, { withFileTypes: true });
+
+  const directories = dirListing
+    .filter((item) => {
+      return item.isDirectory();
+    })
+    .map((dir) => {
+      return dir.name;
+    });
+
+  return directories;
+}
+
 export async function listFiles(parentFolder: string): Promise<string[]> {
   const dirListing = await readdir(parentFolder, {
     withFileTypes: true,

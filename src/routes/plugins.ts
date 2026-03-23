@@ -7,7 +7,7 @@
  */
 import { Route } from "../types/route.js";
 import { HttpMethods } from "../misc/constants.js";
-import { musicServerInstance } from "../server/music_server.js";
+import { musicServerInstance } from "../server/musicServer.js";
 import {
   PluginStartSchema,
   PluginStopSchema,

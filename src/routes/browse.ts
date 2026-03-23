@@ -7,7 +7,7 @@
  */
 import { Route } from "../types/route.js";
 import { HttpMethods } from "../misc/constants.js";
-import { musicServerInstance } from "../server/music_server.js";
+import { musicServerInstance } from "../server/musicServer.js";
 import {
   MUSIC_SOURCE_PLUGIN_CATEGORY,
   MusicSourcePlugin,

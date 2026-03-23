@@ -11,7 +11,7 @@ import { Song } from "../../../types/api/song.js";
 import { SongDbModel } from "../../../types/db/song.js";
 import { BrowseUtils } from "../../../utils/browseUtils.js";
 import { letters } from "../../../misc/constants.js";
-import { musicServerInstance } from "../../../server/music_server.js";
+import { musicServerInstance } from "../../../server/musicServer.js";
 import {
   createBrowseReponseFolderForLetters,
   createBrowseResponseFolder,

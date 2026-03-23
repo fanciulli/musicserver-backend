@@ -7,7 +7,7 @@
  */
 import { Logger } from "../server/logging.js";
 import { PluginManager } from "../plugins/pluginManager.js";
-import { musicServerInstance } from "../server/music_server.js";
+import { musicServerInstance } from "../server/musicServer.js";
 import type { Database } from "../server/database.js";
 
 export class Context {

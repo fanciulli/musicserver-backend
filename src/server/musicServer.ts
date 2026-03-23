@@ -11,52 +11,48 @@ import type { FastifyInstance } from "fastify";
 import { RouteController } from "../routes/routeController.js";
 import { Database } from "./database.js";
 import { Logger } from "./logging.js";
-import { join } from "path";
 import { rm } from "node:fs/promises";
-import pino from "pino";
+import { createRollingLogger } from "./loggingRollingTransport.js";
 
 class MusicServer {
   #initDone: Boolean = false;
-  #database?: Database;
-  #pluginManager?: PluginManager;
-  #fastifyInstance?: FastifyInstance;
-  #logger?: Logger;
+  #database: Database;
+  #pluginManager: PluginManager;
+  #fastifyInstance: FastifyInstance;
+  #logger: Logger;
 
-  async start(): Promise<void> {
+  async run(): Promise<void> {
     if (!this.#initDone) {
       this.#initDone = true;
 
-      await rm("logs", { force: true, recursive: true });
+      try {
+        await this.#createLogger();
+        this.#logger.info("Starting Music Server");
 
-      this.#logger = new Logger();
-      this.#logger.info("Starting Music Server");
-
-      const database_connected = await this.#startDatabase();
-      if (database_connected === false) {
-        this.#logger.error(
-          "Exiting application because connection to database failed",
-        );
+        await this.#startDatabase();
+        await this.#startFastify();
+        await this.#startPluginManager();
+      } catch (err) {
+        if (this.#logger) {
+          this.#logger.error(
+            `Error during Music Server initialization: ${err}`,
+          );
+        } else {
+          console.error("Error during Music Server initialization:", err);
+        }
         process.exit(1);
       }
-
-      await this.#startFastify();
-      await this.#startPluginManager();
     }
   }
 
-  async #startFastify() {
-    const transport = pino.transport({
-      target: "pino-roll",
-      options: {
-        file: join("logs", "fastify"),
-        size: 1,
-        frequency: "daily",
-        mkdir: true,
-        dateFormat: "yyyy-MM-dd",
-      },
-    });
+  async #createLogger() {
+    await rm("logs", { force: true, recursive: true });
 
-    const logger = pino(transport);
+    this.#logger = new Logger();
+  }
+
+  async #startFastify() {
+    const logger = createRollingLogger("fastify");
 
     this.#fastifyInstance = fastify({ loggerInstance: logger });
 
@@ -79,9 +75,9 @@ class MusicServer {
     await this.#pluginManager.startPlugins();
   }
 
-  async #startDatabase(): Promise<Boolean> {
+  async #startDatabase(): Promise<void> {
     this.#database = new Database();
-    return await this.#database.start();
+    await this.#database.start();
   }
 
   getPluginManager(): PluginManager {

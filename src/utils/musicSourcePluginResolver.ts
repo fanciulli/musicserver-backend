@@ -5,7 +5,7 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { musicServerInstance } from "../server/music_server.js";
+import { musicServerInstance } from "../server/musicServer.js";
 import { PluginDBModel, PluginStatus } from "../types/db/plugin.js";
 import { MusicSourcePlugin } from "../types/plugins/music_sources.js";
 

@@ -33,14 +33,9 @@ export class Database {
     }
   }
 
-  async start(): Promise<Boolean> {
-    try {
-      await this.connect();
-      await this.#initModels();
-      return true;
-    } catch (err) {
-      return false;
-    }
+  async start(): Promise<void> {
+    await this.connect();
+    await this.#initModels();
   }
 
   async disconnect(): Promise<void> {

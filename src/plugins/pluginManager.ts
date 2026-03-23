@@ -6,36 +6,19 @@
  * GitHub: https://github.com/fanciulli
  */
 import { Plugin } from "../types/plugins/plugin.js";
-import { readdir } from "node:fs/promises";
-import { musicServerInstance } from "../server/music_server.js";
 import path from "node:path";
-import { Database } from "../server/database.js";
-import { Logger } from "../server/logging.js";
 import { PluginDBModel, PluginStatus } from "../types/db/plugin.js";
 import { Context } from "../types/context.js";
-
-const listFolders = async (parentFolder: string): Promise<string[]> => {
-  const dirListing = await readdir(parentFolder, { withFileTypes: true });
-  const directories = dirListing
-    .filter((item) => {
-      return item.isDirectory();
-    })
-    .map((dir) => {
-      return dir.name;
-    });
-  return directories;
-};
+import { listFolderNames } from "../utils/fsUtils.js";
 
 class PluginList {
   category: string;
   #plugins: Map<string, Plugin> = new Map();
-  #database?: Database;
-  #logger?: Logger;
+  #context: Context;
 
-  constructor(category: string) {
+  constructor(category: string, context: Context) {
     this.category = category;
-    this.#database = musicServerInstance.getDatabase();
-    this.#logger = musicServerInstance.getLogger();
+    this.#context = context;
   }
 
   get(name: string): Plugin | undefined {
@@ -47,23 +30,23 @@ class PluginList {
   }
 
   async loadPluginsFromFolder(folderPath: string): Promise<void> {
-    const pluginsDirectories = await listFolders(folderPath);
+    const pluginsDirectories = await listFolderNames(folderPath);
 
     for (let pluginDir of pluginsDirectories) {
       const pluginIndexFile = path.join(folderPath, pluginDir, "index.js");
       const pluginModule = await import(pluginIndexFile);
       const pluginClass = pluginModule.default;
-      const pluginInstance: Plugin = new pluginClass(Context.create());
+      const pluginInstance: Plugin = new pluginClass(this.#context);
 
       PluginDBModel.assertPluginIsRegisteredInDB(
-        this.#database.client,
+        this.#context.database.client,
         pluginInstance.name,
         pluginInstance.category,
         pluginInstance.id,
       );
       this.#plugins.set(pluginInstance.id, pluginInstance);
 
-      this.#logger.info(
+      this.#context.logger.info(
         `Loaded plugin ${pluginInstance.id} in category ${this.category}`,
       );
     }
@@ -72,7 +55,7 @@ class PluginList {
   async startPlugins(): Promise<void> {
     for (let plugin of this.#plugins.values()) {
       const result: PluginDBModel = await PluginDBModel.find(
-        this.#database.client,
+        this.#context.database.client,
         plugin.category,
         plugin.id,
       );
@@ -80,7 +63,7 @@ class PluginList {
       if (result && result.status === PluginStatus.STARTED) {
         await plugin.start();
       } else {
-        this.#logger.info(
+        this.#context.logger.info(
           `Plugin ${plugin.id} in category ${this.category} is not started because its status in DB is ${result?.status}`,
         );
       }
@@ -91,19 +74,19 @@ class PluginList {
 export class PluginManager {
   #pluginsFolder: string = ".";
   #plugins: Map<string, PluginList> = new Map();
-  #logger?: Logger;
+  #context: Context;
 
   constructor(pluginsFolder: string) {
     this.#pluginsFolder = pluginsFolder;
-    this.#logger = musicServerInstance.getLogger();
+    this.#context = Context.create();
   }
 
   async loadPlugins(): Promise<void> {
-    const categories = await listFolders(this.#pluginsFolder);
+    const categories = await listFolderNames(this.#pluginsFolder);
 
     for (let category of categories) {
-      this.#logger.info("loading category " + category);
-      let pluginList = new PluginList(category);
+      this.#context.logger.info("loading category " + category);
+      let pluginList = new PluginList(category, this.#context);
       await pluginList.loadPluginsFromFolder(
         path.join(this.#pluginsFolder, category),
       );
@@ -113,7 +96,7 @@ export class PluginManager {
   }
 
   async startPlugins(): Promise<void> {
-    this.#logger.info("Starting plugins...");
+    this.#context.logger.info("Starting plugins...");
     for (let pluginList of this.#plugins.values()) {
       await pluginList.startPlugins();
     }
