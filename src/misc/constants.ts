@@ -5,6 +5,15 @@ export enum HttpMethods {
   DELETE = "DELETE",
 }
 
+export enum HttpHeaders {
+  CONTENT_TYPE = "content-type",
+}
+
+export enum MimeTypes {
+  APPLICATION_OCTET_STREAM = "application/octet-stream",
+  TEXT_PLAIN = "text/plain",
+}
+
 export const letters = [
   "A",
   "B",

@@ -6,7 +6,7 @@
  * GitHub: https://github.com/fanciulli
  */
 import { Route } from "../types/route.js";
-import { HttpMethods } from "../misc/constants.js";
+import { HttpHeaders, HttpMethods, MimeTypes } from "../misc/constants.js";
 import { AlbumArtSchema } from "../types/api/albumArt.js";
 import { getPluginById } from "../utils/musicSourcePluginResolver.js";
 import { extractPluginId } from "../utils/pathUtils.js";
@@ -29,7 +29,10 @@ export class AlbumArtRoute extends Route {
     try {
       const plugin = pluginResult.plugin;
       const stream = await plugin.getAlbumArt(uri);
-      response.header("content-type", "application/octet-stream");
+      response.header(
+        HttpHeaders.CONTENT_TYPE,
+        MimeTypes.APPLICATION_OCTET_STREAM,
+      );
       return response.send(stream);
     } catch (error) {
       response.status(404).send({ error: "Album art not found" });
