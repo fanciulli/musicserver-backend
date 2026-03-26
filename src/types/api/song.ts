@@ -1,4 +1,10 @@
-import { Db } from "mongodb";
+/*
+ * Created on Thu Mar 26 2026
+ *
+ * Author: Massimiliano Fanciulli
+ *
+ * GitHub: https://github.com/fanciulli
+ */
 import { SongDbModel } from "../db/song.js";
 import { Format } from "../../misc/constants.js";
 

@@ -28,8 +28,6 @@ export default class BrowseRoute extends Route {
   url = "/music/browse";
   schema = BrowseSchema;
   handler = async (request: any, response: any) => {
-    const pluginManager = musicServerInstance.getPluginManager();
-
     const path = request.body.path;
     if (path === "/" || path === "") {
       const root = await this.browserRoot();

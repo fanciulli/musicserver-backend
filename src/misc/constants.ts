@@ -1,3 +1,10 @@
+/*
+ * Created on Thu Mar 26 2026
+ *
+ * Author: Massimiliano Fanciulli
+ *
+ * GitHub: https://github.com/fanciulli
+ */
 export enum HttpMethods {
   GET = "GET",
   POST = "POST",
