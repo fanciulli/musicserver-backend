@@ -5,10 +5,10 @@ General
 
 Code review
 
-- All the files must have the template header.
+- All the files must have the template header, except for configuration files.
 - Report duplicated code and suggest a solution that minimize code duplication.
 - Report major security criticality.
-- Report any usage of console.log.
+- Report any usage of console.log. Console.log is only allowed on index.ts
 
 Pull Requests
 
