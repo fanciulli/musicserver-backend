@@ -14,6 +14,13 @@ export enum MimeTypes {
   TEXT_PLAIN = "text/plain",
 }
 
+export enum Format {
+  MP3 = "MP3",
+  FLAC = "FLAC",
+  WAV = "WAV",
+  AAC = "AAC",
+}
+
 export const letters = [
   "A",
   "B",

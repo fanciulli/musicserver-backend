@@ -1,6 +1,6 @@
 import { Db } from "mongodb";
 import { SongDbModel } from "../db/song.js";
-import { Format } from "./format.js";
+import { Format } from "../../misc/constants.js";
 
 export class Song {
   id: string;
