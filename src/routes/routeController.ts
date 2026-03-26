@@ -5,30 +5,41 @@
  *
  * GitHub: https://github.com/fanciulli
  */
+import type { Logger } from "../server/logging.js";
 import { Route } from "../types/route.js";
-import { HealthzRoute } from "./healthz.js";
-import { BrowseRoute } from "./browse.js";
-import { ScanRoute } from "./scan.js";
-import { StreamRoute } from "./stream.js";
-import { AlbumArtRoute } from "./albumArt.js";
-import { AdminLogsRoute } from "./adminLogs.js";
-import { PluginStartRoute, PluginStopRoute, PluginsRoute } from "./plugins.js";
+import { listFiles } from "../utils/fsUtils.js";
+import path from "node:path";
 
 export class RouteController {
+  #logger: Logger;
+
+  constructor(logger: Logger) {
+    this.#logger = logger;
+  }
+
   /**
    * Function to register all the routes into Fastify instance
-   * @param {*} fastifyInstance
+   * @param fastifyInstance The Fastify instance
    */
-  async registerRoutes(fastifyInstance) {
-    await this.registerRoute(fastifyInstance, new HealthzRoute());
-    await this.registerRoute(fastifyInstance, new BrowseRoute());
-    await this.registerRoute(fastifyInstance, new ScanRoute());
-    await this.registerRoute(fastifyInstance, new StreamRoute());
-    await this.registerRoute(fastifyInstance, new AlbumArtRoute());
-    await this.registerRoute(fastifyInstance, new AdminLogsRoute());
-    await this.registerRoute(fastifyInstance, new PluginsRoute());
-    await this.registerRoute(fastifyInstance, new PluginStopRoute());
-    await this.registerRoute(fastifyInstance, new PluginStartRoute());
+  async registerRoutes(fastifyInstance: any): Promise<void> {
+    const routeFiles: string[] = await this.getRouteFiles();
+
+    for (const routeFile of routeFiles) {
+      const routeModule = await import(routeFile);
+      const route: Route = new routeModule.default();
+
+      this.#logger.info(`Registering route: [${route.method}] ${route.url}`);
+      await this.registerRoute(fastifyInstance, route);
+    }
+  }
+
+  private async getRouteFiles(): Promise<string[]> {
+    const routesFolder: string = path.resolve(process.cwd(), "routes");
+    const files: string[] = await listFiles(routesFolder);
+
+    return files.filter(
+      (filePath: string) => !filePath.includes("routeController"),
+    );
   }
 
   /**
@@ -36,7 +47,7 @@ export class RouteController {
    * @param fastifyInstance The instance of Fastify to add the route to.
    * @param routeClass The Route definition.
    */
-  async registerRoute(fastifyInstance, routeClass: Route) {
+  async registerRoute(fastifyInstance: any, routeClass: Route): Promise<void> {
     fastifyInstance.route({
       method: routeClass.method,
       url: routeClass.url,

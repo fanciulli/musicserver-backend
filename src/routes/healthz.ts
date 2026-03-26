@@ -7,12 +7,10 @@
  */
 import { Route } from "../types/route.js";
 
-const healthzHandler = async (request: any, reply: any) => {
-  reply.status(200).send({ status: "OK" });
-};
-
-export class HealthzRoute extends Route {
+export default class HealthzRoute extends Route {
   url = "/healthz";
   schema = undefined;
-  handler = healthzHandler;
+  handler = async (request: any, reply: any) => {
+    reply.status(200).send({ status: "OK" });
+  };
 }

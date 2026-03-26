@@ -5,11 +5,12 @@ meta {
 }
 
 get {
-  url: http://{{host}}:{{port}}/plugins
+  url: http://{{host}}:{{port}}/admin/plugins
   body: none
   auth: inherit
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

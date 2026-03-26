@@ -5,27 +5,27 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { Route } from "../types/route.js";
-import { HttpMethods } from "../misc/constants.js";
-import { musicServerInstance } from "../server/musicServer.js";
+import { Route } from "../../types/route.js";
+import { HttpMethods } from "../../misc/constants.js";
+import { musicServerInstance } from "../../server/musicServer.js";
 import {
   MUSIC_SOURCE_PLUGIN_CATEGORY,
   MusicSourcePlugin,
-} from "../types/plugins/music_sources.js";
+} from "../../types/plugins/music_sources.js";
 import {
   BrowseResponse,
   BrowseSchema,
   BrowseType,
-} from "../types/api/browse.js";
-import { Plugin } from "../types/plugins/plugin.js";
-import { Folder } from "../types/api/folder.js";
-import { PluginDBModel, PluginStatus } from "../types/db/plugin.js";
-import { getPluginById } from "../utils/musicSourcePluginResolver.js";
-import { extractPluginId } from "../utils/pathUtils.js";
+} from "../../types/api/browse.js";
+import { Plugin } from "../../types/plugins/plugin.js";
+import { Folder } from "../../types/api/folder.js";
+import { PluginDBModel, PluginStatus } from "../../types/db/plugin.js";
+import { getPluginById } from "../../utils/musicSourcePluginResolver.js";
+import { extractPluginId } from "../../utils/pathUtils.js";
 
-export class BrowseRoute extends Route {
+export default class BrowseRoute extends Route {
   method = HttpMethods.POST;
-  url = "/browse";
+  url = "/music/browse";
   schema = BrowseSchema;
   handler = async (request: any, response: any) => {
     const pluginManager = musicServerInstance.getPluginManager();

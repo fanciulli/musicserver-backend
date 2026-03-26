@@ -19,7 +19,7 @@ vi.mock("fs/promises", () => ({
   readFile: readFileMock,
 }));
 
-import { AdminLogsRoute } from "../../src/routes/adminLogs.js";
+import { default as AdminLogsRoute } from "../../src/routes/admin/adminLogs.js";
 
 function createResponseMock() {
   return {

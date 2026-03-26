@@ -5,15 +5,15 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { Route } from "../types/route.js";
-import { HttpHeaders, HttpMethods, MimeTypes } from "../misc/constants.js";
-import { AlbumArtSchema } from "../types/api/albumArt.js";
-import { getPluginById } from "../utils/musicSourcePluginResolver.js";
-import { extractPluginId } from "../utils/pathUtils.js";
+import { Route } from "../../types/route.js";
+import { HttpHeaders, HttpMethods, MimeTypes } from "../../misc/constants.js";
+import { AlbumArtSchema } from "../../types/api/albumArt.js";
+import { getPluginById } from "../../utils/musicSourcePluginResolver.js";
+import { extractPluginId } from "../../utils/pathUtils.js";
 
-export class AlbumArtRoute extends Route {
+export default class AlbumArtRoute extends Route {
   method = HttpMethods.GET;
-  url = "/albumart";
+  url = "/music/albumart";
   schema = AlbumArtSchema;
   handler = async (request: any, response: any) => {
     const uri = request.query.id;

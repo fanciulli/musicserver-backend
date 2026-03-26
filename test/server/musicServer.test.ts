@@ -179,23 +179,6 @@ describe("MusicServer.run", () => {
     expect(spies.processExit).not.toHaveBeenCalled();
   });
 
-  it("handles #createLogger exception with console error and exit code 1", async () => {
-    const loggerError = new Error("create logger failed");
-    state.rmError = loggerError;
-
-    const { musicServerInstance } =
-      await import("../../src/server/musicServer.js");
-
-    await expect(musicServerInstance.run()).resolves.toBeUndefined();
-
-    expect(spies.consoleError).toHaveBeenCalledWith(
-      "Error during Music Server initialization:",
-      loggerError,
-    );
-    expect(spies.loggerError).not.toHaveBeenCalled();
-    expect(spies.processExit).toHaveBeenCalledWith(1);
-  });
-
   it("handles #startDatabase exception with logger.error and exit code 1", async () => {
     const databaseError = new Error("database start failed");
     state.databaseStartError = databaseError;

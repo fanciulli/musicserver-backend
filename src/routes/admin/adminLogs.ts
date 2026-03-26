@@ -7,11 +7,11 @@
  */
 import { readFile, readdir } from "fs/promises";
 import { join } from "path";
-import { Route } from "../types/route.js";
-import { HttpMethods, MimeTypes } from "../misc/constants.js";
-import { AdminLogsSchema } from "../types/api/adminLogs.js";
+import { Route } from "../../types/route.js";
+import { HttpMethods, MimeTypes } from "../../misc/constants.js";
+import { AdminLogsSchema } from "../../types/api/adminLogs.js";
 
-export class AdminLogsRoute extends Route {
+export default class AdminLogsRoute extends Route {
   method = HttpMethods.GET;
   url = "/admin/logs";
   schema = AdminLogsSchema;

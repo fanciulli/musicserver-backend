@@ -26,7 +26,7 @@ class MusicServer {
       this.#initDone = true;
 
       try {
-        await this.#createLogger();
+        this.#logger = new Logger();
         this.#logger.info("Starting Music Server");
 
         await this.#startDatabase();
@@ -45,18 +45,12 @@ class MusicServer {
     }
   }
 
-  async #createLogger() {
-    await rm("logs", { force: true, recursive: true });
-
-    this.#logger = new Logger();
-  }
-
   async #startFastify() {
     const logger = createRollingLogger("fastify");
 
     this.#fastifyInstance = fastify({ loggerInstance: logger });
 
-    const rc = new RouteController();
+    const rc = new RouteController(this.#logger);
     await rc.registerRoutes(this.#fastifyInstance);
 
     // Run the server!
