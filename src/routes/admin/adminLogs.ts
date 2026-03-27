@@ -7,11 +7,11 @@
  */
 import { readFile, readdir } from "fs/promises";
 import { join } from "path";
-import { Route } from "../types/route.js";
-import { HttpMethods } from "../misc/constants.js";
-import { AdminLogsSchema } from "../types/api/adminLogs.js";
+import { Route } from "../../types/route.js";
+import { HttpMethods, MimeTypes } from "../../misc/constants.js";
+import { AdminLogsSchema } from "../../types/api/adminLogs.js";
 
-export class AdminLogsRoute extends Route {
+export default class AdminLogsRoute extends Route {
   method = HttpMethods.GET;
   url = "/admin/logs";
   schema = AdminLogsSchema;
@@ -56,7 +56,7 @@ export class AdminLogsRoute extends Route {
 
       const filePath = join("logs", latestLogFile.fileName);
       const logContent = await readFile(filePath, "utf-8");
-      response.type("text/plain").send(logContent);
+      response.type(MimeTypes.TEXT_PLAIN).send(logContent);
     } catch (error) {
       response.status(404).send({ error: "Log file not found" });
     }

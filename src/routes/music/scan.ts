@@ -5,14 +5,14 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { Route } from "../types/route.js";
-import { HttpMethods } from "../misc/constants.js";
-import { ScanSchema } from "../types/api/scan.js";
-import { getPluginById } from "../utils/musicSourcePluginResolver.js";
+import { Route } from "../../types/route.js";
+import { HttpMethods } from "../../misc/constants.js";
+import { ScanSchema } from "../../types/api/scan.js";
+import { getPluginById } from "../../utils/musicSourcePluginResolver.js";
 
-export class ScanRoute extends Route {
+export default class ScanRoute extends Route {
   method = HttpMethods.POST;
-  url = "/scan";
+  url = "/music/scan";
   schema = ScanSchema;
   handler = async (request: any, response: any) => {
     const pluginId = request.body.id;

@@ -17,7 +17,7 @@ import {
   type IAudioMetadata,
 } from "music-metadata";
 import { v4 } from "uuid";
-import { musicServerInstance } from "../../../server/music_server.js";
+import { musicServerInstance } from "../../../server/musicServer.js";
 
 export class FileSystemScan {
   static async scan(db: Db, pluginId: string): Promise<void> {

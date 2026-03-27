@@ -5,15 +5,15 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { Route } from "../types/route.js";
-import { HttpMethods } from "../misc/constants.js";
-import { StreamSchema } from "../types/api/stream.js";
-import { getPluginById } from "../utils/musicSourcePluginResolver.js";
-import { extractPluginId } from "../utils/pathUtils.js";
+import { Route } from "../../types/route.js";
+import { HttpMethods } from "../../misc/constants.js";
+import { StreamSchema } from "../../types/api/stream.js";
+import { getPluginById } from "../../utils/musicSourcePluginResolver.js";
+import { extractPluginId } from "../../utils/pathUtils.js";
 
-export class StreamRoute extends Route {
+export default class StreamRoute extends Route {
   method = HttpMethods.GET;
-  url = "/stream";
+  url = "/music/stream";
   schema = StreamSchema;
   handler = async (request: any, response: any) => {
     const streamId = request.query.id;

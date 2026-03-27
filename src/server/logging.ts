@@ -5,21 +5,9 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { join } from "path";
-import pino from "pino";
+import { createRollingLogger } from "./loggingRollingTransport.js";
 
-const transport = pino.transport({
-  target: "pino-roll",
-  options: {
-    file: join("logs", "main"),
-    size: 1,
-    frequency: "daily",
-    mkdir: true,
-    dateFormat: "yyyy-MM-dd",
-  },
-});
-
-const logger = pino(transport);
+const logger = createRollingLogger("main");
 
 export class Logger {
   info(message: string): void {

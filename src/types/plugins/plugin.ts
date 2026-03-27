@@ -5,18 +5,26 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { musicServerInstance } from "../../server/music_server.js";
+import { Context } from "../context.js";
 
 export abstract class Plugin {
   abstract id: string;
   abstract name: string;
   abstract category: string;
+  context: Context;
+
+  constructor(context: Context) {
+    this.context = context;
+  }
+
   start: () => Promise<void> = async () => {
-    const logger = musicServerInstance.getLogger();
-    logger.info("Starting plugin " + this.category + "/" + this.id);
+    this.context.logger.info(
+      "Starting plugin " + this.category + "/" + this.id,
+    );
   };
   stop: () => Promise<void> = async () => {
-    const logger = musicServerInstance.getLogger();
-    logger.info("Stopping plugin " + this.category + "/" + this.id);
+    this.context.logger.info(
+      "Stopping plugin " + this.category + "/" + this.id,
+    );
   };
 }

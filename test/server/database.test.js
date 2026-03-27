@@ -86,7 +86,7 @@ describe("Database.start", () => {
 
     const database = new Database();
 
-    await expect(database.start()).resolves.toBe(true);
+    await expect(database.start()).resolves.toBeUndefined();
     expect(connectMock).toHaveBeenCalledTimes(1);
     expect(listFilesMock).toHaveBeenCalledTimes(1);
   });
@@ -96,7 +96,7 @@ describe("Database.start", () => {
 
     const database = new Database();
 
-    await expect(database.start()).resolves.toBe(false);
+    await expect(database.start()).rejects.toThrow("connection failed");
     expect(listFilesMock).not.toHaveBeenCalled();
   });
 });
