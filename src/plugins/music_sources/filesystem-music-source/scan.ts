@@ -20,13 +20,21 @@ import { v4 } from "uuid";
 import { musicServerInstance } from "../../../server/musicServer.js";
 
 export class FileSystemScan {
-  static async scan(db: Db, pluginId: string): Promise<void> {
+  static async scan(
+    db: Db,
+    pluginId: string,
+    musicFolder: string,
+  ): Promise<void> {
     const logger = musicServerInstance.getLogger();
+    if (musicFolder.trim() === "") {
+      throw new Error("musicFolder must be configured before scan");
+    }
+
     await ArtistDbModel.deleteAll(db, pluginId);
     await AlbumDbModel.deleteAll(db, pluginId);
     await SongDbModel.deleteAll(db, pluginId);
 
-    const files = await listFiles(process.env.PLUGIN_FSS_FOLDER);
+    const files = await listFiles(musicFolder);
     for (let filePath of files) {
       try {
         const fileMetadata: IAudioMetadata = await parseFile(filePath);

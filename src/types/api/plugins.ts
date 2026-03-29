@@ -7,12 +7,18 @@
  */
 
 import type { PluginStatus } from "../../types/db/plugin.js";
+import type { PluginConfigurationSettings } from "../../types/plugins/plugin.js";
 
 export class PluginListItem {
   id: string;
   name: string;
   category: string;
   status: PluginStatus;
+}
+
+export class PluginConfiguration {
+  pluginId: string;
+  settings: PluginConfigurationSettings;
 }
 
 export const PluginsSchema = {
@@ -66,6 +72,79 @@ export const PluginStartSchema = {
       type: "object",
       properties: {
         status: { type: "string" },
+      },
+    },
+  },
+};
+
+export const PluginConfigGetSchema = {
+  params: {
+    type: "object",
+    required: ["pluginId"],
+    properties: {
+      pluginId: { type: "string" },
+    },
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        pluginId: { type: "string" },
+        settings: {
+          type: "object",
+          properties: {
+            variables: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: {
+                  type: "string",
+                },
+              },
+            },
+            values: {
+              type: "object",
+              additionalProperties: true,
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+export const PluginConfigUpdateSchema = {
+  params: {
+    type: "object",
+    required: ["pluginId"],
+    properties: {
+      pluginId: { type: "string" },
+    },
+  },
+  body: {
+    type: "object",
+    required: ["settings"],
+    properties: {
+      settings: {
+        type: "object",
+        additionalProperties: true,
+      },
+    },
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        pluginId: { type: "string" },
+        settings: {
+          type: "object",
+          properties: {
+            values: {
+              type: "object",
+              additionalProperties: true,
+            },
+          },
+        },
       },
     },
   },
