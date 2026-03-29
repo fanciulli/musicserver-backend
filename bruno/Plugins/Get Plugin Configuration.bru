@@ -1,0 +1,16 @@
+meta {
+  name: Get Plugin Configuration
+  type: http
+  seq: 3
+}
+
+get {
+  url: http://{{host}}:{{port}}/admin/plugins/filesystem-music-source/config
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
