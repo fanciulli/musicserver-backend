@@ -20,14 +20,23 @@ import { browseSongs } from "./songsBrowse.js";
 import { PLUGIN_ID, PLUGIN_NAME } from "./constants.js";
 import { AlbumDbModel } from "../../../types/db/album.js";
 import type { Context } from "../../../types/context.js";
+import type {
+  PluginConfigurationSettings,
+  PluginConfigurationValues,
+} from "../../../types/plugins/plugin.js";
+import { PluginConfigDBModel } from "../../../types/db/pluginConfig.js";
+
+const DEFAULT_MUSIC_FOLDER = "/music";
 
 export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   id: string = PLUGIN_ID;
   name: string = PLUGIN_NAME;
   #browseRoot: Array<BrowseResponse>;
+  #musicFolder: string;
 
   constructor(context: Context) {
     super(context);
+    this.#musicFolder = process.env.PLUGIN_FSS_FOLDER ?? DEFAULT_MUSIC_FOLDER;
     const albumsFolder = new Folder();
     albumsFolder.name = "Albums";
 
@@ -54,8 +63,50 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
 
   async scan(): Promise<void> {
     const database: Db = this.context.database.client;
-    await FileSystemScan.scan(database, this.id);
+    await FileSystemScan.scan(database, this.id, this.#musicFolder);
   }
+
+  loadConfiguration = async (): Promise<void> => {
+    const database: Db = this.context.database.client;
+    const pluginConfig: PluginConfigDBModel =
+      await PluginConfigDBModel.findByPluginId(
+        database,
+        this.category,
+        this.id,
+      );
+
+    if (!pluginConfig) {
+      this.#musicFolder = process.env.PLUGIN_FSS_FOLDER ?? DEFAULT_MUSIC_FOLDER;
+      return;
+    }
+
+    await this.updateConfiguration(pluginConfig.settings);
+  };
+
+  getConfiguration = async (): Promise<PluginConfigurationSettings> => {
+    return {
+      variables: [{ musicFolder: "string" }],
+      values: {
+        musicFolder: this.#musicFolder,
+      },
+    };
+  };
+
+  updateConfiguration = async (
+    settings: PluginConfigurationValues,
+  ): Promise<void> => {
+    const musicFolder = settings["musicFolder"];
+    if (typeof musicFolder !== "string" || musicFolder.trim() === "") {
+      throw new Error("musicFolder must be a non-empty string");
+    }
+
+    this.#musicFolder = musicFolder;
+
+    const database: Db = this.context.database.client;
+    await PluginConfigDBModel.upsertSettings(database, this.category, this.id, {
+      musicFolder: this.#musicFolder,
+    });
+  };
 
   async browse(path: string): Promise<Array<BrowseResponse>> {
     const pathSections = extractPathSections(this.id, path);

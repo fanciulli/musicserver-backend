@@ -8,8 +8,22 @@
 import { Plugin } from "../types/plugins/plugin.js";
 import path from "node:path";
 import { PluginDBModel, PluginStatus } from "../types/db/plugin.js";
+import { PluginConfigDBModel } from "../types/db/pluginConfig.js";
 import { Context } from "../types/context.js";
 import { listFolderNames } from "../utils/fsUtils.js";
+import type {
+  PluginConfigurationSettings,
+  PluginConfigurationValues,
+} from "../types/plugins/plugin.js";
+
+type PluginConfigurationResult = {
+  pluginId: string;
+  settings?: PluginConfigurationSettings;
+  error?: {
+    status: number;
+    message: string;
+  };
+};
 
 class PluginList {
   category: string;
@@ -31,25 +45,38 @@ class PluginList {
 
   async loadPluginsFromFolder(folderPath: string): Promise<void> {
     const pluginsDirectories = await listFolderNames(folderPath);
-
     for (let pluginDir of pluginsDirectories) {
       const pluginIndexFile = path.join(folderPath, pluginDir, "index.js");
-      const pluginModule = await import(pluginIndexFile);
-      const pluginClass = pluginModule.default;
-      const pluginInstance: Plugin = new pluginClass(this.#context);
+      try {
+        const pluginInstance =
+          await this.#loadPluginFromFolder(pluginIndexFile);
+        this.#plugins.set(pluginInstance.id, pluginInstance);
+        await pluginInstance.loadConfiguration();
 
-      PluginDBModel.assertPluginIsRegisteredInDB(
-        this.#context.database.client,
-        pluginInstance.name,
-        pluginInstance.category,
-        pluginInstance.id,
-      );
-      this.#plugins.set(pluginInstance.id, pluginInstance);
-
-      this.#context.logger.info(
-        `Loaded plugin ${pluginInstance.id} in category ${this.category}`,
-      );
+        this.#context.logger.info(
+          `Loaded plugin ${pluginInstance.id} in category ${this.category}`,
+        );
+      } catch (ex) {
+        this.#context.logger.error(
+          `Cannot load plugin from file ${pluginIndexFile}: ${ex.message}`,
+        );
+      }
     }
+  }
+
+  async #loadPluginFromFolder(pluginIndexFile: string): Promise<Plugin> {
+    const pluginModule = await import(pluginIndexFile);
+    const pluginClass = pluginModule.default;
+    const pluginInstance: Plugin = new pluginClass(this.#context);
+
+    PluginDBModel.assertPluginIsRegisteredInDB(
+      this.#context.database.client,
+      pluginInstance.name,
+      pluginInstance.category,
+      pluginInstance.id,
+    );
+
+    return pluginInstance;
   }
 
   async startPlugins(): Promise<void> {
@@ -122,5 +149,68 @@ export class PluginManager {
 
   getPluginById(id: string): Plugin | undefined {
     return this.getAllPlugins().find((pluginItem) => pluginItem.id === id);
+  }
+
+  async getPluginConfiguration(
+    pluginId: string,
+  ): Promise<PluginConfigurationResult> {
+    const plugin = this.getPluginById(pluginId);
+    if (!plugin) {
+      return {
+        pluginId,
+        error: {
+          status: 404,
+          message: `Plugin ${pluginId} not found`,
+        },
+      };
+    }
+
+    const settings = await plugin.getConfiguration();
+    await PluginConfigDBModel.upsertSettings(
+      this.#context.database.client,
+      plugin.category,
+      plugin.id,
+      settings.values,
+    );
+
+    return {
+      pluginId: plugin.id,
+      settings,
+    };
+  }
+
+  async updatePluginConfiguration(
+    pluginId: string,
+    settings: PluginConfigurationValues,
+  ): Promise<PluginConfigurationResult> {
+    const plugin = this.getPluginById(pluginId);
+    if (!plugin) {
+      return {
+        pluginId,
+        error: {
+          status: 404,
+          message: `Plugin ${pluginId} not found`,
+        },
+      };
+    }
+
+    try {
+      await plugin.updateConfiguration(settings);
+      const updatedSettings = await plugin.getConfiguration();
+
+      return {
+        pluginId: plugin.id,
+        settings: updatedSettings,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        pluginId,
+        error: {
+          status: 400,
+          message,
+        },
+      };
+    }
   }
 }

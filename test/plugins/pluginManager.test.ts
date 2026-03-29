@@ -6,18 +6,23 @@
  * GitHub: https://github.com/fanciulli
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
-import os from "node:os";
+import {
+  createPluginId,
+  withPluginFixtures,
+  loadPluginManager,
+  EXPECTED_CONFIG_RESPONSE,
+} from "../utils/pluginTestUtils.js";
 import path from "node:path";
-
-type PluginFixtures = Record<string, string[]>;
 
 const spies = vi.hoisted(() => ({
   contextCreate: vi.fn(),
   loggerInfo: vi.fn(),
+  loggerError: vi.fn(),
   listFolderNames: vi.fn(),
   assertPluginIsRegisteredInDB: vi.fn(),
   findPluginModel: vi.fn(),
+  findPluginConfig: vi.fn(),
+  upsertPluginConfig: vi.fn(),
 }));
 
 vi.mock("../../src/types/context.js", () => ({
@@ -41,76 +46,12 @@ vi.mock("../../src/types/db/plugin.js", () => ({
   },
 }));
 
-function createPluginId(category: string, pluginName: string): string {
-  return `${category}-${pluginName}`;
-}
-
-function buildPluginClassSource(category: string, pluginName: string): string {
-  const pluginId = createPluginId(category, pluginName);
-
-  return `export default class TestPlugin {
-  constructor(context) {
-    this.context = context;
-    this.name = "${pluginName}";
-    this.category = "${category}";
-    this.id = "${pluginId}";
-  }
-
-  async start() {}
-}\n`;
-}
-
-async function createPluginFixtures(
-  tempRoot: string,
-  fixtures: PluginFixtures,
-): Promise<void> {
-  for (const [category, pluginNames] of Object.entries(fixtures)) {
-    for (const pluginName of pluginNames) {
-      const pluginFolder = path.join(tempRoot, category, pluginName);
-      await mkdir(pluginFolder, { recursive: true });
-      await writeFile(
-        path.join(pluginFolder, "index.js"),
-        buildPluginClassSource(category, pluginName),
-      );
-    }
-  }
-}
-
-function mockListFolderNamesForFixtures(
-  tempRoot: string,
-  fixtures: PluginFixtures,
-): void {
-  const categories = Object.keys(fixtures);
-
-  spies.listFolderNames.mockImplementation(async (folderPath: string) => {
-    if (folderPath === tempRoot) {
-      return categories;
-    }
-
-    for (const [category, pluginNames] of Object.entries(fixtures)) {
-      if (folderPath === path.join(tempRoot, category)) {
-        return pluginNames;
-      }
-    }
-
-    return [];
-  });
-}
-
-async function withPluginFixtures(
-  fixtures: PluginFixtures,
-  run: (tempRoot: string) => Promise<void>,
-): Promise<void> {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "plugins-fixture-"));
-
-  try {
-    await createPluginFixtures(tempRoot, fixtures);
-    mockListFolderNamesForFixtures(tempRoot, fixtures);
-    await run(tempRoot);
-  } finally {
-    await rm(tempRoot, { recursive: true, force: true });
-  }
-}
+vi.mock("../../src/types/db/pluginConfig.js", () => ({
+  PluginConfigDBModel: {
+    findByPluginId: (...args: unknown[]) => spies.findPluginConfig(...args),
+    upsertSettings: (...args: unknown[]) => spies.upsertPluginConfig(...args),
+  },
+}));
 
 describe("PluginManager", () => {
   beforeEach(() => {
@@ -118,13 +59,15 @@ describe("PluginManager", () => {
     vi.resetModules();
 
     spies.contextCreate.mockReturnValue({
-      logger: { info: spies.loggerInfo },
+      logger: { info: spies.loggerInfo, error: spies.loggerError },
       database: { client: {} },
       pluginManager: {},
     });
 
     spies.listFolderNames.mockResolvedValue([]);
     spies.findPluginModel.mockResolvedValue(undefined);
+    spies.findPluginConfig.mockResolvedValue(undefined);
+    spies.upsertPluginConfig.mockResolvedValue(undefined);
   });
 
   it("initializes private context by calling Context.create once", async () => {
@@ -138,18 +81,14 @@ describe("PluginManager", () => {
   });
 
   it("loads plugins from multiple folders and starts them", async () => {
-    const { PluginManager } =
-      await import("../../src/plugins/pluginManager.js");
-
     await withPluginFixtures(
       {
         music_sources: ["fs-source"],
         effects: ["reverb"],
       },
+      spies,
       async (tempRoot) => {
-        const pluginManager = new PluginManager(tempRoot);
-        await pluginManager.loadPlugins();
-
+        const pluginManager = await loadPluginManager(tempRoot);
         const loadedPlugins = pluginManager.getAllPlugins();
         const startSpies = loadedPlugins.map((plugin) =>
           vi.spyOn(plugin, "start").mockResolvedValue(undefined),
@@ -193,7 +132,20 @@ describe("PluginManager", () => {
     );
   });
 
-  it("does not start a plugin when its DB model is not found", async () => {
+  it.each([
+    {
+      name: "when its DB model is not found",
+      mockResult: undefined,
+    },
+    {
+      name: "when DB status is not STARTED",
+      mockResult: {
+        category: "music_sources",
+        id: "music_sources-fs-source",
+        status: "stopped",
+      },
+    },
+  ])("does not start a plugin $name", async ({ mockResult }) => {
     const { PluginManager } =
       await import("../../src/plugins/pluginManager.js");
 
@@ -201,55 +153,126 @@ describe("PluginManager", () => {
     const pluginName = "fs-source";
     const pluginId = createPluginId(category, pluginName);
 
-    await withPluginFixtures({ [category]: [pluginName] }, async (tempRoot) => {
-      spies.findPluginModel.mockResolvedValue(undefined);
+    await withPluginFixtures(
+      { [category]: [pluginName] },
+      spies,
+      async (tempRoot) => {
+        spies.findPluginModel.mockResolvedValue(mockResult);
 
-      const pluginManager = new PluginManager(tempRoot);
-      await pluginManager.loadPlugins();
+        const pluginManager = await loadPluginManager(tempRoot);
+        const plugin = pluginManager.getAllPlugins()[0];
+        const startSpy = vi.spyOn(plugin, "start").mockResolvedValue(undefined);
 
-      const plugin = pluginManager.getAllPlugins()[0];
-      const startSpy = vi.spyOn(plugin, "start").mockResolvedValue(undefined);
+        await pluginManager.startPlugins();
 
-      await pluginManager.startPlugins();
-
-      expect(spies.findPluginModel).toHaveBeenCalledWith(
-        expect.anything(),
-        category,
-        pluginId,
-      );
-      expect(startSpy).not.toHaveBeenCalled();
-    });
+        expect(spies.findPluginModel).toHaveBeenCalledWith(
+          expect.anything(),
+          category,
+          pluginId,
+        );
+        expect(startSpy).not.toHaveBeenCalled();
+      },
+    );
   });
 
-  it("does not start a plugin when DB status is not STARTED", async () => {
-    const { PluginManager } =
-      await import("../../src/plugins/pluginManager.js");
+  it("does not persist plugin configuration during load", async () => {
+    await withPluginFixtures(
+      { music_sources: ["fs-source"] },
+      spies,
+      async (tempRoot) => {
+        await loadPluginManager(tempRoot);
+        expect(spies.findPluginConfig).not.toHaveBeenCalled();
+        expect(spies.upsertPluginConfig).not.toHaveBeenCalled();
+      },
+    );
+  });
 
-    const category = "music_sources";
-    const pluginName = "fs-source";
-    const pluginId = createPluginId(category, pluginName);
+  it("continues loading plugins when one plugin index.js is malformed", async () => {
+    await withPluginFixtures(
+      {
+        valid: { music_sources: ["valid-plugin"] },
+        malformed: { music_sources: ["malformed-plugin"] },
+      },
+      spies,
+      async (tempRoot) => {
+        const pluginManager = await loadPluginManager(tempRoot);
 
-    await withPluginFixtures({ [category]: [pluginName] }, async (tempRoot) => {
-      spies.findPluginModel.mockResolvedValue({
-        category,
-        id: pluginId,
-        status: "stopped",
-      });
+        // Verify only valid plugin was loaded
+        const loadedPlugins = pluginManager.getAllPlugins();
+        expect(loadedPlugins).toHaveLength(1);
+        expect(loadedPlugins[0].id).toBe("music_sources-valid-plugin");
 
-      const pluginManager = new PluginManager(tempRoot);
-      await pluginManager.loadPlugins();
+        // Verify error was logged for malformed plugin
+        expect(spies.loggerError).toHaveBeenCalledWith(
+          expect.stringMatching(
+            /Cannot load plugin from file.*malformed-plugin.*index.js/,
+          ),
+        );
+      },
+    );
+  });
 
-      const plugin = pluginManager.getAllPlugins()[0];
-      const startSpy = vi.spyOn(plugin, "start").mockResolvedValue(undefined);
+  it("returns plugin configuration for an existing plugin", async () => {
+    await withPluginFixtures(
+      { music_sources: ["fs-source"] },
+      spies,
+      async (tempRoot) => {
+        const pluginManager = await loadPluginManager(tempRoot);
+        const result = await pluginManager.getPluginConfiguration(
+          "music_sources-fs-source",
+        );
 
-      await pluginManager.startPlugins();
+        expect(result).toEqual({
+          pluginId: "music_sources-fs-source",
+          settings: EXPECTED_CONFIG_RESPONSE,
+        });
+      },
+    );
+  });
 
-      expect(spies.findPluginModel).toHaveBeenCalledWith(
-        expect.anything(),
-        category,
-        pluginId,
-      );
-      expect(startSpy).not.toHaveBeenCalled();
-    });
+  it("returns 404 when plugin configuration is requested for a missing plugin", async () => {
+    await withPluginFixtures(
+      { music_sources: ["fs-source"] },
+      spies,
+      async (tempRoot) => {
+        const pluginManager = await loadPluginManager(tempRoot);
+        const result = await pluginManager.getPluginConfiguration("missing");
+
+        expect(result).toEqual({
+          pluginId: "missing",
+          error: {
+            status: 404,
+            message: "Plugin missing not found",
+          },
+        });
+      },
+    );
+  });
+
+  it("updates and persists plugin configuration", async () => {
+    await withPluginFixtures(
+      { music_sources: ["fs-source"] },
+      spies,
+      async (tempRoot) => {
+        const pluginManager = await loadPluginManager(tempRoot);
+        const result = await pluginManager.updatePluginConfiguration(
+          "music_sources-fs-source",
+          {
+            musicFolder: "/new/path",
+          },
+        );
+
+        expect(result).toEqual({
+          pluginId: "music_sources-fs-source",
+          settings: {
+            variables: [{ musicFolder: "string" }],
+            values: {
+              musicFolder: "/new/path",
+            },
+          },
+        });
+        expect(spies.upsertPluginConfig).not.toHaveBeenCalled();
+      },
+    );
   });
 });
