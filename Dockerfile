@@ -2,7 +2,7 @@ FROM node:25-alpine AS build
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package.json ./
 RUN npm install
 
 COPY tsconfig.json ./
@@ -19,7 +19,7 @@ ENV NODE_ENV=production
 
 RUN npm install -g pm2
 
-COPY --from=build /app/package.json /app/package-lock.json ./
+COPY --from=build /app/package.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 
