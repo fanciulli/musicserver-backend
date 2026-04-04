@@ -6,7 +6,8 @@
   "scripts": {
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "start": "npx tsc -p tsconfig.json; cd dist; node index.js"
+    "start": "npx tsc -p tsconfig.json; cd dist; node index.js",
+    "build": "npx tsc -p tsconfig.json"
   },
   "author": "Massimiliano Fanciulli",
   "license": "ISC",

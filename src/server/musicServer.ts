@@ -13,6 +13,8 @@ import { Database } from "./database.js";
 import { Logger } from "./logging.js";
 import { rm } from "node:fs/promises";
 import { createRollingLogger } from "./loggingRollingTransport.js";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 class MusicServer {
   #initDone: Boolean = false;
@@ -63,7 +65,12 @@ class MusicServer {
   }
 
   async #startPluginManager() {
-    this.#pluginManager = new PluginManager(process.env.PLUGIN_DIR);
+    const pluginsDir = path.join(
+      path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."),
+      "plugins",
+    );
+
+    this.#pluginManager = new PluginManager(pluginsDir);
 
     await this.#pluginManager.loadPlugins();
     await this.#pluginManager.startPlugins();
