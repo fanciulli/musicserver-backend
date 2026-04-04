@@ -36,7 +36,7 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
 
   constructor(context: Context) {
     super(context);
-    this.#musicFolder = process.env.PLUGIN_FSS_FOLDER ?? DEFAULT_MUSIC_FOLDER;
+    this.#musicFolder = DEFAULT_MUSIC_FOLDER;
     const albumsFolder = new Folder();
     albumsFolder.name = "Albums";
 
@@ -76,7 +76,7 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
       );
 
     if (!pluginConfig) {
-      this.#musicFolder = process.env.PLUGIN_FSS_FOLDER ?? DEFAULT_MUSIC_FOLDER;
+      this.#musicFolder = DEFAULT_MUSIC_FOLDER;
       return;
     }
 
