@@ -15,15 +15,15 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "25.5.0",
-    "@vitest/coverage-v8": "4.1.1",
+    "@vitest/coverage-v8": "4.1.2",
     "eslint": "10.1.0",
     "globals": "17.4.0",
     "typescript": "5.9.3",
-    "vitest": "4.1.1"
+    "vitest": "4.1.2"
   },
   "dependencies": {
     "fastify": "5.8.4",
-    "mongodb": "7.1.0",
+    "mongodb": "7.1.1",
     "pino-roll": "4.0.0",
     "uuid": "13.0.0",
     "music-metadata": "11.12.3"
