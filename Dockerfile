@@ -29,4 +29,4 @@ RUN mkdir -p /app/dist/logs
 
 EXPOSE 3000
 
-CMD ["pm2-runtime", "start", "index.js", "--name", "musicserver", "--instances", "1", "--exec-mode", "fork"]
+CMD ["pm2-runtime", "start", "index.js", "--name", "musicserver", "--instances", "1"]
