@@ -13,7 +13,7 @@ export class Database {
   client: Db;
 
   async connect(): Promise<void> {
-    const uri = "mongodb://localhost:27017";
+    const uri = process.env.MONGO_URI || "mongodb://localhost:27017";
     const mongoClient = new MongoClient(uri, {
       connectTimeoutMS: 5000,
       serverSelectionTimeoutMS: 5000,
