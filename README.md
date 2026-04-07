@@ -1,3 +1,5 @@
+[![Unit Tests](https://github.com/fanciulli/musicserver-backend/actions/workflows/unitTests.yml/badge.svg)](https://github.com/fanciulli/musicserver-backend/actions/workflows/unitTests.yml)
+
 # Music Server
 
 Music Server is a Fastify-based backend with a web administration interface to manage installed plugins.
