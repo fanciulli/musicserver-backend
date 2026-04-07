@@ -19,7 +19,7 @@ Returns the operational status of the server.
 
 ---
 
-### `POST /browse`
+### `POST /music/browse`
 
 Navigates the music library hierarchy.
 Calling with `"/"` (or an empty string) returns the list of active music-source plugins as top-level folders.
@@ -65,7 +65,7 @@ When called with a plugin-scoped URI (e.g. `filesystem-music-source://albums/`),
 
 ---
 
-### `POST /scan`
+### `POST /music/scan`
 
 Triggers a content scan for the specified plugin.
 The plugin discovers and indexes its sources and persists the results.
@@ -84,17 +84,30 @@ The plugin discovers and indexes its sources and persists the results.
 
 ---
 
-### `GET /stream`
+### `GET /music/stream`
 
 Streams an audio file to the client.
 
-**Query parameters**
+**Parameters**
 
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `id` | string | Yes | Song UUID returned by `/browse` |
+| Parameter | Type          | Required | Description                                    |
+| --------- | ------------- | -------- | ---------------------------------------------- |
+| `id`      | query string  | Yes      | Song URI returned by `/music/browse`           |
+| `range`   | header string | No       | Partial playback request (e.g. `bytes=12345-`) |
 
 **Response `200`** – binary audio stream
+
+Headers:
+
+- `accept-ranges: bytes`
+- `content-length: <size>`
+
+**Response `206`** – partial binary audio stream (when `range` is provided)
+
+Headers:
+
+- `accept-ranges: bytes`
+- `content-length: <size>`
 
 **Response `404`**
 
@@ -104,15 +117,15 @@ Streams an audio file to the client.
 
 ---
 
-### `GET /albumart`
+### `GET /music/albumart`
 
 Returns the cover art image for an album.
 
 **Query parameters**
 
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `id` | string | Yes | Album URI or UUID |
+| Parameter | Type   | Required | Description       |
+| --------- | ------ | -------- | ----------------- |
+| `id`      | string | Yes      | Album URI or UUID |
 
 **Response `200`** – binary image (`application/octet-stream`)
 
@@ -124,7 +137,7 @@ Returns the cover art image for an album.
 
 ---
 
-### `GET /plugins`
+### `GET /admin/plugins`
 
 Lists all registered plugins and their current status.
 
@@ -143,7 +156,7 @@ Lists all registered plugins and their current status.
 
 ---
 
-### `POST /plugins/start`
+### `POST /admin/plugins/start`
 
 Starts a plugin.
 
@@ -167,7 +180,7 @@ Starts a plugin.
 
 ---
 
-### `POST /plugins/stop`
+### `POST /admin/plugins/stop`
 
 Stops a running plugin.
 
@@ -187,4 +200,76 @@ Stops a running plugin.
 
 ```json
 { "error": "Plugin filesystem-music-source not found" }
+```
+
+---
+
+### `GET /admin/plugins/{pluginId}/config`
+
+Returns configuration settings for a plugin.
+
+**Path parameters**
+
+| Parameter  | Type   | Required | Description |
+| ---------- | ------ | -------- | ----------- |
+| `pluginId` | string | Yes      | Plugin ID   |
+
+**Response `200`** – plugin configuration object
+
+**Response `404`**
+
+```json
+{ "error": "Plugin filesystem-music-source not found" }
+```
+
+---
+
+### `PUT /admin/plugins/{pluginId}/config`
+
+Updates plugin configuration and returns the persisted settings.
+
+**Path parameters**
+
+| Parameter  | Type   | Required | Description |
+| ---------- | ------ | -------- | ----------- |
+| `pluginId` | string | Yes      | Plugin ID   |
+
+**Request body**
+
+```json
+{ "settings": { "someKey": "someValue" } }
+```
+
+**Response `200`** – updated plugin configuration object
+
+**Response `400`**
+
+```json
+{ "error": "Invalid plugin configuration payload" }
+```
+
+**Response `404`**
+
+```json
+{ "error": "Plugin filesystem-music-source not found" }
+```
+
+---
+
+### `GET /admin/logs`
+
+Returns the latest rotated log file content for a logger.
+
+**Query parameters**
+
+| Parameter | Type   | Required | Description                     |
+| --------- | ------ | -------- | ------------------------------- |
+| `id`      | string | Yes      | Logger ID (`main` or `fastify`) |
+
+**Response `200`** – plain text content
+
+**Response `404`**
+
+```json
+{ "error": "Log file not found" }
 ```
