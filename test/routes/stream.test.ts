@@ -24,6 +24,8 @@ import { default as StreamRoute } from "../../src/routes/music/stream.js";
 
 function createResponseMock() {
   return {
+    headers: vi.fn().mockReturnThis(),
+    header: vi.fn().mockReturnThis(),
     status: vi.fn().mockReturnThis(),
     send: vi.fn().mockReturnThis(),
   };
@@ -79,11 +81,14 @@ describe("StreamRoute", () => {
 
   it("sends stream on success", async () => {
     const stream = Buffer.from("song-data");
+    const streamMock = vi
+      .fn()
+      .mockResolvedValue([stream, stream.length] as const);
     mocks.extractPluginId.mockReturnValue("filesystem");
     mocks.getPluginById.mockResolvedValue({
       pluginId: "filesystem",
       plugin: {
-        stream: vi.fn().mockResolvedValue(stream),
+        stream: streamMock,
       },
     });
 
@@ -93,6 +98,46 @@ describe("StreamRoute", () => {
     await route.handler({ query: { id: "filesystem://track" } }, response);
 
     expect(response.send).toHaveBeenCalledWith(stream);
-    expect(response.status).not.toHaveBeenCalled();
+    expect(streamMock).toHaveBeenCalledWith("filesystem://track", undefined);
+    expect(response.status).toHaveBeenCalledWith(200);
+  });
+
+  it.each([
+    {
+      caseName: "extracts stream start from range header with regex",
+      rangeHeader: "bytes=12345-99999",
+      expectedStart: 12345,
+    },
+    {
+      caseName: "extracts stream start from generic uom range header",
+      rangeHeader: "customUnit=42-toDiscard",
+      expectedStart: 42,
+    },
+  ])("$caseName", async ({ rangeHeader, expectedStart }) => {
+    const stream = Buffer.from("song-data");
+    const streamMock = vi.fn().mockResolvedValue(stream);
+    mocks.extractPluginId.mockReturnValue("filesystem");
+    mocks.getPluginById.mockResolvedValue({
+      pluginId: "filesystem",
+      plugin: {
+        stream: streamMock,
+      },
+    });
+
+    const route = new StreamRoute();
+    const response = createResponseMock();
+
+    await route.handler(
+      {
+        query: { id: "filesystem://track" },
+        headers: { range: rangeHeader },
+      },
+      response,
+    );
+
+    expect(streamMock).toHaveBeenCalledWith(
+      "filesystem://track",
+      expectedStart,
+    );
   });
 });

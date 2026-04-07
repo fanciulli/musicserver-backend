@@ -5,7 +5,8 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { createReadStream } from "fs";
+import { createReadStream } from "node:fs";
+import { stat } from "node:fs/promises";
 import { Readable } from "stream";
 import { MusicSourcePlugin } from "../../../types/plugins/music_sources.js";
 import { BrowseResponse, BrowseType } from "../../../types/api/browse.js";
@@ -131,13 +132,20 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     }
   }
 
-  async stream(path: string): Promise<Readable> {
+  async stream(
+    path: string,
+    from?: number,
+  ): Promise<[Readable, number | undefined]> {
     const database: Db = this.context.database.client;
     const id = path.split("/").slice(-1)[0];
     const song = await SongDbModel.findById(database, id);
     if (song) {
-      const stream = createReadStream(song.metadata["filePath"]);
-      return stream;
+      const filePath: string = song.metadata["filePath"];
+      const stats = await stat(filePath);
+      const stream = createReadStream(filePath, {
+        start: from,
+      });
+      return [stream, stats.size];
     } else {
       throw new Error("Song not found");
     }
