@@ -9,7 +9,7 @@ export default defineConfig({
       reporter: ["text", "html"],
       thresholds: {
         statements: 52,
-        branches: 29,
+        branches: 31,
         functions: 62,
         lines: 52,
       },

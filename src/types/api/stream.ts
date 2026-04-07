@@ -13,4 +13,10 @@ export const StreamSchema = {
     },
     required: ["id"],
   },
+  headers: {
+    type: "object",
+    properties: {
+      range: { type: "string" },
+    },
+  },
 };

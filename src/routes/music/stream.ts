@@ -8,8 +8,12 @@
 import { Route } from "../../types/route.js";
 import { HttpMethods } from "../../misc/constants.js";
 import { StreamSchema } from "../../types/api/stream.js";
-import { getPluginById } from "../../utils/musicSourcePluginResolver.js";
+import {
+  getPluginById,
+  type PluginResolutionResult,
+} from "../../utils/musicSourcePluginResolver.js";
 import { extractPluginId } from "../../utils/pathUtils.js";
+import type { MusicSourcePlugin } from "../../types/plugins/music_sources.js";
 
 export default class StreamRoute extends Route {
   method = HttpMethods.GET;
@@ -17,8 +21,8 @@ export default class StreamRoute extends Route {
   schema = StreamSchema;
   handler = async (request: any, response: any) => {
     const streamId = request.query.id;
-    const pluginId = extractPluginId(streamId);
-    const pluginResult = await getPluginById(pluginId);
+    const pluginId: string = extractPluginId(streamId);
+    const pluginResult: PluginResolutionResult = await getPluginById(pluginId);
     if (pluginResult.error) {
       response
         .status(pluginResult.error.status)
@@ -27,11 +31,42 @@ export default class StreamRoute extends Route {
     }
 
     try {
-      const plugin = pluginResult.plugin;
-      const stream = await plugin.stream(streamId);
-      return response.send(stream);
+      if (pluginResult.plugin) {
+        const streamStart = this.#extractStreamStartFromRange(
+          request.headers?.range,
+        );
+
+        const [stream, size] = await pluginResult.plugin.stream(
+          streamId,
+          streamStart,
+        );
+
+        return response
+          .headers({
+            "accept-ranges": "bytes",
+            "content-length": size,
+          })
+          .status(streamStart ? 206 : 200)
+          .send(stream);
+      } else {
+        response.status(404).send({ error: "Plugin not found" });
+      }
     } catch (error) {
       response.status(404).send({ error: "Song not found" });
     }
   };
+
+  #extractStreamStartFromRange(rangeHeader: string): number | undefined {
+    if (rangeHeader === undefined) {
+      return undefined;
+    }
+
+    console.log(rangeHeader);
+    const parsedRange = rangeHeader.match(/^[^=]+=([0-9]+)-.*$/);
+    if (!parsedRange) {
+      return undefined;
+    }
+
+    return Number.parseInt(parsedRange[1], 10);
+  }
 }
