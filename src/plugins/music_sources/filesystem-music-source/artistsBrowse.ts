@@ -40,6 +40,14 @@ export async function browseArtists(
         return browseArtistsByLetter(pluginId, scope);
       }
 
+      if (isUuidSection(scope)) {
+        return browseAlbumsByArtistId(
+          pluginId,
+          scope,
+          `${pluginId}://artists/${scope}`,
+        );
+      }
+
       return [];
     }
 
@@ -53,6 +61,15 @@ export async function browseArtists(
 
       if (scope === "ALL" || isLetterSection(scope, letters)) {
         return browseAlbumsByArtistId(
+          pluginId,
+          artistId,
+          `${pluginId}://artists/${scope}/${artistId}`,
+        );
+      }
+
+      if (isUuidSection(scope)) {
+        // scope=ARTIST_ID, artistId=ALBUM_ID
+        return browseSongsByAlbumId(
           pluginId,
           artistId,
           `${pluginId}://artists/${scope}/${artistId}`,
@@ -76,6 +93,20 @@ export async function browseArtists(
           pluginId,
           albumId,
           `${pluginId}://artists/${scope}/${artistId}/${albumId}`,
+        );
+      }
+
+      if (
+        isUuidSection(scope) &&
+        isUuidSection(artistId) &&
+        isUuidSection(albumId)
+      ) {
+        // scope=ARTIST_ID, artistId=ALBUM_ID, albumId=SONG_ID
+        return browseSongByDirectArtistAlbumAndSongId(
+          pluginId,
+          scope,
+          artistId,
+          albumId,
         );
       }
 
@@ -215,6 +246,34 @@ async function browseSongByArtistAlbumAndSongId(
   return [
     new BrowseResponse(
       `${pluginId}://artists/${scope}/${artistId}/${albumId}/${song.id}`,
+      BrowseType.SONG,
+      data,
+    ),
+  ];
+}
+
+async function browseSongByDirectArtistAlbumAndSongId(
+  pluginId: string,
+  artistId: string,
+  albumId: string,
+  songId: string,
+): Promise<BrowseResponse[]> {
+  const database: Db = musicServerInstance.getDatabase().client;
+  const song = await SongDbModel.findByIdAndPluginId(
+    database,
+    songId,
+    pluginId,
+  );
+  if (!song || song.albumId !== albumId || !song.artistsId.includes(artistId)) {
+    return [];
+  }
+
+  const data = Song.fromDbModel(song);
+  data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
+
+  return [
+    new BrowseResponse(
+      `${pluginId}://artists/${artistId}/${albumId}/${song.id}`,
       BrowseType.SONG,
       data,
     ),

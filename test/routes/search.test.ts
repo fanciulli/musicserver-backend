@@ -135,7 +135,7 @@ describe("SearchRoute", () => {
 
     expect(response.status).toHaveBeenCalledWith(404);
     expect(response.send).toHaveBeenCalledWith({
-      error: "Plugin broken not found",
+      error: "Specified plugin not found or not searchable",
     });
   });
 });

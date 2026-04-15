@@ -38,6 +38,10 @@ export async function browseSongs(
         return browseSongsByLetter(pluginId, scope);
       }
 
+      if (isUuidSection(scope)) {
+        return browseSongByDirectId(pluginId, scope);
+      }
+
       return [];
     }
 
@@ -146,5 +150,27 @@ async function browseSongsByScopeAndSongId(
       BrowseType.SONG,
       data,
     ),
+  ];
+}
+
+async function browseSongByDirectId(
+  pluginId: string,
+  songId: string,
+): Promise<BrowseResponse[]> {
+  const database: Db = musicServerInstance.getDatabase().client;
+  const song = await SongDbModel.findByIdAndPluginId(
+    database,
+    songId,
+    pluginId,
+  );
+  if (!song) {
+    return [];
+  }
+
+  const data = Song.fromDbModel(song);
+  data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
+
+  return [
+    new BrowseResponse(`${pluginId}://songs/${song.id}`, BrowseType.SONG, data),
   ];
 }

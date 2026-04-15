@@ -207,7 +207,7 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     const database: Db = this.context.database.client;
     const id = uri.split("/").slice(-1)[0];
     const song = await SongDbModel.findById(database, id);
-    let albumId?;
+    let albumId: string | undefined;
 
     this.context.logger.info("Searching for id " + id);
     if (!song) {

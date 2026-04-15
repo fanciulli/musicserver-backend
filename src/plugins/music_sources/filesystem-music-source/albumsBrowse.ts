@@ -39,6 +39,14 @@ export async function browseAlbums(
         return browseAlbumsByLetter(pluginId, scope);
       }
 
+      if (isUuidSection(scope)) {
+        return browseSongsByAlbumId(
+          pluginId,
+          scope,
+          `${pluginId}://albums/${scope}`,
+        );
+      }
+
       return [];
     }
 
@@ -55,6 +63,16 @@ export async function browseAlbums(
           pluginId,
           albumId,
           `${pluginId}://albums/${scope}/${albumId}`,
+        );
+      }
+
+      if (isUuidSection(scope)) {
+        // scope=ALBUM_ID, albumId=SONG_ID
+        return browseSongByScopedPathAndSongId(
+          pluginId,
+          `${pluginId}://albums/${scope}`,
+          scope,
+          albumId,
         );
       }
 
