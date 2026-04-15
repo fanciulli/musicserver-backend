@@ -8,9 +8,9 @@ export default defineConfig({
       exclude: ["src/types/**"],
       reporter: ["text", "html"],
       thresholds: {
-        statements: 52,
-        branches: 31,
-        functions: 62,
+        statements: 63,
+        branches: 50,
+        functions: 71,
         lines: 52,
       },
     },
