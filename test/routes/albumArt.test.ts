@@ -7,6 +7,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpHeaders, MimeTypes } from "../../src/misc/constants.js";
+import { DEFAULT_ALBUM_ART } from "../../src/resources/defaultAlbumArt.js";
 
 const mocks = vi.hoisted(() => ({
   extractPluginId: vi.fn(),
@@ -101,6 +102,28 @@ describe("AlbumArtRoute", () => {
       MimeTypes.APPLICATION_OCTET_STREAM,
     );
     expect(response.send).toHaveBeenCalledWith(stream);
+    expect(response.status).not.toHaveBeenCalled();
+  });
+
+  it("sends fallback album art when plugin returns undefined", async () => {
+    mocks.extractPluginId.mockReturnValue("filesystem");
+    mocks.getPluginById.mockResolvedValue({
+      pluginId: "filesystem",
+      plugin: {
+        getAlbumArt: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+
+    const route = new AlbumArtRoute();
+    const response = createResponseMock();
+
+    await route.handler({ query: { id: "filesystem://cover" } }, response);
+
+    expect(response.header).toHaveBeenCalledWith(
+      HttpHeaders.CONTENT_TYPE,
+      MimeTypes.IMAGE_SVG_XML,
+    );
+    expect(response.send).toHaveBeenCalledWith(DEFAULT_ALBUM_ART);
     expect(response.status).not.toHaveBeenCalled();
   });
 });

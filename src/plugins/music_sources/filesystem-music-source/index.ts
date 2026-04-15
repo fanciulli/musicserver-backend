@@ -14,6 +14,7 @@ import { SongDbModel } from "../../../types/db/song.js";
 import { Folder } from "../../../types/api/folder.js";
 import { Db } from "mongodb";
 import { FileSystemScan } from "./scan.js";
+import { BrowseUtils } from "../../../utils/browseUtils.js";
 import { extractPathSections } from "../../../utils/pathUtils.js";
 import { browseAlbums } from "./albumsBrowse.js";
 import { browseArtists } from "./artistsBrowse.js";
@@ -26,6 +27,7 @@ import type {
   PluginConfigurationValues,
 } from "../../../types/plugins/plugin.js";
 import { PluginConfigDBModel } from "../../../types/db/pluginConfig.js";
+import { ArtistDbModel } from "../../../types/db/artist.js";
 
 const DEFAULT_MUSIC_FOLDER = "/music";
 
@@ -132,6 +134,56 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     }
   }
 
+  async search(query: string, category: string): Promise<BrowseResponse[]> {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery === "") {
+      return [];
+    }
+
+    const database: Db = this.context.database.client;
+
+    switch (category) {
+      case "album": {
+        const albums = await AlbumDbModel.findAlbumsByQuery(
+          database,
+          this.id,
+          normalizedQuery,
+        );
+        return BrowseUtils.createAlbumsFolderResponses(
+          `${this.id}://albums`,
+          albums,
+        );
+      }
+
+      case "artist": {
+        const artists = await ArtistDbModel.findArtistsByQuery(
+          database,
+          this.id,
+          normalizedQuery,
+        );
+        return BrowseUtils.createArtistsFolderResponses(
+          `${this.id}://artists`,
+          artists,
+        );
+      }
+
+      case "song": {
+        const songs = await SongDbModel.findSongsByQuery(
+          database,
+          this.id,
+          normalizedQuery,
+        );
+        return BrowseUtils.createSongsBrowseResponses(
+          `${this.id}://songs`,
+          songs,
+        );
+      }
+
+      default:
+        return [];
+    }
+  }
+
   async stream(
     path: string,
     from?: number,
@@ -151,11 +203,11 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     }
   }
 
-  async getAlbumArt(uri: string): Promise<Buffer<ArrayBuffer>> {
+  async getAlbumArt(uri: string): Promise<Buffer<ArrayBuffer> | undefined> {
     const database: Db = this.context.database.client;
     const id = uri.split("/").slice(-1)[0];
     const song = await SongDbModel.findById(database, id);
-    let albumId = undefined;
+    let albumId?;
 
     this.context.logger.info("Searching for id " + id);
     if (!song) {
@@ -166,7 +218,7 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
 
     const albumCover = await AlbumDbModel.findCoverById(database, albumId);
     if (!albumCover) {
-      throw new Error("Identifier is not a Album nor a Song.");
+      return undefined;
     } else {
       return Buffer.from(albumCover, "base64");
     }

@@ -6,5 +6,6 @@
  * GitHub: https://github.com/fanciulli
  */
 export class Folder {
-  name: string;
+  name?: string;
+  albumArt?: string;
 }

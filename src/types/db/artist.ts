@@ -9,16 +9,20 @@ import { Db } from "mongodb";
 
 const COLLECTION_NAME = "artists";
 
+function escapeRegex(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export class ArtistDbModel {
-  id: string;
-  name: string;
-  pluginId: string;
+  id?: string;
+  name?: string;
+  pluginId?: string;
 
   static async find(
     db: Db,
     name: string,
     pluginId: string,
-  ): Promise<ArtistDbModel> {
+  ): Promise<ArtistDbModel | null> {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
     const filter = {
       name: name,
@@ -67,7 +71,7 @@ export class ArtistDbModel {
     db: Db,
     pluginId: string,
     id: string,
-  ): Promise<ArtistDbModel> {
+  ): Promise<ArtistDbModel | null> {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
 
     return await collection.findOne({
@@ -86,6 +90,25 @@ export class ArtistDbModel {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
 
     await collection.deleteMany({ pluginId: pluginId });
+  }
+
+  static async findArtistsByQuery(
+    db: Db,
+    pluginId: string,
+    query: string,
+  ): Promise<Array<ArtistDbModel>> {
+    const normalizedQuery = query.trim();
+    if (normalizedQuery === "") {
+      return [];
+    }
+
+    const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
+    return await collection
+      .find({
+        pluginId: pluginId,
+        name: { $regex: escapeRegex(normalizedQuery), $options: "i" },
+      })
+      .toArray();
   }
 }
 
