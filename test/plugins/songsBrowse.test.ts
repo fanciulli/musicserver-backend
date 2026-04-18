@@ -52,7 +52,7 @@ describe("browseSongs – direct song ID path", () => {
     };
     mocks.findByIdAndPluginId.mockResolvedValue(song);
 
-    const result = await browseSongs(PLUGIN_ID, ["songs", SONG_UUID]);
+    const result = await browseSongs(["songs", SONG_UUID]);
 
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe(BrowseType.SONG);
@@ -67,13 +67,13 @@ describe("browseSongs – direct song ID path", () => {
   it("returns empty array when song is not found", async () => {
     mocks.findByIdAndPluginId.mockResolvedValue(null);
 
-    const result = await browseSongs(PLUGIN_ID, ["songs", SONG_UUID]);
+    const result = await browseSongs(["songs", SONG_UUID]);
 
     expect(result).toEqual([]);
   });
 
   it("returns empty array for non-UUID sections[1]", async () => {
-    const result = await browseSongs(PLUGIN_ID, ["songs", "not-a-uuid"]);
+    const result = await browseSongs(["songs", "not-a-uuid"]);
 
     expect(result).toEqual([]);
     expect(mocks.findByIdAndPluginId).not.toHaveBeenCalled();

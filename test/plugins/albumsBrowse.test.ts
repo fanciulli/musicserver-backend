@@ -55,7 +55,7 @@ describe("browseAlbums – direct album ID path", () => {
     };
     mocks.findSongsByAlbumId.mockResolvedValue([song]);
 
-    const result = await browseAlbums(PLUGIN_ID, ["albums", ALBUM_UUID]);
+    const result = await browseAlbums(["albums", ALBUM_UUID]);
 
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe(BrowseType.SONG);
@@ -72,13 +72,13 @@ describe("browseAlbums – direct album ID path", () => {
   it("returns empty array when album has no songs", async () => {
     mocks.findSongsByAlbumId.mockResolvedValue([]);
 
-    const result = await browseAlbums(PLUGIN_ID, ["albums", ALBUM_UUID]);
+    const result = await browseAlbums(["albums", ALBUM_UUID]);
 
     expect(result).toEqual([]);
   });
 
   it("returns empty array for non-UUID sections[1]", async () => {
-    const result = await browseAlbums(PLUGIN_ID, ["albums", "not-a-uuid"]);
+    const result = await browseAlbums(["albums", "not-a-uuid"]);
 
     expect(result).toEqual([]);
     expect(mocks.findSongsByAlbumId).not.toHaveBeenCalled();
@@ -105,11 +105,7 @@ describe("browseAlbums – direct album ID + song ID path", () => {
     };
     mocks.findByIdAndPluginId.mockResolvedValue(song);
 
-    const result = await browseAlbums(PLUGIN_ID, [
-      "albums",
-      ALBUM_UUID,
-      SONG_UUID,
-    ]);
+    const result = await browseAlbums(["albums", ALBUM_UUID, SONG_UUID]);
 
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe(BrowseType.SONG);
@@ -132,11 +128,7 @@ describe("browseAlbums – direct album ID + song ID path", () => {
     };
     mocks.findByIdAndPluginId.mockResolvedValue(song);
 
-    const result = await browseAlbums(PLUGIN_ID, [
-      "albums",
-      ALBUM_UUID,
-      SONG_UUID,
-    ]);
+    const result = await browseAlbums(["albums", ALBUM_UUID, SONG_UUID]);
 
     expect(result).toEqual([]);
   });
@@ -144,11 +136,7 @@ describe("browseAlbums – direct album ID + song ID path", () => {
   it("returns empty array when song is not found", async () => {
     mocks.findByIdAndPluginId.mockResolvedValue(null);
 
-    const result = await browseAlbums(PLUGIN_ID, [
-      "albums",
-      ALBUM_UUID,
-      SONG_UUID,
-    ]);
+    const result = await browseAlbums(["albums", ALBUM_UUID, SONG_UUID]);
 
     expect(result).toEqual([]);
   });

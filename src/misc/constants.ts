@@ -39,6 +39,8 @@ export const letters = [
   "G",
   "H",
   "I",
+  "J",
+  "K",
   "L",
   "M",
   "N",
@@ -50,5 +52,7 @@ export const letters = [
   "T",
   "U",
   "V",
+  "X",
+  "Y",
   "Z",
 ];

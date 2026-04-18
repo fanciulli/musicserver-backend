@@ -19,17 +19,19 @@ import { extractPathSections } from "../../../utils/pathUtils.js";
 import { browseAlbums } from "./albumsBrowse.js";
 import { browseArtists } from "./artistsBrowse.js";
 import { browseSongs } from "./songsBrowse.js";
-import { PLUGIN_ID, PLUGIN_NAME } from "./constants.js";
+import { DEFAULT_MUSIC_FOLDER, PLUGIN_ID, PLUGIN_NAME } from "./constants.js";
 import { AlbumDbModel } from "../../../types/db/album.js";
 import type { Context } from "../../../types/context.js";
 import type {
   PluginConfigurationSettings,
   PluginConfigurationValues,
 } from "../../../types/plugins/plugin.js";
-import { PluginConfigDBModel } from "../../../types/db/pluginConfig.js";
 import { ArtistDbModel } from "../../../types/db/artist.js";
-
-const DEFAULT_MUSIC_FOLDER = "/music";
+import {
+  getConfiguration,
+  loadConfiguration,
+  updateConfiguration,
+} from "./configurationManager.js";
 
 export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   id: string = PLUGIN_ID;
@@ -71,44 +73,28 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
 
   loadConfiguration = async (): Promise<void> => {
     const database: Db = this.context.database.client;
-    const pluginConfig: PluginConfigDBModel =
-      await PluginConfigDBModel.findByPluginId(
-        database,
-        this.category,
-        this.id,
-      );
-
-    if (!pluginConfig) {
-      this.#musicFolder = DEFAULT_MUSIC_FOLDER;
-      return;
-    }
-
-    await this.updateConfiguration(pluginConfig.settings);
+    this.#musicFolder = await loadConfiguration(
+      database,
+      this.category,
+      this.id,
+      DEFAULT_MUSIC_FOLDER,
+    );
   };
 
   getConfiguration = async (): Promise<PluginConfigurationSettings> => {
-    return {
-      variables: [{ musicFolder: "string" }],
-      values: {
-        musicFolder: this.#musicFolder,
-      },
-    };
+    return getConfiguration(this.#musicFolder);
   };
 
   updateConfiguration = async (
     settings: PluginConfigurationValues,
   ): Promise<void> => {
-    const musicFolder = settings["musicFolder"];
-    if (typeof musicFolder !== "string" || musicFolder.trim() === "") {
-      throw new Error("musicFolder must be a non-empty string");
-    }
-
-    this.#musicFolder = musicFolder;
-
     const database: Db = this.context.database.client;
-    await PluginConfigDBModel.upsertSettings(database, this.category, this.id, {
-      musicFolder: this.#musicFolder,
-    });
+    this.#musicFolder = await updateConfiguration(
+      database,
+      this.category,
+      this.id,
+      settings,
+    );
   };
 
   async browse(path: string): Promise<Array<BrowseResponse>> {
@@ -124,11 +110,11 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     const [section] = pathSections;
     switch (section) {
       case "albums":
-        return browseAlbums(this.id, pathSections);
+        return browseAlbums(pathSections);
       case "artists":
-        return browseArtists(this.id, pathSections);
+        return browseArtists(pathSections);
       case "songs":
-        return browseSongs(this.id, pathSections);
+        return browseSongs(pathSections);
       default:
         return [];
     }
@@ -216,11 +202,15 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
       albumId = song.albumId;
     }
 
-    const albumCover = await AlbumDbModel.findCoverById(database, albumId);
-    if (!albumCover) {
-      return undefined;
+    if (albumId) {
+      const albumCover = await AlbumDbModel.findCoverById(database, albumId);
+      if (!albumCover) {
+        return undefined;
+      } else {
+        return Buffer.from(albumCover, "base64");
+      }
     } else {
-      return Buffer.from(albumCover, "base64");
+      return undefined;
     }
   }
 }

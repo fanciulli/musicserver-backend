@@ -9,6 +9,7 @@ Code review
 - Report duplicated code and suggest a solution that minimize code duplication.
 - Report major security criticality.
 - Report any usage of console.log. Console.log is only allowed on index.ts
+- Report string concatenation via + operator. Enforce using ` instead.
 
 Pull Requests
 

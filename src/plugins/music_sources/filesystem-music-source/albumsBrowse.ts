@@ -13,6 +13,7 @@ import { SongDbModel } from "../../../types/db/song.js";
 import { BrowseUtils } from "../../../utils/browseUtils.js";
 import { letters } from "../../../misc/constants.js";
 import { musicServerInstance } from "../../../server/musicServer.js";
+import { PLUGIN_ID } from "./constants.js";
 import {
   createBrowseReponseFolderForLetters,
   createBrowseResponseFolder,
@@ -21,30 +22,25 @@ import {
 } from "./utils.js";
 
 export async function browseAlbums(
-  pluginId: string,
   sections: string[],
 ): Promise<BrowseResponse[]> {
   switch (sections.length) {
     case 1:
-      return browseAlbumsRoot(pluginId);
+      return browseAlbumsRoot();
 
     case 2: {
       const scope = sections[1];
 
       if (scope === "ALL") {
-        return browseAlbumsAll(pluginId);
+        return browseAlbumsAll();
       }
 
       if (isLetterSection(scope, letters)) {
-        return browseAlbumsByLetter(pluginId, scope);
+        return browseAlbumsByLetter(scope);
       }
 
       if (isUuidSection(scope)) {
-        return browseSongsByAlbumId(
-          pluginId,
-          scope,
-          `${pluginId}://albums/${scope}`,
-        );
+        return browseSongsByAlbumId(scope, `${PLUGIN_ID}://albums/${scope}`);
       }
 
       return [];
@@ -60,17 +56,15 @@ export async function browseAlbums(
 
       if (scope === "ALL" || isLetterSection(scope, letters)) {
         return browseSongsByAlbumId(
-          pluginId,
           albumId,
-          `${pluginId}://albums/${scope}/${albumId}`,
+          `${PLUGIN_ID}://albums/${scope}/${albumId}`,
         );
       }
 
       if (isUuidSection(scope)) {
         // scope=ALBUM_ID, albumId=SONG_ID
         return browseSongByScopedPathAndSongId(
-          pluginId,
-          `${pluginId}://albums/${scope}`,
+          `${PLUGIN_ID}://albums/${scope}`,
           scope,
           albumId,
         );
@@ -90,8 +84,7 @@ export async function browseAlbums(
         isUuidSection(songId)
       ) {
         return browseSongByScopedPathAndSongId(
-          pluginId,
-          `${pluginId}://albums/${scope}/${albumId}`,
+          `${PLUGIN_ID}://albums/${scope}/${albumId}`,
           albumId,
           songId,
         );
@@ -105,10 +98,8 @@ export async function browseAlbums(
   }
 }
 
-export async function browseAlbumsRoot(
-  pluginId: string,
-): Promise<BrowseResponse[]> {
-  const albumsPath = `${pluginId}://albums`;
+export async function browseAlbumsRoot(): Promise<BrowseResponse[]> {
+  const albumsPath = `${PLUGIN_ID}://albums`;
   const allBrowseResponse = createBrowseResponseFolder(
     "ALL",
     albumsPath,
@@ -121,33 +112,29 @@ export async function browseAlbumsRoot(
   return [allBrowseResponse].concat(lettersResponse);
 }
 
-export async function browseAlbumsAll(
-  pluginId: string,
-): Promise<BrowseResponse[]> {
+export async function browseAlbumsAll(): Promise<BrowseResponse[]> {
   const database: Db = musicServerInstance.getDatabase().client;
-  const albums = await AlbumDbModel.findAlbumsByPluginId(database, pluginId);
-  const albumsPath = `${pluginId}://albums/ALL`;
+  const albums = await AlbumDbModel.findAlbumsByPluginId(database, PLUGIN_ID);
+  const albumsPath = `${PLUGIN_ID}://albums/ALL`;
 
   return BrowseUtils.createAlbumsFolderResponses(albumsPath, albums);
 }
 
 export async function browseAlbumsByLetter(
-  pluginId: string,
   letter: string,
 ): Promise<BrowseResponse[]> {
   const database: Db = musicServerInstance.getDatabase().client;
   const albums = await AlbumDbModel.findAlbumsByStartingLetter(
     database,
-    pluginId,
+    PLUGIN_ID,
     letter,
   );
-  const albumsPath = `${pluginId}://albums/${letter}`;
+  const albumsPath = `${PLUGIN_ID}://albums/${letter}`;
 
   return BrowseUtils.createAlbumsFolderResponses(albumsPath, albums);
 }
 
 async function browseSongsByAlbumId(
-  pluginId: string,
   albumId: string,
   pathPrefix: string,
 ): Promise<BrowseResponse[]> {
@@ -155,7 +142,7 @@ async function browseSongsByAlbumId(
   const songs = await SongDbModel.findSongsByAlbumId(
     database,
     albumId,
-    pluginId,
+    PLUGIN_ID,
   );
   const resp = [];
 
@@ -172,7 +159,6 @@ async function browseSongsByAlbumId(
 }
 
 async function browseSongByScopedPathAndSongId(
-  pluginId: string,
   pathPrefix: string,
   albumId: string,
   songId: string,
@@ -181,7 +167,7 @@ async function browseSongByScopedPathAndSongId(
   const song = await SongDbModel.findByIdAndPluginId(
     database,
     songId,
-    pluginId,
+    PLUGIN_ID,
   );
   if (!song || song.albumId !== albumId) {
     return [];

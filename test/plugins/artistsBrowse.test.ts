@@ -59,7 +59,7 @@ describe("browseArtists – direct artist ID path", () => {
     };
     mocks.findAlbumsByArtistId.mockResolvedValue([album]);
 
-    const result = await browseArtists(PLUGIN_ID, ["artists", ARTIST_UUID]);
+    const result = await browseArtists(["artists", ARTIST_UUID]);
 
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe(BrowseType.FOLDER);
@@ -76,13 +76,13 @@ describe("browseArtists – direct artist ID path", () => {
   it("returns empty array when artist has no albums", async () => {
     mocks.findAlbumsByArtistId.mockResolvedValue([]);
 
-    const result = await browseArtists(PLUGIN_ID, ["artists", ARTIST_UUID]);
+    const result = await browseArtists(["artists", ARTIST_UUID]);
 
     expect(result).toEqual([]);
   });
 
   it("returns empty array for non-UUID sections[1]", async () => {
-    const result = await browseArtists(PLUGIN_ID, ["artists", "not-a-uuid"]);
+    const result = await browseArtists(["artists", "not-a-uuid"]);
 
     expect(result).toEqual([]);
     expect(mocks.findAlbumsByArtistId).not.toHaveBeenCalled();
@@ -109,11 +109,7 @@ describe("browseArtists – direct artist ID + album ID path", () => {
     };
     mocks.findSongsByAlbumId.mockResolvedValue([song]);
 
-    const result = await browseArtists(PLUGIN_ID, [
-      "artists",
-      ARTIST_UUID,
-      ALBUM_UUID,
-    ]);
+    const result = await browseArtists(["artists", ARTIST_UUID, ALBUM_UUID]);
 
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe(BrowseType.SONG);
@@ -130,11 +126,7 @@ describe("browseArtists – direct artist ID + album ID path", () => {
   it("returns empty array when album has no songs", async () => {
     mocks.findSongsByAlbumId.mockResolvedValue([]);
 
-    const result = await browseArtists(PLUGIN_ID, [
-      "artists",
-      ARTIST_UUID,
-      ALBUM_UUID,
-    ]);
+    const result = await browseArtists(["artists", ARTIST_UUID, ALBUM_UUID]);
 
     expect(result).toEqual([]);
   });
@@ -160,7 +152,7 @@ describe("browseArtists – direct artist ID + album ID + song ID path", () => {
     };
     mocks.findByIdAndPluginId.mockResolvedValue(song);
 
-    const result = await browseArtists(PLUGIN_ID, [
+    const result = await browseArtists([
       "artists",
       ARTIST_UUID,
       ALBUM_UUID,
@@ -188,7 +180,7 @@ describe("browseArtists – direct artist ID + album ID + song ID path", () => {
     };
     mocks.findByIdAndPluginId.mockResolvedValue(song);
 
-    const result = await browseArtists(PLUGIN_ID, [
+    const result = await browseArtists([
       "artists",
       ARTIST_UUID,
       ALBUM_UUID,
@@ -207,7 +199,7 @@ describe("browseArtists – direct artist ID + album ID + song ID path", () => {
     };
     mocks.findByIdAndPluginId.mockResolvedValue(song);
 
-    const result = await browseArtists(PLUGIN_ID, [
+    const result = await browseArtists([
       "artists",
       ARTIST_UUID,
       ALBUM_UUID,
@@ -220,7 +212,7 @@ describe("browseArtists – direct artist ID + album ID + song ID path", () => {
   it("returns empty array when song is not found", async () => {
     mocks.findByIdAndPluginId.mockResolvedValue(null);
 
-    const result = await browseArtists(PLUGIN_ID, [
+    const result = await browseArtists([
       "artists",
       ARTIST_UUID,
       ALBUM_UUID,
