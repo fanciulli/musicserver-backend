@@ -151,24 +151,27 @@ export class FileSystemScan {
   ) {
     const songName = fileMetadata.common?.title;
 
-    const songInDb = await SongDbModel.find(db, songName, pluginId);
-    if (!songInDb) {
-      const song = new SongDbModel();
-      song.name = songName;
-      song.id = v4();
-      song.pluginId = pluginId;
-      song.album = album?.name;
-      song.albumId = album?.id;
-      song.artist = artists.map((artist) => artist.name).join(", ");
-      song.artistsId = album?.artists;
-      song.trackNumber = fileMetadata.common.track?.no;
-      song.diskNumber = fileMetadata.common.disk?.no;
-      // song.duration =
-      song.metadata = {
-        filePath: filePath,
-      };
+    if (songName) {
+      const songInDb = await SongDbModel.find(db, songName, pluginId);
+      if (!songInDb) {
+        const song = new SongDbModel();
+        song.name = songName;
+        song.id = v4();
+        song.pluginId = pluginId;
+        song.album = album?.name;
+        song.albumId = album?.id;
+        song.artist = artists.map((artist) => artist.name).join(", ");
+        song.artistsId = album?.artists;
+        song.trackNumber = fileMetadata.common.track?.no
+          ? fileMetadata.common.track?.no
+          : 0;
+        song.diskNumber = fileMetadata.common.disk?.no
+          ? fileMetadata.common.disk?.no
+          : 1;
+        song.metadata?.set("filePath", filePath);
 
-      await song.insert(db);
+        await song.insert(db);
+      }
     }
   }
 }
