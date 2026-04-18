@@ -1,3 +1,10 @@
+/*
+ * Created on Sat Apr 18 2026
+ *
+ * Author: Massimiliano Fanciulli
+ *
+ * GitHub: https://github.com/fanciulli
+ */
 import { describe, expect, it } from "vitest";
 import {
   extractPathSections,

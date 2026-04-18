@@ -6,8 +6,7 @@
  * GitHub: https://github.com/fanciulli
  */
 import { Db } from "mongodb";
-import { BrowseResponse, BrowseType } from "../../../types/api/browse.js";
-import { Song } from "../../../types/api/song.js";
+import { BrowseResponse } from "../../../types/api/browse.js";
 import { AlbumDbModel } from "../../../types/db/album.js";
 import { ArtistDbModel } from "../../../types/db/artist.js";
 import { SongDbModel } from "../../../types/db/song.js";
@@ -18,6 +17,8 @@ import { PLUGIN_ID } from "./constants.js";
 import {
   createBrowseReponseFolderForLetters,
   createBrowseResponseFolder,
+  createSongBrowseResponse,
+  createSongBrowseResponses,
   isLetterSection,
   isUuidSection,
 } from "./utils.js";
@@ -178,18 +179,8 @@ async function browseSongsByAlbumId(
     albumId,
     PLUGIN_ID,
   );
-  const resp = [];
 
-  for (let song of songs) {
-    const data = Song.fromDbModel(song);
-    data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
-
-    resp.push(
-      new BrowseResponse(`${pathPrefix}/${song.id}`, BrowseType.SONG, data),
-    );
-  }
-
-  return resp;
+  return createSongBrowseResponses(pathPrefix, songs);
 }
 
 async function browseAlbumsByArtistId(
@@ -218,18 +209,18 @@ async function browseSongByArtistAlbumAndSongId(
     songId,
     PLUGIN_ID,
   );
-  if (!song || song.albumId !== albumId || !song.artistsId.includes(artistId)) {
+  if (
+    !song ||
+    song.albumId !== albumId ||
+    !song.artistsId?.includes(artistId)
+  ) {
     return [];
   }
 
-  const data = Song.fromDbModel(song);
-  data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
-
   return [
-    new BrowseResponse(
+    createSongBrowseResponse(
       `${PLUGIN_ID}://artists/${scope}/${artistId}/${albumId}/${song.id}`,
-      BrowseType.SONG,
-      data,
+      song,
     ),
   ];
 }
@@ -245,18 +236,18 @@ async function browseSongByDirectArtistAlbumAndSongId(
     songId,
     PLUGIN_ID,
   );
-  if (!song || song.albumId !== albumId || !song.artistsId.includes(artistId)) {
+  if (
+    !song ||
+    song.albumId !== albumId ||
+    !song.artistsId?.includes(artistId)
+  ) {
     return [];
   }
 
-  const data = Song.fromDbModel(song);
-  data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
-
   return [
-    new BrowseResponse(
+    createSongBrowseResponse(
       `${PLUGIN_ID}://artists/${artistId}/${albumId}/${song.id}`,
-      BrowseType.SONG,
-      data,
+      song,
     ),
   ];
 }

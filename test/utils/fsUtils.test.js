@@ -1,3 +1,10 @@
+/*
+ * Created on Sat Apr 18 2026
+ *
+ * Author: Massimiliano Fanciulli
+ *
+ * GitHub: https://github.com/fanciulli
+ */
 import path from "path";
 import { readdir } from "fs/promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";

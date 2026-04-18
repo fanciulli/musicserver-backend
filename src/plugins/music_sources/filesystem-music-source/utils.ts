@@ -7,6 +7,8 @@
  */
 import { Folder } from "../../../types/api/folder.js";
 import { BrowseType, BrowseResponse } from "../../../types/api/browse.js";
+import { Song } from "../../../types/api/song.js";
+import { SongDbModel } from "../../../types/db/song.js";
 
 /**
  * Creates a folder browse response by composing a child path from prefix and section.
@@ -73,5 +75,24 @@ export function isLetterSection(
 export function isUuidSection(pathSection: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     pathSection,
+  );
+}
+
+export function createSongBrowseResponse(
+  path: string,
+  song: SongDbModel,
+): BrowseResponse {
+  const data = Song.fromDbModel(song);
+  data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
+
+  return new BrowseResponse(path, BrowseType.SONG, data);
+}
+
+export function createSongBrowseResponses(
+  pathPrefix: string,
+  songs: SongDbModel[],
+): BrowseResponse[] {
+  return songs.map((song) =>
+    createSongBrowseResponse(`${pathPrefix}/${song.id}`, song),
   );
 }

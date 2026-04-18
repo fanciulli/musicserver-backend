@@ -61,7 +61,6 @@ export default class StreamRoute extends Route {
       return undefined;
     }
 
-    console.log(rangeHeader);
     const parsedRange = rangeHeader.match(/^[^=]+=([0-9]+)-.*$/);
     if (!parsedRange) {
       return undefined;

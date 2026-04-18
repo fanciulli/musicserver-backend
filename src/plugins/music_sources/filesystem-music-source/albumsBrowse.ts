@@ -6,8 +6,7 @@
  * GitHub: https://github.com/fanciulli
  */
 import { Db } from "mongodb";
-import { BrowseResponse, BrowseType } from "../../../types/api/browse.js";
-import { Song } from "../../../types/api/song.js";
+import { BrowseResponse } from "../../../types/api/browse.js";
 import { AlbumDbModel } from "../../../types/db/album.js";
 import { SongDbModel } from "../../../types/db/song.js";
 import { BrowseUtils } from "../../../utils/browseUtils.js";
@@ -17,6 +16,8 @@ import { PLUGIN_ID } from "./constants.js";
 import {
   createBrowseReponseFolderForLetters,
   createBrowseResponseFolder,
+  createSongBrowseResponse,
+  createSongBrowseResponses,
   isLetterSection,
   isUuidSection,
 } from "./utils.js";
@@ -144,18 +145,8 @@ async function browseSongsByAlbumId(
     albumId,
     PLUGIN_ID,
   );
-  const resp = [];
 
-  for (let song of songs) {
-    const data = Song.fromDbModel(song);
-    data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
-
-    resp.push(
-      new BrowseResponse(`${pathPrefix}/${song.id}`, BrowseType.SONG, data),
-    );
-  }
-
-  return resp;
+  return createSongBrowseResponses(pathPrefix, songs);
 }
 
 async function browseSongByScopedPathAndSongId(
@@ -173,10 +164,5 @@ async function browseSongByScopedPathAndSongId(
     return [];
   }
 
-  const data = Song.fromDbModel(song);
-  data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
-
-  return [
-    new BrowseResponse(`${pathPrefix}/${song.id}`, BrowseType.SONG, data),
-  ];
+  return [createSongBrowseResponse(`${pathPrefix}/${song.id}`, song)];
 }

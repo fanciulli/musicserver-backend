@@ -6,8 +6,7 @@
  * GitHub: https://github.com/fanciulli
  */
 import { Db } from "mongodb";
-import { BrowseResponse, BrowseType } from "../../../types/api/browse.js";
-import { Song } from "../../../types/api/song.js";
+import { BrowseResponse } from "../../../types/api/browse.js";
 import { SongDbModel } from "../../../types/db/song.js";
 import { BrowseUtils } from "../../../utils/browseUtils.js";
 import { letters } from "../../../misc/constants.js";
@@ -16,6 +15,7 @@ import { PLUGIN_ID } from "./constants.js";
 import {
   createBrowseReponseFolderForLetters,
   createBrowseResponseFolder,
+  createSongBrowseResponse,
   isLetterSection,
   isUuidSection,
 } from "./utils.js";
@@ -133,15 +133,8 @@ async function browseSongsByScopeAndSongId(
     return [];
   }
 
-  const data = Song.fromDbModel(song);
-  data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
-
   return [
-    new BrowseResponse(
-      `${PLUGIN_ID}://songs/${scope}/${song.id}`,
-      BrowseType.SONG,
-      data,
-    ),
+    createSongBrowseResponse(`${PLUGIN_ID}://songs/${scope}/${song.id}`, song),
   ];
 }
 
@@ -156,14 +149,5 @@ async function browseSongByDirectId(songId: string): Promise<BrowseResponse[]> {
     return [];
   }
 
-  const data = Song.fromDbModel(song);
-  data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
-
-  return [
-    new BrowseResponse(
-      `${PLUGIN_ID}://songs/${song.id}`,
-      BrowseType.SONG,
-      data,
-    ),
-  ];
+  return [createSongBrowseResponse(`${PLUGIN_ID}://songs/${song.id}`, song)];
 }
