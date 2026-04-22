@@ -1,0 +1,23 @@
+meta {
+  name: search
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://{{host}}:{{port}}/music/search
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "query": "nirvana",
+    "category": "song"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

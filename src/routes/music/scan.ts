@@ -26,8 +26,12 @@ export default class ScanRoute extends Route {
 
     const plugin = pluginResult.plugin;
 
-    await plugin.scan();
+    if (plugin) {
+      await plugin.scan();
 
-    response.send({ status: "Scan completed" });
+      response.send({ status: "Scan completed" });
+    } else {
+      response.status(404).send({ error: "Plugin not found" });
+    }
   };
 }

@@ -9,6 +9,10 @@ import { Db } from "mongodb";
 
 const COLLECTION_NAME = "albums";
 
+function escapeRegex(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export class AlbumDbModel {
   id: string;
   name: string;
@@ -158,6 +162,27 @@ export class AlbumDbModel {
       .find({
         pluginId: pluginId,
         artists: artistId,
+      })
+      .toArray();
+
+    return albums.map((album) => AlbumDbModel.fromJson(album));
+  }
+
+  static async findAlbumsByQuery(
+    db: Db,
+    pluginId: string,
+    query: string,
+  ): Promise<Array<AlbumDbModel>> {
+    const normalizedQuery = query.trim();
+    if (normalizedQuery === "") {
+      return [];
+    }
+
+    const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
+    const albums = await collection
+      .find({
+        pluginId: pluginId,
+        name: { $regex: escapeRegex(normalizedQuery), $options: "i" },
       })
       .toArray();
 

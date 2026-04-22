@@ -9,19 +9,23 @@ import { Db } from "mongodb";
 
 const COLLECTION_NAME = "songs";
 
-export class SongDbModel {
-  id: string;
-  name: string;
-  pluginId: string;
-  album: string;
-  albumId: string;
-  artist: string;
-  artistsId: string[];
-  trackNumber: number;
-  diskNumber: number;
-  metadata: object;
+function escapeRegex(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
-  static async findById(db: Db, id: string): Promise<SongDbModel> {
+export class SongDbModel {
+  id?: string;
+  name?: string;
+  pluginId?: string;
+  album?: string;
+  albumId?: string;
+  artist?: string;
+  artistsId?: string[];
+  trackNumber?: number;
+  diskNumber?: number;
+  metadata?: Map<string, any>;
+
+  static async findById(db: Db, id: string): Promise<SongDbModel | null> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
     return await collection.findOne({
       id: id,
@@ -32,7 +36,7 @@ export class SongDbModel {
     db: Db,
     id: string,
     pluginId: string,
-  ): Promise<SongDbModel> {
+  ): Promise<SongDbModel | null> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
     return await collection.findOne({
       id: id,
@@ -44,7 +48,7 @@ export class SongDbModel {
     db: Db,
     name: string,
     pluginId: string,
-  ): Promise<SongDbModel> {
+  ): Promise<SongDbModel | null> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
     const filter = {
       name: name,
@@ -113,6 +117,35 @@ export class SongDbModel {
         {
           artistsId: artistId,
           pluginId: pluginId,
+        },
+        {},
+      )
+      .toArray();
+  }
+
+  static async findSongsByQuery(
+    db: Db,
+    pluginId: string,
+    query: string,
+  ): Promise<Array<SongDbModel>> {
+    const normalizedQuery = query.trim();
+    if (normalizedQuery === "") {
+      return [];
+    }
+
+    const collection = db.collection<SongDbModel>(COLLECTION_NAME);
+    return await collection
+      .find(
+        {
+          pluginId: pluginId,
+          $or: [
+            {
+              name: { $regex: escapeRegex(normalizedQuery), $options: "i" },
+            },
+            {
+              title: { $regex: escapeRegex(normalizedQuery), $options: "i" },
+            },
+          ],
         },
         {},
       )

@@ -13,7 +13,6 @@ import {
   type PluginResolutionResult,
 } from "../../utils/musicSourcePluginResolver.js";
 import { extractPluginId } from "../../utils/pathUtils.js";
-import type { MusicSourcePlugin } from "../../types/plugins/music_sources.js";
 
 export default class StreamRoute extends Route {
   method = HttpMethods.GET;
@@ -52,6 +51,7 @@ export default class StreamRoute extends Route {
         response.status(404).send({ error: "Plugin not found" });
       }
     } catch (error) {
+      console.log(error);
       response.status(404).send({ error: "Song not found" });
     }
   };
@@ -61,7 +61,6 @@ export default class StreamRoute extends Route {
       return undefined;
     }
 
-    console.log(rangeHeader);
     const parsedRange = rangeHeader.match(/^[^=]+=([0-9]+)-.*$/);
     if (!parsedRange) {
       return undefined;

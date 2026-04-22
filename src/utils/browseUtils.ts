@@ -65,7 +65,6 @@ export class BrowseUtils {
 
     for (let song of songs) {
       const data = Song.fromDbModel(song);
-      data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
 
       resp.push(
         new BrowseResponse(`${pathPrefix}/${song.id}`, BrowseType.SONG, data),

@@ -1,3 +1,10 @@
+/*
+ * Created on Sat Apr 18 2026
+ *
+ * Author: Massimiliano Fanciulli
+ *
+ * GitHub: https://github.com/fanciulli
+ */
 import { join } from "path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

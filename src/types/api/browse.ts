@@ -23,7 +23,7 @@ export const BrowseSchema = {
         type: "object",
         properties: {
           id: { type: "string" },
-          type: { type: "string" },
+          type: { type: "string", enum: ["folder", "song"] },
           metadata: {
             type: "object",
             properties: {

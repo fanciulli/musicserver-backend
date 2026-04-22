@@ -18,6 +18,7 @@ export enum HttpHeaders {
 
 export enum MimeTypes {
   APPLICATION_OCTET_STREAM = "application/octet-stream",
+  IMAGE_SVG_XML = "image/svg+xml",
   TEXT_PLAIN = "text/plain",
 }
 
@@ -38,6 +39,8 @@ export const letters = [
   "G",
   "H",
   "I",
+  "J",
+  "K",
   "L",
   "M",
   "N",
@@ -49,5 +52,7 @@ export const letters = [
   "T",
   "U",
   "V",
+  "X",
+  "Y",
   "Z",
 ];

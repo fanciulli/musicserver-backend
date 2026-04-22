@@ -112,7 +112,7 @@ export class PluginManager {
     const categories = await listFolderNames(this.#pluginsFolder);
 
     for (let category of categories) {
-      this.#context.logger.info("loading category " + category);
+      this.#context.logger.info(`loading category ${category}`);
       let pluginList = new PluginList(category, this.#context);
       await pluginList.loadPluginsFromFolder(
         path.join(this.#pluginsFolder, category),

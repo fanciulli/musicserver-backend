@@ -7,3 +7,4 @@
  */
 export const PLUGIN_ID = "filesystem-music-source";
 export const PLUGIN_NAME = "Filesystem Music Source";
+export const DEFAULT_MUSIC_FOLDER = "/music";
