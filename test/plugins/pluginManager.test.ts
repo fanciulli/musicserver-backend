@@ -275,4 +275,53 @@ describe("PluginManager", () => {
       },
     );
   });
+
+  it("getPlugin returns the plugin when category and name are correct", async () => {
+    await withPluginFixtures(
+      { music_sources: ["fs-source"] },
+      spies,
+      async (tempRoot) => {
+        const pluginManager = await loadPluginManager(tempRoot);
+
+        const plugin = pluginManager.getPlugin(
+          "music_sources",
+          "music_sources-fs-source",
+        );
+
+        expect(plugin).toBeDefined();
+        expect(plugin?.id).toBe("music_sources-fs-source");
+      },
+    );
+  });
+
+  it("getPlugin returns undefined when category does not exist", async () => {
+    await withPluginFixtures(
+      { music_sources: ["fs-source"] },
+      spies,
+      async (tempRoot) => {
+        const pluginManager = await loadPluginManager(tempRoot);
+
+        const plugin = pluginManager.getPlugin(
+          "non_existent_category",
+          "music_sources-fs-source",
+        );
+
+        expect(plugin).toBeUndefined();
+      },
+    );
+  });
+
+  it("getPlugin returns undefined when plugin name does not exist in the category", async () => {
+    await withPluginFixtures(
+      { music_sources: ["fs-source"] },
+      spies,
+      async (tempRoot) => {
+        const pluginManager = await loadPluginManager(tempRoot);
+
+        const plugin = pluginManager.getPlugin("music_sources", "non-existent");
+
+        expect(plugin).toBeUndefined();
+      },
+    );
+  });
 });
