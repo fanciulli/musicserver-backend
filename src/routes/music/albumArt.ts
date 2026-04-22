@@ -19,7 +19,7 @@ export default class AlbumArtRoute extends Route {
   handler = async (request: any, response: any) => {
     const uri = request.query.id;
     const pluginId = extractPluginId(uri);
-    const pluginResult = await getPluginById(pluginId);
+    const pluginResult = await getPluginById(pluginId, this.getContext());
     if (pluginResult.error) {
       response
         .status(pluginResult.error.status)

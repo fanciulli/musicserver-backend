@@ -23,36 +23,9 @@ export enum MimeTypes {
 }
 
 export enum Format {
+  UNKNOWN = "UNKNOWN",
   MP3 = "MP3",
   FLAC = "FLAC",
   WAV = "WAV",
   AAC = "AAC",
 }
-
-export const letters = [
-  "A",
-  "B",
-  "C",
-  "D",
-  "E",
-  "F",
-  "G",
-  "H",
-  "I",
-  "J",
-  "K",
-  "L",
-  "M",
-  "N",
-  "O",
-  "P",
-  "Q",
-  "R",
-  "S",
-  "T",
-  "U",
-  "V",
-  "X",
-  "Y",
-  "Z",
-];

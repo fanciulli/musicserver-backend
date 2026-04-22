@@ -25,6 +25,14 @@ function createResponseMock() {
 }
 
 describe("ScanRoute", () => {
+  function createRoute() {
+    return new ScanRoute({
+      pluginManager: {},
+      database: {},
+      logger: { info: vi.fn(), error: vi.fn() },
+    } as any);
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -32,7 +40,7 @@ describe("ScanRoute", () => {
   it("fails when getPluginById invocation throws", async () => {
     mocks.getPluginById.mockRejectedValue(new Error("getPluginById failed"));
 
-    const route = new ScanRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await expect(
@@ -49,7 +57,7 @@ describe("ScanRoute", () => {
       },
     });
 
-    const route = new ScanRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await route.handler({ body: { id: "filesystem" } }, response);
@@ -68,7 +76,7 @@ describe("ScanRoute", () => {
       },
     });
 
-    const route = new ScanRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await expect(
@@ -84,7 +92,7 @@ describe("ScanRoute", () => {
       },
     });
 
-    const route = new ScanRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await route.handler({ body: { id: "filesystem" } }, response);

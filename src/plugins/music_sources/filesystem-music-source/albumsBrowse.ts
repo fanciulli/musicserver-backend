@@ -10,9 +10,7 @@ import { BrowseResponse } from "../../../types/api/browse.js";
 import { AlbumDbModel } from "../../../types/db/album.js";
 import { SongDbModel } from "../../../types/db/song.js";
 import { BrowseUtils } from "../../../utils/browseUtils.js";
-import { letters } from "../../../misc/constants.js";
-import { musicServerInstance } from "../../../server/musicServer.js";
-import { PLUGIN_ID } from "./constants.js";
+import { letters, PLUGIN_ID } from "./constants.js";
 import {
   createBrowseReponseFolderForLetters,
   createBrowseResponseFolder,
@@ -23,6 +21,7 @@ import {
 } from "./utils.js";
 
 export async function browseAlbums(
+  db: Db,
   sections: string[],
 ): Promise<BrowseResponse[]> {
   switch (sections.length) {
@@ -33,15 +32,19 @@ export async function browseAlbums(
       const scope = sections[1];
 
       if (scope === "ALL") {
-        return browseAlbumsAll();
+        return browseAlbumsAll(db);
       }
 
       if (isLetterSection(scope, letters)) {
-        return browseAlbumsByLetter(scope);
+        return browseAlbumsByLetter(db, scope);
       }
 
       if (isUuidSection(scope)) {
-        return browseSongsByAlbumId(scope, `${PLUGIN_ID}://albums/${scope}`);
+        return browseSongsByAlbumId(
+          db,
+          scope,
+          `${PLUGIN_ID}://albums/${scope}`,
+        );
       }
 
       return [];
@@ -57,6 +60,7 @@ export async function browseAlbums(
 
       if (scope === "ALL" || isLetterSection(scope, letters)) {
         return browseSongsByAlbumId(
+          db,
           albumId,
           `${PLUGIN_ID}://albums/${scope}/${albumId}`,
         );
@@ -65,6 +69,7 @@ export async function browseAlbums(
       if (isUuidSection(scope)) {
         // scope=ALBUM_ID, albumId=SONG_ID
         return browseSongByScopedPathAndSongId(
+          db,
           `${PLUGIN_ID}://albums/${scope}`,
           scope,
           albumId,
@@ -85,6 +90,7 @@ export async function browseAlbums(
         isUuidSection(songId)
       ) {
         return browseSongByScopedPathAndSongId(
+          db,
           `${PLUGIN_ID}://albums/${scope}/${albumId}`,
           albumId,
           songId,
@@ -113,20 +119,19 @@ export async function browseAlbumsRoot(): Promise<BrowseResponse[]> {
   return [allBrowseResponse].concat(lettersResponse);
 }
 
-export async function browseAlbumsAll(): Promise<BrowseResponse[]> {
-  const database: Db = musicServerInstance.getDatabase().client;
-  const albums = await AlbumDbModel.findAlbumsByPluginId(database, PLUGIN_ID);
+export async function browseAlbumsAll(db: Db): Promise<BrowseResponse[]> {
+  const albums = await AlbumDbModel.findAlbumsByPluginId(db, PLUGIN_ID);
   const albumsPath = `${PLUGIN_ID}://albums/ALL`;
 
   return BrowseUtils.createAlbumsFolderResponses(albumsPath, albums);
 }
 
 export async function browseAlbumsByLetter(
+  db: Db,
   letter: string,
 ): Promise<BrowseResponse[]> {
-  const database: Db = musicServerInstance.getDatabase().client;
   const albums = await AlbumDbModel.findAlbumsByStartingLetter(
-    database,
+    db,
     PLUGIN_ID,
     letter,
   );
@@ -136,30 +141,22 @@ export async function browseAlbumsByLetter(
 }
 
 async function browseSongsByAlbumId(
+  db: Db,
   albumId: string,
   pathPrefix: string,
 ): Promise<BrowseResponse[]> {
-  const database: Db = musicServerInstance.getDatabase().client;
-  const songs = await SongDbModel.findSongsByAlbumId(
-    database,
-    albumId,
-    PLUGIN_ID,
-  );
+  const songs = await SongDbModel.findSongsByAlbumId(db, albumId, PLUGIN_ID);
 
   return createSongBrowseResponses(pathPrefix, songs);
 }
 
 async function browseSongByScopedPathAndSongId(
+  db: Db,
   pathPrefix: string,
   albumId: string,
   songId: string,
 ): Promise<BrowseResponse[]> {
-  const database: Db = musicServerInstance.getDatabase().client;
-  const song = await SongDbModel.findByIdAndPluginId(
-    database,
-    songId,
-    PLUGIN_ID,
-  );
+  const song = await SongDbModel.findByIdAndPluginId(db, songId, PLUGIN_ID);
   if (!song || song.albumId !== albumId) {
     return [];
   }

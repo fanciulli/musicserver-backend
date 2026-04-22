@@ -8,6 +8,7 @@
 import { AlbumDbModel } from "../../../types/db/album.js";
 import { ArtistDbModel } from "../../../types/db/artist.js";
 import { SongDbModel } from "../../../types/db/song.js";
+import type { Context } from "../../../types/context.js";
 import type { Db } from "mongodb";
 import { listFiles } from "../../../utils/fsUtils.js";
 import {
@@ -17,15 +18,15 @@ import {
   type IAudioMetadata,
 } from "music-metadata";
 import { v4 } from "uuid";
-import { musicServerInstance } from "../../../server/musicServer.js";
 
 export class FileSystemScan {
   static async scan(
-    db: Db,
+    context: Context,
     pluginId: string,
     musicFolder: string,
   ): Promise<void> {
-    const logger = musicServerInstance.getLogger();
+    const db: Db = context.database;
+    const logger = context.logger;
     if (musicFolder.trim() === "") {
       throw new Error("musicFolder must be configured before scan");
     }
@@ -58,7 +59,7 @@ export class FileSystemScan {
           artists,
           filePath,
         );
-      } catch (ex) {
+      } catch (ex: any) {
         if (ex instanceof UnsupportedFileTypeError) {
           logger.info(
             `Skipping file ${filePath} because of and unsupported format`,
@@ -79,7 +80,7 @@ export class FileSystemScan {
     pluginId: string,
     fileMetadata: IAudioMetadata,
     artists: ArtistDbModel[],
-  ): Promise<AlbumDbModel> {
+  ): Promise<AlbumDbModel | undefined> {
     const name = fileMetadata.common?.album;
 
     if (name) {
@@ -98,7 +99,9 @@ export class FileSystemScan {
         album.id = v4();
         album.name = name;
         album.pluginId = pluginId;
-        album.artists = artists.map((artist) => artist.id);
+        album.artists = artists
+          .map((artist) => artist.id)
+          .filter((id) => id !== undefined);
         const coverImage = fileMetadata.common?.picture?.[0]?.data;
         if (coverImage) {
           album.cover = Buffer.from(coverImage).toString("base64");
@@ -145,10 +148,10 @@ export class FileSystemScan {
     db: Db,
     pluginId: string,
     fileMetadata: IAudioMetadata,
-    album: AlbumDbModel,
+    album: AlbumDbModel | undefined,
     artists: ArtistDbModel[],
     filePath: string,
-  ) {
+  ): Promise<SongDbModel | undefined> {
     const songName = fileMetadata.common?.title;
 
     if (songName) {
@@ -171,7 +174,12 @@ export class FileSystemScan {
         song.metadata?.set("filePath", filePath);
 
         await song.insert(db);
+        return song;
+      } else {
+        return songInDb;
       }
+    } else {
+      return;
     }
   }
 }

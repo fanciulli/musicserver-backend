@@ -33,6 +33,14 @@ function createResponseMock() {
 }
 
 describe("AlbumArtRoute", () => {
+  function createRoute() {
+    return new AlbumArtRoute({
+      pluginManager: {},
+      database: {},
+      logger: { info: vi.fn(), error: vi.fn() },
+    } as any);
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -42,7 +50,7 @@ describe("AlbumArtRoute", () => {
       throw new Error("extractPluginId failed");
     });
 
-    const route = new AlbumArtRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await expect(
@@ -54,7 +62,7 @@ describe("AlbumArtRoute", () => {
     mocks.extractPluginId.mockReturnValue("filesystem");
     mocks.getPluginById.mockRejectedValue(new Error("getPluginById failed"));
 
-    const route = new AlbumArtRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await expect(
@@ -71,7 +79,7 @@ describe("AlbumArtRoute", () => {
       },
     });
 
-    const route = new AlbumArtRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await route.handler({ query: { id: "filesystem://cover" } }, response);
@@ -92,7 +100,7 @@ describe("AlbumArtRoute", () => {
       },
     });
 
-    const route = new AlbumArtRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await route.handler({ query: { id: "filesystem://cover" } }, response);
@@ -114,7 +122,7 @@ describe("AlbumArtRoute", () => {
       },
     });
 
-    const route = new AlbumArtRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await route.handler({ query: { id: "filesystem://cover" } }, response);

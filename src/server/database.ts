@@ -10,7 +10,7 @@ import { listFiles } from "../utils/fsUtils.js";
 import path from "node:path";
 
 export class Database {
-  client: Db;
+  client?: Db;
 
   async connect(): Promise<void> {
     const uri = process.env.MONGO_URI || "mongodb://localhost:27017";
@@ -39,6 +39,6 @@ export class Database {
   }
 
   async disconnect(): Promise<void> {
-    await this.client.client.close();
+    await this.client?.client.close();
   }
 }

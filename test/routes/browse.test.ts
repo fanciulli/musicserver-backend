@@ -14,13 +14,6 @@ const mocks = vi.hoisted(() => ({
   getDatabase: vi.fn(),
 }));
 
-vi.mock("../../src/server/musicServer.js", () => ({
-  musicServerInstance: {
-    getPluginManager: () => mocks.getPluginManager(),
-    getDatabase: () => mocks.getDatabase(),
-  },
-}));
-
 vi.mock("../../src/utils/pathUtils.js", () => ({
   extractPluginId: (...args: unknown[]) => mocks.extractPluginId(...args),
 }));
@@ -42,8 +35,15 @@ describe("BrowseRoute", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getPluginManager.mockReturnValue({});
-    mocks.getDatabase.mockReturnValue({ client: {} });
+    mocks.getDatabase.mockReturnValue({});
   });
+  function createRoute() {
+    return new BrowseRoute({
+      pluginManager: mocks.getPluginManager(),
+      database: mocks.getDatabase(),
+      logger: { info: vi.fn(), error: vi.fn() },
+    } as any);
+  }
 
   it.each(["/", ""])("sends browser root when path is %s", async (path) => {
     const plugins = [
@@ -73,9 +73,9 @@ describe("BrowseRoute", () => {
     };
 
     mocks.getPluginManager.mockReturnValue(pluginManager);
-    mocks.getDatabase.mockReturnValue({ client: databaseClient });
+    mocks.getDatabase.mockReturnValue(databaseClient);
 
-    const route = new BrowseRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     const browsePathInPluginSpy = vi.spyOn(route, "browsePathInPlugin");
@@ -103,7 +103,7 @@ describe("BrowseRoute", () => {
       throw new Error("extractPluginId failed");
     });
 
-    const route = new BrowseRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await expect(
@@ -121,7 +121,7 @@ describe("BrowseRoute", () => {
       },
     });
 
-    const route = new BrowseRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await route.handler({ body: { path: "filesystem://albums" } }, response);
@@ -141,7 +141,7 @@ describe("BrowseRoute", () => {
       },
     });
 
-    const route = new BrowseRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await expect(
@@ -159,7 +159,7 @@ describe("BrowseRoute", () => {
       },
     });
 
-    const route = new BrowseRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await route.handler({ body: { path: "filesystem://albums" } }, response);

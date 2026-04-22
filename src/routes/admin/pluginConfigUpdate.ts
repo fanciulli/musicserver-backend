@@ -7,7 +7,6 @@
  */
 import { Route } from "../../types/route.js";
 import { HttpMethods } from "../../misc/constants.js";
-import { musicServerInstance } from "../../server/musicServer.js";
 import {
   PluginConfigUpdateSchema,
   PluginConfiguration,
@@ -20,13 +19,13 @@ export default class PluginConfigUpdateRoute extends Route {
   handler = async (request: any, response: any) => {
     const pluginId = request.params.pluginId;
     const settings = request.body.settings as Record<string, unknown>;
-    const pluginManager = musicServerInstance.getPluginManager();
 
-    const configResult = await pluginManager.updatePluginConfiguration(
-      pluginId,
-      settings,
-    );
-    if (configResult.error) {
+    const configResult =
+      await this.getContext().pluginManager.updatePluginConfiguration(
+        pluginId,
+        settings,
+      );
+    if ("error" in configResult) {
       response.status(configResult.error.status).send({
         error: configResult.error.message,
       });

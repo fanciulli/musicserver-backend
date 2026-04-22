@@ -6,19 +6,19 @@
  * GitHub: https://github.com/fanciulli
  */
 
-import type { PluginStatus } from "../../types/db/plugin.js";
+import { PluginStatus } from "../../types/db/plugin.js";
 import type { PluginConfigurationSettings } from "../../types/plugins/plugin.js";
 
 export class PluginListItem {
-  id: string;
-  name: string;
-  category: string;
-  status: PluginStatus;
+  id: string = "";
+  name: string = "";
+  category: string = "";
+  status: PluginStatus = PluginStatus.UNKNOWN;
 }
 
 export class PluginConfiguration {
-  pluginId: string;
-  settings: PluginConfigurationSettings;
+  pluginId: string = "";
+  settings: PluginConfigurationSettings = {} as PluginConfigurationSettings;
 }
 
 export const PluginsSchema = {

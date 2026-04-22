@@ -9,6 +9,7 @@ import { Db } from "mongodb";
 import { v4 } from "uuid";
 
 export enum PluginStatus {
+  UNKNOWN = "unknown",
   LOADED = "loaded",
   STARTED = "started",
   STOPPED = "stopped",
@@ -19,22 +20,23 @@ export enum PluginStatus {
 const COLLECTION_NAME = "plugins";
 
 export class PluginDBModel {
-  name: string;
-  pluginCategory: string;
-  pluginId: string;
-  status: PluginStatus;
+  name: string = "";
+  pluginCategory: string = "";
+  pluginId: string = "";
+  status: PluginStatus = PluginStatus.UNKNOWN;
 
   static async find(
     db: Db,
     category: string,
     id: string,
-  ): Promise<PluginDBModel> {
+  ): Promise<PluginDBModel | undefined> {
     const collection = db.collection<PluginDBModel>(COLLECTION_NAME);
 
-    return await collection.findOne({
+    const plugin = await collection.findOne({
       pluginCategory: category,
       pluginId: id,
     });
+    return plugin ? plugin : undefined;
   }
 
   static async assertPluginIsRegisteredInDB(
@@ -42,7 +44,7 @@ export class PluginDBModel {
     name: string,
     pluginCategory: string,
     pluginId: string,
-  ): Promise<PluginDBModel> {
+  ): Promise<PluginDBModel | undefined> {
     const collection = db.collection<PluginDBModel>(COLLECTION_NAME);
     const filter = {
       name: name,
@@ -61,7 +63,9 @@ export class PluginDBModel {
         },
       };
       await collection.updateOne(filter, doc, { upsert: true });
-      return await collection.findOne(filter);
+
+      const plugin = await collection.findOne(filter);
+      return plugin ? plugin : undefined;
     } else {
       return pluginInDb;
     }

@@ -46,7 +46,7 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
     });
 
     const plugin = new FilesystemMusicSourcePlugin({
-      database: { client: "db-client" },
+      database: "db-client",
       logger: { info: vi.fn() },
     } as any);
 
@@ -64,7 +64,7 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
     mocks.findPluginConfig.mockResolvedValue(undefined);
 
     const plugin = new FilesystemMusicSourcePlugin({
-      database: { client: "db-client" },
+      database: "db-client",
       logger: { info: vi.fn() },
     } as any);
 
@@ -80,7 +80,7 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
 
   it("updates musicFolder configuration and returns it", async () => {
     const plugin = new FilesystemMusicSourcePlugin({
-      database: { client: "db-client" },
+      database: "db-client",
       logger: { info: vi.fn() },
     } as any);
 
@@ -104,7 +104,7 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
 
   it("rejects invalid musicFolder configuration", async () => {
     const plugin = new FilesystemMusicSourcePlugin({
-      database: { client: "db-client" },
+      database: "db-client",
       logger: { info: vi.fn() },
     } as any);
 
@@ -116,16 +116,18 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
   it("uses configured musicFolder during scan", async () => {
     mocks.fileSystemScan.mockResolvedValue(undefined);
 
-    const plugin = new FilesystemMusicSourcePlugin({
-      database: { client: "db-client" },
+    const context = {
+      database: "db-client",
       logger: { info: vi.fn() },
-    } as any);
+    } as any;
+
+    const plugin = new FilesystemMusicSourcePlugin(context);
 
     await plugin.updateConfiguration({ musicFolder: "/data/audio" });
     await plugin.scan();
 
     expect(mocks.fileSystemScan).toHaveBeenCalledWith(
-      "db-client",
+      context,
       "filesystem-music-source",
       "/data/audio",
     );

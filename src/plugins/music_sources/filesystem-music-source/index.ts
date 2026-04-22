@@ -67,14 +67,12 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   }
 
   async scan(): Promise<void> {
-    const database: Db = this.context.database.client;
-    await FileSystemScan.scan(database, this.id, this.#musicFolder);
+    await FileSystemScan.scan(this.context, this.id, this.#musicFolder);
   }
 
   loadConfiguration = async (): Promise<void> => {
-    const database: Db = this.context.database.client;
     this.#musicFolder = await loadConfiguration(
-      database,
+      this.getDatabase(),
       this.category,
       this.id,
       DEFAULT_MUSIC_FOLDER,
@@ -88,9 +86,8 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   updateConfiguration = async (
     settings: PluginConfigurationValues,
   ): Promise<void> => {
-    const database: Db = this.context.database.client;
     this.#musicFolder = await updateConfiguration(
-      database,
+      this.getDatabase(),
       this.category,
       this.id,
       settings,
@@ -108,13 +105,14 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     }
 
     const [section] = pathSections;
+    const db: Db = this.getDatabase();
     switch (section) {
       case "albums":
-        return browseAlbums(pathSections);
+        return browseAlbums(db, pathSections);
       case "artists":
-        return browseArtists(pathSections);
+        return browseArtists(db, pathSections);
       case "songs":
-        return browseSongs(pathSections);
+        return browseSongs(db, pathSections);
       default:
         return [];
     }
@@ -126,7 +124,7 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
       return [];
     }
 
-    const database: Db = this.context.database.client;
+    const database: Db = this.getDatabase();
 
     switch (category) {
       case "album": {
@@ -174,11 +172,10 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     path: string,
     from?: number,
   ): Promise<[Readable, number | undefined]> {
-    const database: Db = this.context.database.client;
     const id = path.split("/").slice(-1)[0];
-    const song = await SongDbModel.findById(database, id);
+    const song = await SongDbModel.findById(this.getDatabase(), id);
     if (song && song.metadata) {
-      const filePath: string = song.metadata["filePath"];
+      const filePath: string = song.metadata?.get("filePath");
       const stats = await stat(filePath);
       const stream = createReadStream(filePath, {
         start: from,
@@ -190,9 +187,9 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   }
 
   async getAlbumArt(uri: string): Promise<Buffer<ArrayBuffer> | undefined> {
-    const database: Db = this.context.database.client;
     const id = uri.split("/").slice(-1)[0];
-    const song = await SongDbModel.findById(database, id);
+    const db: Db = this.getDatabase();
+    const song = await SongDbModel.findById(db, id);
     let albumId: string | undefined;
 
     this.context.logger.info(`Searching for id ${id}`);
@@ -203,7 +200,7 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     }
 
     if (albumId) {
-      const albumCover = await AlbumDbModel.findCoverById(database, albumId);
+      const albumCover = await AlbumDbModel.findCoverById(db, albumId);
       if (!albumCover) {
         return undefined;
       } else {

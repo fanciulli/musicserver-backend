@@ -7,10 +7,10 @@
  */
 import { Route } from "../../types/route.js";
 import { HttpMethods } from "../../misc/constants.js";
-import { musicServerInstance } from "../../server/musicServer.js";
 import { PluginsSchema } from "../../types/api/plugins.js";
 import { PluginListItem } from "../../types/api/plugins.js";
 import { PluginDBModel, PluginStatus } from "../../types/db/plugin.js";
+import type { Context } from "../../types/context.js";
 
 export default class PluginsRoute extends Route {
   method = HttpMethods.GET;
@@ -23,17 +23,14 @@ export default class PluginsRoute extends Route {
   };
 
   getInstalledPlugins = async (): Promise<Array<PluginListItem>> => {
-    const pluginManager = musicServerInstance.getPluginManager();
-    const database = musicServerInstance.getDatabase();
-    const plugins = pluginManager.getAllPlugins();
+    const context: Context = this.getContext();
+    const db = context.database;
+
+    const plugins = context.pluginManager.getAllPlugins();
     const response: Array<PluginListItem> = [];
 
     for (const plugin of plugins) {
-      const record = await PluginDBModel.find(
-        database.client,
-        plugin.category,
-        plugin.id,
-      );
+      const record = await PluginDBModel.find(db, plugin.category, plugin.id);
 
       const pluginItem = new PluginListItem();
       pluginItem.id = plugin.id;
