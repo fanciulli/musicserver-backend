@@ -5,8 +5,8 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { musicServerInstance } from "../server/musicServer.js";
 import { PluginDBModel, PluginStatus } from "../types/db/plugin.js";
+import type { Context } from "../types/context.js";
 import { MusicSourcePlugin } from "../types/plugins/music_sources.js";
 
 export type PluginResolutionError = {
@@ -22,10 +22,9 @@ export type PluginResolutionResult = {
 
 export async function getPluginById(
   pluginId: string,
+  context: Context,
 ): Promise<PluginResolutionResult> {
-  const pluginManager = musicServerInstance.getPluginManager();
-  const database = musicServerInstance.getDatabase();
-  const plugin = pluginManager.getPlugin(
+  const plugin = context.pluginManager.getPlugin(
     "music_sources",
     pluginId,
   ) as MusicSourcePlugin;
@@ -41,7 +40,7 @@ export async function getPluginById(
   }
 
   const pluginRecord = await PluginDBModel.find(
-    database.client,
+    context.database,
     plugin.category,
     plugin.id,
   );

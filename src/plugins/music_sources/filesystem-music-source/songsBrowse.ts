@@ -9,9 +9,7 @@ import { Db } from "mongodb";
 import { BrowseResponse } from "../../../types/api/browse.js";
 import { SongDbModel } from "../../../types/db/song.js";
 import { BrowseUtils } from "../../../utils/browseUtils.js";
-import { letters } from "../../../misc/constants.js";
-import { musicServerInstance } from "../../../server/musicServer.js";
-import { PLUGIN_ID } from "./constants.js";
+import { letters, PLUGIN_ID } from "./constants.js";
 import {
   createBrowseReponseFolderForLetters,
   createBrowseResponseFolder,
@@ -21,6 +19,7 @@ import {
 } from "./utils.js";
 
 export async function browseSongs(
+  db: Db,
   sections: string[],
 ): Promise<BrowseResponse[]> {
   switch (sections.length) {
@@ -31,15 +30,15 @@ export async function browseSongs(
       const scope = sections[1];
 
       if (scope === "ALL") {
-        return browseSongsAll();
+        return browseSongsAll(db);
       }
 
       if (isLetterSection(scope, letters)) {
-        return browseSongsByLetter(scope);
+        return browseSongsByLetter(db, scope);
       }
 
       if (isUuidSection(scope)) {
-        return browseSongByDirectId(scope);
+        return browseSongByDirectId(db, scope);
       }
 
       return [];
@@ -54,11 +53,11 @@ export async function browseSongs(
       }
 
       if (scope === "ALL") {
-        return browseSongsAllAndSongId(songId);
+        return browseSongsAllAndSongId(db, songId);
       }
 
       if (isLetterSection(scope, letters)) {
-        return browseSongsByLetterAndSongId(scope, songId);
+        return browseSongsByLetterAndSongId(db, scope, songId);
       }
 
       return [];
@@ -80,9 +79,8 @@ export async function browseSongsRoot(): Promise<BrowseResponse[]> {
   return [allBrowseResponse].concat(lettersResponse);
 }
 
-export async function browseSongsAll(): Promise<BrowseResponse[]> {
-  const database: Db = musicServerInstance.getDatabase().client;
-  const songs = await SongDbModel.findSongsByPluginId(database, PLUGIN_ID);
+export async function browseSongsAll(db: Db): Promise<BrowseResponse[]> {
+  const songs = await SongDbModel.findSongsByPluginId(db, PLUGIN_ID);
 
   return BrowseUtils.createSongsBrowseResponses(
     `${PLUGIN_ID}://songs/ALL`,
@@ -91,11 +89,11 @@ export async function browseSongsAll(): Promise<BrowseResponse[]> {
 }
 
 export async function browseSongsByLetter(
+  db: Db,
   letter: string,
 ): Promise<BrowseResponse[]> {
-  const database: Db = musicServerInstance.getDatabase().client;
   const songs = await SongDbModel.findSongsByStartingLetter(
-    database,
+    db,
     PLUGIN_ID,
     letter,
   );
@@ -107,28 +105,26 @@ export async function browseSongsByLetter(
 }
 
 export async function browseSongsAllAndSongId(
+  db: Db,
   songId: string,
 ): Promise<BrowseResponse[]> {
-  return browseSongsByScopeAndSongId("ALL", songId);
+  return browseSongsByScopeAndSongId(db, "ALL", songId);
 }
 
 export async function browseSongsByLetterAndSongId(
+  db: Db,
   letter: string,
   songId: string,
 ): Promise<BrowseResponse[]> {
-  return browseSongsByScopeAndSongId(letter, songId);
+  return browseSongsByScopeAndSongId(db, letter, songId);
 }
 
 async function browseSongsByScopeAndSongId(
+  db: Db,
   scope: string,
   songId: string,
 ): Promise<BrowseResponse[]> {
-  const database: Db = musicServerInstance.getDatabase().client;
-  const song = await SongDbModel.findByIdAndPluginId(
-    database,
-    songId,
-    PLUGIN_ID,
-  );
+  const song = await SongDbModel.findByIdAndPluginId(db, songId, PLUGIN_ID);
   if (!song) {
     return [];
   }
@@ -138,13 +134,11 @@ async function browseSongsByScopeAndSongId(
   ];
 }
 
-async function browseSongByDirectId(songId: string): Promise<BrowseResponse[]> {
-  const database: Db = musicServerInstance.getDatabase().client;
-  const song = await SongDbModel.findByIdAndPluginId(
-    database,
-    songId,
-    PLUGIN_ID,
-  );
+async function browseSongByDirectId(
+  db: Db,
+  songId: string,
+): Promise<BrowseResponse[]> {
+  const song = await SongDbModel.findByIdAndPluginId(db, songId, PLUGIN_ID);
   if (!song) {
     return [];
   }

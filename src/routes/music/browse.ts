@@ -7,7 +7,6 @@
  */
 import { Route } from "../../types/route.js";
 import { HttpMethods } from "../../misc/constants.js";
-import { musicServerInstance } from "../../server/musicServer.js";
 import {
   MUSIC_SOURCE_PLUGIN_CATEGORY,
   MusicSourcePlugin,
@@ -37,17 +36,18 @@ export default class BrowseRoute extends Route {
     }
   };
 
-  browserRoot = async () => {
-    const pluginManager = musicServerInstance.getPluginManager();
-    const database = musicServerInstance.getDatabase();
-    const plugins: Array<Plugin> = pluginManager.getPluginsInCategory(
+  async browserRoot() {
+    const context = this.getContext();
+    const database = context.database;
+
+    const plugins: Array<Plugin> = context.pluginManager.getPluginsInCategory(
       MUSIC_SOURCE_PLUGIN_CATEGORY,
     );
 
     const resp = [];
     for (let plugin of plugins) {
       const pluginRecord = await PluginDBModel.find(
-        database.client,
+        database,
         plugin.category,
         plugin.id,
       );
@@ -63,12 +63,12 @@ export default class BrowseRoute extends Route {
       );
     }
     return resp;
-  };
+  }
 
   browsePathInPlugin = async (request: any, response: any) => {
     const path = request.body.path;
     const pluginId = extractPluginId(path);
-    const pluginResult = await getPluginById(pluginId);
+    const pluginResult = await getPluginById(pluginId, this.getContext());
     if (pluginResult.error) {
       response
         .status(pluginResult.error.status)

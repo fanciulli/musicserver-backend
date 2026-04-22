@@ -6,15 +6,18 @@
  * GitHub: https://github.com/fanciulli
  */
 import type { Logger } from "../server/logging.js";
+import type { Context } from "../types/context.js";
 import { Route } from "../types/route.js";
 import { listFiles } from "../utils/fsUtils.js";
 import path from "node:path";
 
 export class RouteController {
   #logger: Logger;
+  #context?: Context;
 
-  constructor(logger: Logger) {
+  constructor(logger: Logger, context?: Context) {
     this.#logger = logger;
+    this.#context = context;
   }
 
   /**
@@ -26,7 +29,7 @@ export class RouteController {
 
     for (const routeFile of routeFiles) {
       const routeModule = await import(routeFile);
-      const route: Route = new routeModule.default();
+      const route: Route = new routeModule.default(this.#context);
 
       this.#logger.info(`Registering route: [${route.method}] ${route.url}`);
       await this.registerRoute(fastifyInstance, route);

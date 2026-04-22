@@ -21,7 +21,10 @@ export default class StreamRoute extends Route {
   handler = async (request: any, response: any) => {
     const streamId = request.query.id;
     const pluginId: string = extractPluginId(streamId);
-    const pluginResult: PluginResolutionResult = await getPluginById(pluginId);
+    const pluginResult: PluginResolutionResult = await getPluginById(
+      pluginId,
+      this.getContext(),
+    );
     if (pluginResult.error) {
       response
         .status(pluginResult.error.status)

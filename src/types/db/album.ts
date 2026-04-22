@@ -14,10 +14,10 @@ function escapeRegex(text: string): string {
 }
 
 export class AlbumDbModel {
-  id: string;
-  name: string;
-  pluginId: string;
-  artists: string[];
+  id: string = "";
+  name: string = "";
+  pluginId: string = "";
+  artists: string[] = [];
   cover?: string = undefined;
 
   static fromJson(json: Partial<AlbumDbModel>): AlbumDbModel {
@@ -40,7 +40,7 @@ export class AlbumDbModel {
     db: Db,
     name: string,
     pluginId: string,
-  ): Promise<AlbumDbModel> {
+  ): Promise<AlbumDbModel | undefined> {
     const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
 
     const album = await collection.findOne(
@@ -58,7 +58,7 @@ export class AlbumDbModel {
     return album ? AlbumDbModel.fromJson(album) : undefined;
   }
 
-  static async findById(db: Db, id: string): Promise<AlbumDbModel> {
+  static async findById(db: Db, id: string): Promise<AlbumDbModel | undefined> {
     const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
     const album = await collection.findOne(
       {

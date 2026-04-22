@@ -11,21 +11,22 @@ import type { PluginConfigurationValues } from "../plugins/plugin.js";
 const COLLECTION_NAME = "pluginConfigs";
 
 export class PluginConfigDBModel {
-  pluginCategory: string;
-  pluginId: string;
-  settings: PluginConfigurationValues;
+  pluginCategory: string = "";
+  pluginId: string = "";
+  settings: PluginConfigurationValues = {} as PluginConfigurationValues;
 
   static async findByPluginId(
     db: Db,
     pluginCategory: string,
     pluginId: string,
-  ): Promise<PluginConfigDBModel> {
+  ): Promise<PluginConfigDBModel | undefined> {
     const collection = db.collection<PluginConfigDBModel>(COLLECTION_NAME);
 
-    return await collection.findOne({
+    const pluginConfig = await collection.findOne({
       pluginCategory,
       pluginId,
     });
+    return pluginConfig ? pluginConfig : undefined;
   }
 
   static async upsertSettings(

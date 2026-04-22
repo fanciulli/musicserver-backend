@@ -16,13 +16,6 @@ const mocks = vi.hoisted(() => ({
   updatePluginConfiguration: vi.fn(),
 }));
 
-vi.mock("../../src/server/musicServer.js", () => ({
-  musicServerInstance: {
-    getPluginManager: () => mocks.getPluginManager(),
-    getDatabase: () => mocks.getDatabase(),
-  },
-}));
-
 vi.mock("../../src/types/db/plugin.js", () => ({
   PluginDBModel: {
     find: (...args: unknown[]) => mocks.find(...args),
@@ -48,10 +41,18 @@ function createResponseMock() {
   };
 }
 
+function createRouteContext() {
+  return {
+    pluginManager: mocks.getPluginManager(),
+    database: mocks.getDatabase(),
+    logger: { info: vi.fn(), error: vi.fn() },
+  } as any;
+}
+
 describe("Plugins routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.getDatabase.mockReturnValue({ client: "db-client" });
+    mocks.getDatabase.mockReturnValue("db-client");
     mocks.getPluginManager.mockReturnValue({
       getPluginConfiguration: (...args: unknown[]) =>
         mocks.getPluginConfiguration(...args),
@@ -61,13 +62,17 @@ describe("Plugins routes", () => {
   });
 
   it("uses /admin prefix for plugins routes", () => {
-    expect(new PluginsRoute().url).toBe("/admin/plugins");
-    expect(new PluginStopRoute().url).toBe("/admin/plugins/stop");
-    expect(new PluginStartRoute().url).toBe("/admin/plugins/start");
-    expect(new PluginConfigGetRoute().url).toBe(
+    expect(new PluginsRoute(createRouteContext()).url).toBe("/admin/plugins");
+    expect(new PluginStopRoute(createRouteContext()).url).toBe(
+      "/admin/plugins/stop",
+    );
+    expect(new PluginStartRoute(createRouteContext()).url).toBe(
+      "/admin/plugins/start",
+    );
+    expect(new PluginConfigGetRoute(createRouteContext()).url).toBe(
       "/admin/plugins/:pluginId/config",
     );
-    expect(new PluginConfigUpdateRoute().url).toBe(
+    expect(new PluginConfigUpdateRoute(createRouteContext()).url).toBe(
       "/admin/plugins/:pluginId/config",
     );
   });
@@ -82,7 +87,7 @@ describe("Plugins routes", () => {
     });
     mocks.find.mockResolvedValue(undefined);
 
-    const route = new PluginsRoute();
+    const route = new PluginsRoute(createRouteContext());
     const response = createResponseMock();
 
     await route.handler({}, response);
@@ -103,7 +108,7 @@ describe("Plugins routes", () => {
       getPluginById: vi.fn().mockReturnValue(undefined),
     });
 
-    const route = new PluginStopRoute();
+    const route = new PluginStopRoute(createRouteContext());
     const response = createResponseMock();
 
     await route.handler({ body: { pluginId: "missing" } }, response);
@@ -126,7 +131,7 @@ describe("Plugins routes", () => {
     });
     mocks.setStatus.mockResolvedValue(undefined);
 
-    const route = new PluginStopRoute();
+    const route = new PluginStopRoute(createRouteContext());
     const response = createResponseMock();
 
     await route.handler({ body: { pluginId: "p1" } }, response);
@@ -146,7 +151,7 @@ describe("Plugins routes", () => {
       getPluginById: vi.fn().mockReturnValue(undefined),
     });
 
-    const route = new PluginStartRoute();
+    const route = new PluginStartRoute(createRouteContext());
     const response = createResponseMock();
 
     await route.handler({ body: { pluginId: "missing" } }, response);
@@ -169,7 +174,7 @@ describe("Plugins routes", () => {
     });
     mocks.setStatus.mockResolvedValue(undefined);
 
-    const route = new PluginStartRoute();
+    const route = new PluginStartRoute(createRouteContext());
     const response = createResponseMock();
 
     await route.handler({ body: { pluginId: "p1" } }, response);
@@ -195,7 +200,13 @@ describe("Plugins routes", () => {
       },
     });
 
-    const route = new PluginConfigGetRoute();
+    const route = new PluginConfigGetRoute({
+      ...createRouteContext(),
+      pluginManager: {
+        getPluginConfiguration: (...args: unknown[]) =>
+          mocks.getPluginConfiguration(...args),
+      },
+    } as any);
     const response = createResponseMock();
 
     await route.handler({ params: { pluginId: "p1" } }, response);
@@ -221,7 +232,13 @@ describe("Plugins routes", () => {
       },
     });
 
-    const route = new PluginConfigGetRoute();
+    const route = new PluginConfigGetRoute({
+      ...createRouteContext(),
+      pluginManager: {
+        getPluginConfiguration: (...args: unknown[]) =>
+          mocks.getPluginConfiguration(...args),
+      },
+    } as any);
     const response = createResponseMock();
 
     await route.handler({ params: { pluginId: "missing" } }, response);
@@ -243,7 +260,7 @@ describe("Plugins routes", () => {
       },
     });
 
-    const route = new PluginConfigUpdateRoute();
+    const route = new PluginConfigUpdateRoute(createRouteContext());
     const response = createResponseMock();
 
     await route.handler(
@@ -281,7 +298,7 @@ describe("Plugins routes", () => {
       },
     });
 
-    const route = new PluginConfigUpdateRoute();
+    const route = new PluginConfigUpdateRoute(createRouteContext());
     const response = createResponseMock();
 
     await route.handler(

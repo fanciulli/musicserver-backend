@@ -11,17 +11,11 @@ import { BrowseType } from "../../src/types/api/browse.js";
 const PLUGIN_ID = "filesystem-music-source";
 const ALBUM_UUID = "aaaaaaaa-aaaa-1aaa-8aaa-aaaaaaaaaaaa";
 const SONG_UUID = "bbbbbbbb-bbbb-1bbb-8bbb-bbbbbbbbbbbb";
+const DB_CLIENT = "db-client";
 
 const mocks = vi.hoisted(() => ({
-  getDatabase: vi.fn(),
   findSongsByAlbumId: vi.fn(),
   findByIdAndPluginId: vi.fn(),
-}));
-
-vi.mock("../../src/server/musicServer.js", () => ({
-  musicServerInstance: {
-    getDatabase: () => mocks.getDatabase(),
-  },
 }));
 
 vi.mock("../../src/types/db/song.js", () => ({
@@ -38,7 +32,6 @@ import { browseAlbums } from "../../src/plugins/music_sources/filesystem-music-s
 describe("browseAlbums – direct album ID path", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.getDatabase.mockReturnValue({ client: "db-client" });
   });
 
   it("returns songs when called with a direct album UUID", async () => {
@@ -55,7 +48,7 @@ describe("browseAlbums – direct album ID path", () => {
     };
     mocks.findSongsByAlbumId.mockResolvedValue([song]);
 
-    const result = await browseAlbums(["albums", ALBUM_UUID]);
+    const result = await browseAlbums(DB_CLIENT as any, ["albums", ALBUM_UUID]);
 
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe(BrowseType.SONG);
@@ -63,7 +56,7 @@ describe("browseAlbums – direct album ID path", () => {
       `${PLUGIN_ID}://albums/${ALBUM_UUID}/${SONG_UUID}`,
     );
     expect(mocks.findSongsByAlbumId).toHaveBeenCalledWith(
-      "db-client",
+      DB_CLIENT,
       ALBUM_UUID,
       PLUGIN_ID,
     );
@@ -72,13 +65,16 @@ describe("browseAlbums – direct album ID path", () => {
   it("returns empty array when album has no songs", async () => {
     mocks.findSongsByAlbumId.mockResolvedValue([]);
 
-    const result = await browseAlbums(["albums", ALBUM_UUID]);
+    const result = await browseAlbums(DB_CLIENT as any, ["albums", ALBUM_UUID]);
 
     expect(result).toEqual([]);
   });
 
   it("returns empty array for non-UUID sections[1]", async () => {
-    const result = await browseAlbums(["albums", "not-a-uuid"]);
+    const result = await browseAlbums(DB_CLIENT as any, [
+      "albums",
+      "not-a-uuid",
+    ]);
 
     expect(result).toEqual([]);
     expect(mocks.findSongsByAlbumId).not.toHaveBeenCalled();
@@ -88,7 +84,6 @@ describe("browseAlbums – direct album ID path", () => {
 describe("browseAlbums – direct album ID + song ID path", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.getDatabase.mockReturnValue({ client: "db-client" });
   });
 
   it("returns a song when both album UUID and song UUID are provided", async () => {
@@ -105,7 +100,11 @@ describe("browseAlbums – direct album ID + song ID path", () => {
     };
     mocks.findByIdAndPluginId.mockResolvedValue(song);
 
-    const result = await browseAlbums(["albums", ALBUM_UUID, SONG_UUID]);
+    const result = await browseAlbums(DB_CLIENT as any, [
+      "albums",
+      ALBUM_UUID,
+      SONG_UUID,
+    ]);
 
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe(BrowseType.SONG);
@@ -113,7 +112,7 @@ describe("browseAlbums – direct album ID + song ID path", () => {
       `${PLUGIN_ID}://albums/${ALBUM_UUID}/${SONG_UUID}`,
     );
     expect(mocks.findByIdAndPluginId).toHaveBeenCalledWith(
-      "db-client",
+      DB_CLIENT,
       SONG_UUID,
       PLUGIN_ID,
     );
@@ -128,7 +127,11 @@ describe("browseAlbums – direct album ID + song ID path", () => {
     };
     mocks.findByIdAndPluginId.mockResolvedValue(song);
 
-    const result = await browseAlbums(["albums", ALBUM_UUID, SONG_UUID]);
+    const result = await browseAlbums(DB_CLIENT as any, [
+      "albums",
+      ALBUM_UUID,
+      SONG_UUID,
+    ]);
 
     expect(result).toEqual([]);
   });
@@ -136,7 +139,11 @@ describe("browseAlbums – direct album ID + song ID path", () => {
   it("returns empty array when song is not found", async () => {
     mocks.findByIdAndPluginId.mockResolvedValue(null);
 
-    const result = await browseAlbums(["albums", ALBUM_UUID, SONG_UUID]);
+    const result = await browseAlbums(DB_CLIENT as any, [
+      "albums",
+      ALBUM_UUID,
+      SONG_UUID,
+    ]);
 
     expect(result).toEqual([]);
   });

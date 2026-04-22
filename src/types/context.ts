@@ -7,19 +7,16 @@
  */
 import { Logger } from "../server/logging.js";
 import { PluginManager } from "../plugins/pluginManager.js";
-import { musicServerInstance } from "../server/musicServer.js";
-import type { Database } from "../server/database.js";
+import type { Db } from "mongodb";
 
 export class Context {
   logger: Logger;
   pluginManager: PluginManager;
-  database: Database;
+  database: Db;
 
-  static create(): Context {
-    const context = new Context();
-    context.logger = musicServerInstance.getLogger();
-    context.pluginManager = musicServerInstance.getPluginManager();
-    context.database = musicServerInstance.getDatabase();
-    return context;
+  constructor(logger: Logger, pluginManager: PluginManager, database: Db) {
+    this.logger = logger;
+    this.pluginManager = pluginManager;
+    this.database = database;
   }
 }

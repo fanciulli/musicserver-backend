@@ -32,6 +32,14 @@ function createResponseMock() {
 }
 
 describe("StreamRoute", () => {
+  function createRoute() {
+    return new StreamRoute({
+      pluginManager: {},
+      database: {},
+      logger: { info: vi.fn(), error: vi.fn() },
+    } as any);
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -41,7 +49,7 @@ describe("StreamRoute", () => {
       throw new Error("extractPluginId failed");
     });
 
-    const route = new StreamRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await expect(
@@ -53,7 +61,7 @@ describe("StreamRoute", () => {
     mocks.extractPluginId.mockReturnValue("filesystem");
     mocks.getPluginById.mockRejectedValue(new Error("getPluginById failed"));
 
-    const route = new StreamRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await expect(
@@ -70,7 +78,7 @@ describe("StreamRoute", () => {
       },
     });
 
-    const route = new StreamRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await route.handler({ query: { id: "filesystem://track" } }, response);
@@ -92,7 +100,7 @@ describe("StreamRoute", () => {
       },
     });
 
-    const route = new StreamRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await route.handler({ query: { id: "filesystem://track" } }, response);
@@ -124,7 +132,7 @@ describe("StreamRoute", () => {
       },
     });
 
-    const route = new StreamRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await route.handler(

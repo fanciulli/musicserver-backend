@@ -11,29 +11,28 @@ import type { FastifyInstance } from "fastify";
 import { RouteController } from "../routes/routeController.js";
 import { Database } from "./database.js";
 import { Logger } from "./logging.js";
-import { rm } from "node:fs/promises";
 import { createRollingLogger } from "./loggingRollingTransport.js";
+import { Context } from "../types/context.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-class MusicServer {
+export class MusicServer {
   #initDone: Boolean = false;
-  #database: Database;
-  #pluginManager: PluginManager;
-  #fastifyInstance: FastifyInstance;
-  #logger: Logger;
+  #database?: Database;
+  #pluginManager?: PluginManager;
+  #fastifyInstance?: FastifyInstance;
+  #logger: Logger = new Logger();
 
   async run(): Promise<void> {
     if (!this.#initDone) {
       this.#initDone = true;
 
       try {
-        this.#logger = new Logger();
         this.#logger.info("Starting Music Server");
 
         await this.#startDatabase();
-        await this.#startFastify();
         await this.#startPluginManager();
+        await this.#startFastify();
       } catch (err) {
         if (this.#logger) {
           this.#logger.error(
@@ -50,15 +49,20 @@ class MusicServer {
   async #startFastify() {
     const logger = createRollingLogger("fastify");
 
-    this.#fastifyInstance = fastify({ loggerInstance: logger });
+    this.#fastifyInstance = fastify({ loggerInstance: logger }) as any;
 
-    const rc = new RouteController(this.#logger);
+    const context = new Context(
+      this.#logger,
+      this.#pluginManager!,
+      this.#database!.client!,
+    );
+    const rc = new RouteController(this.#logger, context);
     await rc.registerRoutes(this.#fastifyInstance);
 
     // Run the server!
-    this.#fastifyInstance.listen({ port: 3005, host: "0.0.0.0" }, (err) => {
+    this.#fastifyInstance!.listen({ port: 3005, host: "0.0.0.0" }, (err) => {
       if (err) {
-        this.#fastifyInstance.log.error(err);
+        this.#fastifyInstance!.log.error(err);
         process.exit(1);
       }
     });
@@ -70,7 +74,13 @@ class MusicServer {
       "plugins",
     );
 
-    this.#pluginManager = new PluginManager(pluginsDir);
+    const context = new Context(
+      this.#logger,
+      [] as any,
+      this.#database!.client!,
+    );
+    this.#pluginManager = new PluginManager(pluginsDir, context);
+    context.pluginManager = this.#pluginManager;
 
     await this.#pluginManager.loadPlugins();
     await this.#pluginManager.startPlugins();
@@ -78,26 +88,12 @@ class MusicServer {
 
   async #startDatabase(): Promise<void> {
     this.#database = new Database();
+
+    if (!this.#database) {
+      throw new Error("Database initialization failed");
+    }
     await this.#database.start();
   }
-
-  getPluginManager(): PluginManager {
-    return this.#pluginManager;
-  }
-
-  getDatabase(): Database {
-    return this.#database;
-  }
-
-  getLogger(): Logger {
-    return this.#logger;
-  }
 }
 
-var musicServerInstance: MusicServer;
-
-if (musicServerInstance === undefined) {
-  musicServerInstance = new MusicServer();
-}
-
-export { musicServerInstance };
+export const musicServerInstance = new MusicServer();

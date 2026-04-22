@@ -16,7 +16,7 @@ export default class ScanRoute extends Route {
   schema = ScanSchema;
   handler = async (request: any, response: any) => {
     const pluginId = request.body.id;
-    const pluginResult = await getPluginById(pluginId);
+    const pluginResult = await getPluginById(pluginId, this.getContext());
     if (pluginResult.error) {
       response
         .status(pluginResult.error.status)

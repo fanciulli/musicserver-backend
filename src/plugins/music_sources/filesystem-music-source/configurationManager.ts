@@ -20,7 +20,7 @@ export async function loadConfiguration(
   pluginId: string,
   defaultMusicFolder: string,
 ): Promise<string> {
-  const pluginConfig: PluginConfigDBModel =
+  const pluginConfig: PluginConfigDBModel | undefined =
     await PluginConfigDBModel.findByPluginId(database, category, pluginId);
 
   if (!pluginConfig) {

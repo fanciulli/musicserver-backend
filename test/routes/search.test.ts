@@ -14,12 +14,6 @@ const mocks = vi.hoisted(() => ({
   getPluginManager: vi.fn(),
 }));
 
-vi.mock("../../src/server/musicServer.js", () => ({
-  musicServerInstance: {
-    getPluginManager: () => mocks.getPluginManager(),
-  },
-}));
-
 vi.mock("../../src/utils/musicSourcePluginResolver.js", () => ({
   getPluginById: (...args: unknown[]) => mocks.getPluginById(...args),
 }));
@@ -34,12 +28,20 @@ function createResponseMock() {
 }
 
 describe("SearchRoute", () => {
+  function createRoute() {
+    return new SearchRoute({
+      pluginManager: mocks.getPluginManager(),
+      database: {},
+      logger: { info: vi.fn(), error: vi.fn() },
+    } as any);
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("registers POST /music/search with the expected schema", () => {
-    const route = new SearchRoute();
+    const route = createRoute();
 
     expect(route.method).toBe(HttpMethods.POST);
     expect(route.url).toBe("/music/search");
@@ -57,7 +59,7 @@ describe("SearchRoute", () => {
       getPluginsInCategory: vi.fn().mockReturnValue([pluginOne, pluginTwo]),
     });
 
-    const route = new SearchRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await route.handler(
@@ -89,7 +91,7 @@ describe("SearchRoute", () => {
       plugin,
     });
 
-    const route = new SearchRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await route.handler(
@@ -103,7 +105,10 @@ describe("SearchRoute", () => {
       response,
     );
 
-    expect(mocks.getPluginById).toHaveBeenCalledWith("filesystem");
+    expect(mocks.getPluginById).toHaveBeenCalledWith(
+      "filesystem",
+      expect.anything(),
+    );
     expect(plugin.search).toHaveBeenCalledWith("queen", "song");
     expect(response.send).toHaveBeenCalledWith([
       { id: "filesystem://x", type: "song" },
@@ -119,7 +124,7 @@ describe("SearchRoute", () => {
       },
     });
 
-    const route = new SearchRoute();
+    const route = createRoute();
     const response = createResponseMock();
 
     await route.handler(

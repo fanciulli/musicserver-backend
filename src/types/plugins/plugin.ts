@@ -6,6 +6,7 @@
  * GitHub: https://github.com/fanciulli
  */
 import { Context } from "../context.js";
+import { Db } from "mongodb";
 
 export type PluginConfigurationVariables = Array<Record<string, string>>;
 
@@ -56,4 +57,12 @@ export abstract class Plugin {
         "Updating configuration for plugin " + this.category + "/" + this.id,
       );
     };
+
+  getDatabase(): Db {
+    if (!this.context.database) {
+      throw new Error("Database not available in plugin context");
+    }
+
+    return this.context.database;
+  }
 }

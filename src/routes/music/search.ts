@@ -11,7 +11,6 @@ import {
   SearchSchema,
   type SearchRequestBody,
 } from "../../types/api/search.js";
-import { musicServerInstance } from "../../server/musicServer.js";
 import {
   getPluginById,
   type PluginResolutionResult,
@@ -48,7 +47,10 @@ export default class SearchRoute extends Route {
     scheme?: string,
   ): Promise<MusicSourcePlugin[] | undefined> {
     if (scheme) {
-      const pluginResult: PluginResolutionResult = await getPluginById(scheme);
+      const pluginResult: PluginResolutionResult = await getPluginById(
+        scheme,
+        this.getContext(),
+      );
 
       if (pluginResult.plugin === undefined) {
         return undefined;
@@ -58,7 +60,7 @@ export default class SearchRoute extends Route {
       }
     }
 
-    const pluginManager = musicServerInstance.getPluginManager();
+    const pluginManager = this.getContext().pluginManager;
     return pluginManager.getPluginsInCategory(
       MUSIC_SOURCE_PLUGIN_CATEGORY,
     ) as MusicSourcePlugin[];

@@ -16,14 +16,22 @@ import type {
   PluginConfigurationValues,
 } from "../types/plugins/plugin.js";
 
-type PluginConfigurationResult = {
+type PluginConfigurationErrorResult = {
   pluginId: string;
-  settings?: PluginConfigurationSettings;
-  error?: {
+  error: {
     status: number;
     message: string;
   };
 };
+
+type PluginConfigurationSettingsResult = {
+  pluginId: string;
+  settings: PluginConfigurationSettings;
+};
+
+type PluginConfigurationResult =
+  | PluginConfigurationErrorResult
+  | PluginConfigurationSettingsResult;
 
 class PluginList {
   category: string;
@@ -56,7 +64,7 @@ class PluginList {
         this.#context.logger.info(
           `Loaded plugin ${pluginInstance.id} in category ${this.category}`,
         );
-      } catch (ex) {
+      } catch (ex: any) {
         this.#context.logger.error(
           `Cannot load plugin from file ${pluginIndexFile}: ${ex.message}`,
         );
@@ -70,7 +78,7 @@ class PluginList {
     const pluginInstance: Plugin = new pluginClass(this.#context);
 
     PluginDBModel.assertPluginIsRegisteredInDB(
-      this.#context.database.client,
+      this.#context.database,
       pluginInstance.name,
       pluginInstance.category,
       pluginInstance.id,
@@ -81,8 +89,8 @@ class PluginList {
 
   async startPlugins(): Promise<void> {
     for (let plugin of this.#plugins.values()) {
-      const result: PluginDBModel = await PluginDBModel.find(
-        this.#context.database.client,
+      const result: PluginDBModel | undefined = await PluginDBModel.find(
+        this.#context.database,
         plugin.category,
         plugin.id,
       );
@@ -103,9 +111,9 @@ export class PluginManager {
   #plugins: Map<string, PluginList> = new Map();
   #context: Context;
 
-  constructor(pluginsFolder: string) {
+  constructor(pluginsFolder: string, context: Context) {
     this.#pluginsFolder = pluginsFolder;
-    this.#context = Context.create();
+    this.#context = context;
   }
 
   async loadPlugins(): Promise<void> {
@@ -167,7 +175,7 @@ export class PluginManager {
 
     const settings = await plugin.getConfiguration();
     await PluginConfigDBModel.upsertSettings(
-      this.#context.database.client,
+      this.#context.database,
       plugin.category,
       plugin.id,
       settings.values,

@@ -5,7 +5,7 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { musicServerInstance } from "./server/musicServer.js";
+import { MusicServer } from "./server/musicServer.js";
 
 async function run() {
   console.log("888b     d888                   d8b.               .d8888b.");
@@ -28,6 +28,7 @@ async function run() {
   );
   console.log("");
 
+  const musicServerInstance = new MusicServer();
   await musicServerInstance.run();
 }
 

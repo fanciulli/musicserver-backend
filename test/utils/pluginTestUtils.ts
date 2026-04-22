@@ -21,10 +21,7 @@ export interface PluginTestSpies {
   listFolderNames: MockProxy<any>;
 }
 
-export function createPluginId(
-  category: string,
-  pluginName: string,
-): string {
+export function createPluginId(category: string, pluginName: string): string {
   return `${category}-${pluginName}`;
 }
 
@@ -151,9 +148,16 @@ export async function withPluginFixtures(
   }
 }
 
-export async function loadPluginManager(tempRoot: string) {
+export async function loadPluginManager(tempRoot: string, context?: unknown) {
   const { PluginManager } = await import("../../src/plugins/pluginManager.js");
-  const pluginManager = new PluginManager(tempRoot);
+  const pluginManager = new PluginManager(
+    tempRoot,
+    (context ?? {
+      logger: { info: () => undefined, error: () => undefined },
+      database: {},
+      pluginManager: {},
+    }) as any,
+  );
   await pluginManager.loadPlugins();
   return pluginManager;
 }
