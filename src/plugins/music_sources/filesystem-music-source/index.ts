@@ -175,7 +175,7 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     const id = path.split("/").slice(-1)[0];
     const song = await SongDbModel.findById(this.getDatabase(), id);
     if (song && song.metadata) {
-      const filePath: string = song.metadata?.get("filePath");
+      const filePath: string = song.metadata["filePath"];
       const stats = await stat(filePath);
       const stream = createReadStream(filePath, {
         start: from,

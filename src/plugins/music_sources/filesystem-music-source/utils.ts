@@ -83,7 +83,6 @@ export function createSongBrowseResponse(
   song: SongDbModel,
 ): BrowseResponse {
   const data = Song.fromDbModel(song);
-  data.id = `${song.pluginId}://${song.albumId}/${song.id}`;
 
   return new BrowseResponse(path, BrowseType.SONG, data);
 }
