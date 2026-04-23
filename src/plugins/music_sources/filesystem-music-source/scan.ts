@@ -171,7 +171,8 @@ export class FileSystemScan {
         song.diskNumber = fileMetadata.common.disk?.no
           ? fileMetadata.common.disk?.no
           : 1;
-        song.metadata?.set("filePath", filePath);
+        song.metadata = {};
+        song.metadata["filePath"] = filePath;
 
         await song.insert(db);
         return song;

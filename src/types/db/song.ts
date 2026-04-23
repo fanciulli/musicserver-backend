@@ -23,7 +23,7 @@ export class SongDbModel {
   artistsId?: string[];
   trackNumber?: number;
   diskNumber?: number;
-  metadata?: Map<string, any>;
+  metadata?: Record<string, any>;
 
   static async findById(db: Db, id: string): Promise<SongDbModel | null> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);

@@ -9,7 +9,6 @@ import { SongDbModel } from "../db/song.js";
 import { Format } from "../../misc/constants.js";
 
 export class Song {
-  id: string = "";
   title: string = "";
   artist: string = "";
   artistsId: string[] = [];
