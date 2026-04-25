@@ -88,7 +88,10 @@ export class FileSystemScan {
     const name = fileMetadata.common?.album;
 
     if (name) {
-      const albumInDb = await AlbumDbModel.find(db, name, pluginId);
+      const artistIds = artists
+        .map((artist) => artist.id)
+        .filter((id) => id !== undefined);
+      const albumInDb = await AlbumDbModel.find(db, name, pluginId, artistIds);
       if (albumInDb) {
         albumInDb.exists = true;
         if (albumInDb.cover === undefined) {
@@ -105,9 +108,7 @@ export class FileSystemScan {
         album.name = name;
         album.pluginId = pluginId;
         album.exists = true;
-        album.artists = artists
-          .map((artist) => artist.id)
-          .filter((id) => id !== undefined);
+        album.artists = artistIds;
         const coverImage = fileMetadata.common?.picture?.[0]?.data;
         if (coverImage) {
           album.cover = Buffer.from(coverImage).toString("base64");
@@ -164,7 +165,12 @@ export class FileSystemScan {
     const songName = fileMetadata.common?.title;
 
     if (songName) {
-      const songInDb = await SongDbModel.find(db, songName, pluginId, album?.id);
+      const songInDb = await SongDbModel.find(
+        db,
+        songName,
+        pluginId,
+        album?.id,
+      );
       if (!songInDb) {
         const song = new SongDbModel();
         song.name = songName;
