@@ -24,6 +24,7 @@ export class SongDbModel {
   trackNumber?: number;
   diskNumber?: number;
   metadata?: Record<string, any>;
+  exists?: boolean;
 
   static async findById(db: Db, id: string): Promise<SongDbModel | null> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
@@ -48,12 +49,16 @@ export class SongDbModel {
     db: Db,
     name: string,
     pluginId: string,
+    albumId?: string,
   ): Promise<SongDbModel | null> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
-    const filter = {
+    const filter: Record<string, any> = {
       name: name,
       pluginId: pluginId,
     };
+    if (albumId !== undefined) {
+      filter["albumId"] = albumId;
+    }
     return await collection.findOne(filter);
   }
 
@@ -158,10 +163,29 @@ export class SongDbModel {
     await collection.insertOne(this);
   }
 
+  async update(db: Db): Promise<void> {
+    const collection = db.collection<SongDbModel>(COLLECTION_NAME);
+    await collection.updateOne(
+      { id: this.id },
+      { $set: this },
+      { ignoreUndefined: true },
+    );
+  }
+
   static async deleteAll(db: Db, pluginId: string) {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
 
     await collection.deleteMany({ pluginId: pluginId });
+  }
+
+  static async markAllAsNotExisting(db: Db, pluginId: string): Promise<void> {
+    const collection = db.collection<SongDbModel>(COLLECTION_NAME);
+    await collection.updateMany({ pluginId: pluginId }, { $set: { exists: false } });
+  }
+
+  static async deleteNotExisting(db: Db, pluginId: string): Promise<void> {
+    const collection = db.collection<SongDbModel>(COLLECTION_NAME);
+    await collection.deleteMany({ pluginId: pluginId, exists: false });
   }
 }
 

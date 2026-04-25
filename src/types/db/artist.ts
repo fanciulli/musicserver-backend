@@ -17,6 +17,7 @@ export class ArtistDbModel {
   id?: string;
   name?: string;
   pluginId?: string;
+  exists?: boolean;
 
   static async find(
     db: Db,
@@ -86,10 +87,29 @@ export class ArtistDbModel {
     await collection.insertOne(this);
   }
 
+  async update(db: Db): Promise<void> {
+    const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
+    await collection.updateOne(
+      { id: this.id },
+      { $set: this },
+      { ignoreUndefined: true },
+    );
+  }
+
   static async deleteAll(db: Db, pluginId: string) {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
 
     await collection.deleteMany({ pluginId: pluginId });
+  }
+
+  static async markAllAsNotExisting(db: Db, pluginId: string): Promise<void> {
+    const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
+    await collection.updateMany({ pluginId: pluginId }, { $set: { exists: false } });
+  }
+
+  static async deleteNotExisting(db: Db, pluginId: string): Promise<void> {
+    const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
+    await collection.deleteMany({ pluginId: pluginId, exists: false });
   }
 
   static async findArtistsByQuery(
