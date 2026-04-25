@@ -171,20 +171,34 @@ describe("FileSystemScan.scan – lifecycle", () => {
     mocks.listFiles.mockResolvedValue([]);
   });
 
-  it("marks all entries as not existing at the start of scan", async () => {
+  it("marks all entries as not existing at the start and deletes them at the end of scan", async () => {
     await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
 
-    expect(mocks.artistMarkAllAsNotExisting).toHaveBeenCalledWith(DB_CLIENT, PLUGIN_ID);
-    expect(mocks.albumMarkAllAsNotExisting).toHaveBeenCalledWith(DB_CLIENT, PLUGIN_ID);
-    expect(mocks.songMarkAllAsNotExisting).toHaveBeenCalledWith(DB_CLIENT, PLUGIN_ID);
-  });
+    expect(mocks.artistMarkAllAsNotExisting).toHaveBeenCalledWith(
+      DB_CLIENT,
+      PLUGIN_ID,
+    );
+    expect(mocks.albumMarkAllAsNotExisting).toHaveBeenCalledWith(
+      DB_CLIENT,
+      PLUGIN_ID,
+    );
+    expect(mocks.songMarkAllAsNotExisting).toHaveBeenCalledWith(
+      DB_CLIENT,
+      PLUGIN_ID,
+    );
 
-  it("deletes non-existing entries at the end of scan", async () => {
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
-
-    expect(mocks.artistDeleteNotExisting).toHaveBeenCalledWith(DB_CLIENT, PLUGIN_ID);
-    expect(mocks.albumDeleteNotExisting).toHaveBeenCalledWith(DB_CLIENT, PLUGIN_ID);
-    expect(mocks.songDeleteNotExisting).toHaveBeenCalledWith(DB_CLIENT, PLUGIN_ID);
+    expect(mocks.artistDeleteNotExisting).toHaveBeenCalledWith(
+      DB_CLIENT,
+      PLUGIN_ID,
+    );
+    expect(mocks.albumDeleteNotExisting).toHaveBeenCalledWith(
+      DB_CLIENT,
+      PLUGIN_ID,
+    );
+    expect(mocks.songDeleteNotExisting).toHaveBeenCalledWith(
+      DB_CLIENT,
+      PLUGIN_ID,
+    );
   });
 
   it("throws when musicFolder is empty", async () => {
@@ -215,7 +229,7 @@ describe("FileSystemScan.scan – new data is inserted", () => {
     mocks.songFind.mockResolvedValue(null);
   });
 
-  it("inserts a new artist with exists=true when not found in DB", async () => {
+  it("inserts new artist, album and song with exists=true and does not call update", async () => {
     await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
 
     expect(mocks.artistInsert).toHaveBeenCalledOnce();
@@ -223,30 +237,18 @@ describe("FileSystemScan.scan – new data is inserted", () => {
     expect(insertedArtist.name).toBe("Test Artist");
     expect(insertedArtist.pluginId).toBe(PLUGIN_ID);
     expect(insertedArtist.exists).toBe(true);
-  });
-
-  it("inserts a new album with exists=true when not found in DB", async () => {
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
 
     expect(mocks.albumInsert).toHaveBeenCalledOnce();
     const insertedAlbum = mocks.albumInsert.mock.calls[0][1];
     expect(insertedAlbum.name).toBe("Test Album");
     expect(insertedAlbum.pluginId).toBe(PLUGIN_ID);
     expect(insertedAlbum.exists).toBe(true);
-  });
-
-  it("inserts a new song with exists=true when not found in DB", async () => {
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
 
     expect(mocks.songInsert).toHaveBeenCalledOnce();
     const insertedSong = mocks.songInsert.mock.calls[0][1];
     expect(insertedSong.name).toBe("Test Song");
     expect(insertedSong.pluginId).toBe(PLUGIN_ID);
     expect(insertedSong.exists).toBe(true);
-  });
-
-  it("does not call update when inserting new entries", async () => {
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
 
     expect(mocks.artistUpdate).not.toHaveBeenCalled();
     expect(mocks.albumUpdate).not.toHaveBeenCalled();
@@ -304,31 +306,23 @@ describe("FileSystemScan.scan – existing data is preserved and updated", () =>
     mocks.songFind.mockResolvedValue(existingSong);
   });
 
-  it("updates existing artist and sets exists=true", async () => {
+  it("updates existing artist, album and song setting exists=true and does not call insert", async () => {
     await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
 
     expect(existingArtist.exists).toBe(true);
     expect(existingArtist.update).toHaveBeenCalledOnce();
     expect(mocks.artistInsert).not.toHaveBeenCalled();
-  });
-
-  it("updates existing album and sets exists=true", async () => {
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
 
     expect(existingAlbum.exists).toBe(true);
     expect(existingAlbum.update).toHaveBeenCalledOnce();
     expect(mocks.albumInsert).not.toHaveBeenCalled();
-  });
-
-  it("updates existing song and sets exists=true", async () => {
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
 
     expect(existingSong.exists).toBe(true);
     expect(existingSong.update).toHaveBeenCalledOnce();
     expect(mocks.songInsert).not.toHaveBeenCalled();
   });
 
-  it("updates song fields (trackNumber, diskNumber, metadata) when song already exists", async () => {
+  it("updates song fields and preserves id, name and albumId when song already exists", async () => {
     mocks.parseFile.mockResolvedValue(
       makeMetadata({ track: { no: 5 }, disk: { no: 2 } }),
     );
@@ -338,10 +332,6 @@ describe("FileSystemScan.scan – existing data is preserved and updated", () =>
     expect(existingSong.trackNumber).toBe(5);
     expect(existingSong.diskNumber).toBe(2);
     expect(existingSong.metadata?.filePath).toBe("/music/song.mp3");
-  });
-
-  it("preserves song id and name when song already exists", async () => {
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
 
     expect(existingSong.id).toBe("song-id-1");
     expect(existingSong.name).toBe("Test Song");
@@ -375,9 +365,18 @@ describe("FileSystemScan.scan – stale data is removed", () => {
   it("calls deleteNotExisting for artists, albums and songs after scanning empty folder", async () => {
     await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
 
-    expect(mocks.artistDeleteNotExisting).toHaveBeenCalledWith(DB_CLIENT, PLUGIN_ID);
-    expect(mocks.albumDeleteNotExisting).toHaveBeenCalledWith(DB_CLIENT, PLUGIN_ID);
-    expect(mocks.songDeleteNotExisting).toHaveBeenCalledWith(DB_CLIENT, PLUGIN_ID);
+    expect(mocks.artistDeleteNotExisting).toHaveBeenCalledWith(
+      DB_CLIENT,
+      PLUGIN_ID,
+    );
+    expect(mocks.albumDeleteNotExisting).toHaveBeenCalledWith(
+      DB_CLIENT,
+      PLUGIN_ID,
+    );
+    expect(mocks.songDeleteNotExisting).toHaveBeenCalledWith(
+      DB_CLIENT,
+      PLUGIN_ID,
+    );
   });
 
   it("calls markAllAsNotExisting before scanning files", async () => {
@@ -397,7 +396,11 @@ describe("FileSystemScan.scan – stale data is removed", () => {
 
     await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
 
-    expect(callOrder.indexOf("markArtists")).toBeLessThan(callOrder.indexOf("listFiles"));
-    expect(callOrder.indexOf("listFiles")).toBeLessThan(callOrder.indexOf("deleteArtists"));
+    expect(callOrder.indexOf("markArtists")).toBeLessThan(
+      callOrder.indexOf("listFiles"),
+    );
+    expect(callOrder.indexOf("listFiles")).toBeLessThan(
+      callOrder.indexOf("deleteArtists"),
+    );
   });
 });
