@@ -6,6 +6,7 @@
  * GitHub: https://github.com/fanciulli
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Context } from "../../src/types/context.js";
 
 const PLUGIN_ID = "filesystem-music-source";
 const DB_CLIENT = "db-client";
@@ -142,10 +143,11 @@ vi.mock("../../src/types/db/song.js", () => ({
 
 import { FileSystemScan } from "../../src/plugins/music_sources/filesystem-music-source/scan.js";
 
-const makeContext = () => ({
-  database: DB_CLIENT as any,
-  logger: { info: vi.fn(), error: vi.fn() },
-});
+const makeContext = (): Context =>
+  ({
+    database: DB_CLIENT,
+    logger: { info: vi.fn(), error: vi.fn() },
+  }) as unknown as Context;
 
 const makeMetadata = (overrides: Record<string, any> = {}) => ({
   common: {
