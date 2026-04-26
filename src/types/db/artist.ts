@@ -19,6 +19,15 @@ export class ArtistDbModel {
   pluginId?: string;
   exists?: boolean;
 
+  static fromJson(json: Partial<ArtistDbModel>): ArtistDbModel {
+    const artist = new ArtistDbModel();
+    artist.id = json.id;
+    artist.name = json.name;
+    artist.pluginId = json.pluginId;
+    artist.exists = json.exists;
+    return artist;
+  }
+
   static async find(
     db: Db,
     name: string,
@@ -29,7 +38,8 @@ export class ArtistDbModel {
       name: name,
       pluginId: pluginId,
     };
-    return await collection.findOne(filter);
+    const artist = await collection.findOne(filter);
+    return artist ? ArtistDbModel.fromJson(artist) : null;
   }
 
   static async findById(db: Db, ids: string[]): Promise<ArtistDbModel[]> {
@@ -37,7 +47,8 @@ export class ArtistDbModel {
     const filter = {
       id: { $in: ids },
     };
-    return (await collection.find(filter)).toArray();
+    const artists = await (await collection.find(filter)).toArray();
+    return artists.map((artist) => ArtistDbModel.fromJson(artist));
   }
 
   static async findArtistsByPluginId(
@@ -46,11 +57,13 @@ export class ArtistDbModel {
   ): Promise<Array<ArtistDbModel>> {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
 
-    return await collection
+    const artists = await collection
       .find({
         pluginId: pluginId,
       })
       .toArray();
+
+    return artists.map((artist) => ArtistDbModel.fromJson(artist));
   }
 
   static async findArtistsByStartingLetter(
@@ -60,12 +73,14 @@ export class ArtistDbModel {
   ): Promise<Array<ArtistDbModel>> {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
 
-    return await collection
+    const artists = await collection
       .find({
         pluginId: pluginId,
         name: { $regex: `^${letter}.*`, $options: "i" },
       })
       .toArray();
+
+    return artists.map((artist) => ArtistDbModel.fromJson(artist));
   }
 
   static async findArtistById(
@@ -75,10 +90,12 @@ export class ArtistDbModel {
   ): Promise<ArtistDbModel | null> {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
 
-    return await collection.findOne({
+    const artist = await collection.findOne({
       id: id,
       pluginId: pluginId,
     });
+
+    return artist ? ArtistDbModel.fromJson(artist) : null;
   }
 
   async insert(db: Db): Promise<void> {
@@ -123,12 +140,14 @@ export class ArtistDbModel {
     }
 
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
-    return await collection
+    const artists = await collection
       .find({
         pluginId: pluginId,
         name: { $regex: escapeRegex(normalizedQuery), $options: "i" },
       })
       .toArray();
+
+    return artists.map((artist) => ArtistDbModel.fromJson(artist));
   }
 }
 
