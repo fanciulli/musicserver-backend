@@ -173,6 +173,12 @@ describe("FileSystemScan.scan – lifecycle", () => {
     mocks.listFiles.mockResolvedValue([]);
   });
 
+  it("throws when musicFolder is empty", async () => {
+    await expect(
+      FileSystemScan.scan(makeContext(), PLUGIN_ID, "  "),
+    ).rejects.toThrow("musicFolder must be configured before scan");
+  });
+
   it("marks all entries as not existing at the start and deletes them at the end of scan", async () => {
     await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
 
@@ -202,16 +208,10 @@ describe("FileSystemScan.scan – lifecycle", () => {
       PLUGIN_ID,
     );
   });
-
-  it("throws when musicFolder is empty", async () => {
-    await expect(
-      FileSystemScan.scan(makeContext(), PLUGIN_ID, "  "),
-    ).rejects.toThrow("musicFolder must be configured before scan");
-  });
 });
 
-describe("FileSystemScan.scan – new data is inserted", () => {
-  beforeEach(() => {
+describe("Successfully adds new data", () => {
+  it("Inserts new artist, album and song", async () => {
     vi.clearAllMocks();
     mocks.artistMarkAllAsNotExisting.mockResolvedValue(undefined);
     mocks.albumMarkAllAsNotExisting.mockResolvedValue(undefined);
@@ -229,9 +229,7 @@ describe("FileSystemScan.scan – new data is inserted", () => {
     mocks.artistFind.mockResolvedValue(null);
     mocks.albumFind.mockResolvedValue(null);
     mocks.songFind.mockResolvedValue(null);
-  });
 
-  it("inserts new artist, album and song with exists=true and does not call update", async () => {
     await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
 
     expect(mocks.artistInsert).toHaveBeenCalledOnce();
@@ -258,7 +256,7 @@ describe("FileSystemScan.scan – new data is inserted", () => {
   });
 });
 
-describe("FileSystemScan.scan – existing data is preserved and updated", () => {
+describe("Existing data is preserved and updated", () => {
   const existingArtist = {
     id: "artist-id-1",
     name: "Test Artist",
@@ -308,7 +306,7 @@ describe("FileSystemScan.scan – existing data is preserved and updated", () =>
     mocks.songFind.mockResolvedValue(existingSong);
   });
 
-  it("updates existing artist, album and song setting exists=true and does not call insert", async () => {
+  it("Updates existing artist, album and song", async () => {
     await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
 
     expect(existingArtist.exists).toBe(true);
@@ -324,7 +322,7 @@ describe("FileSystemScan.scan – existing data is preserved and updated", () =>
     expect(mocks.songInsert).not.toHaveBeenCalled();
   });
 
-  it("updates song fields and preserves id, name and albumId when song already exists", async () => {
+  it("Updates song fields and preserves id, name and albumId when song already exists", async () => {
     mocks.parseFile.mockResolvedValue(
       makeMetadata({ track: { no: 5 }, disk: { no: 2 } }),
     );
@@ -352,8 +350,8 @@ describe("FileSystemScan.scan – existing data is preserved and updated", () =>
   });
 });
 
-describe("FileSystemScan.scan – stale data is removed", () => {
-  beforeEach(() => {
+describe("Stale data is removed", () => {
+  it("marks before scanning and deletes non-existing entries after empty scan", async () => {
     vi.clearAllMocks();
     mocks.artistMarkAllAsNotExisting.mockResolvedValue(undefined);
     mocks.albumMarkAllAsNotExisting.mockResolvedValue(undefined);
@@ -362,26 +360,7 @@ describe("FileSystemScan.scan – stale data is removed", () => {
     mocks.albumDeleteNotExisting.mockResolvedValue(undefined);
     mocks.songDeleteNotExisting.mockResolvedValue(undefined);
     mocks.listFiles.mockResolvedValue([]);
-  });
 
-  it("calls deleteNotExisting for artists, albums and songs after scanning empty folder", async () => {
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
-
-    expect(mocks.artistDeleteNotExisting).toHaveBeenCalledWith(
-      DB_CLIENT,
-      PLUGIN_ID,
-    );
-    expect(mocks.albumDeleteNotExisting).toHaveBeenCalledWith(
-      DB_CLIENT,
-      PLUGIN_ID,
-    );
-    expect(mocks.songDeleteNotExisting).toHaveBeenCalledWith(
-      DB_CLIENT,
-      PLUGIN_ID,
-    );
-  });
-
-  it("calls markAllAsNotExisting before scanning files", async () => {
     const callOrder: string[] = [];
     mocks.artistMarkAllAsNotExisting.mockImplementation(() => {
       callOrder.push("markArtists");
@@ -403,6 +382,19 @@ describe("FileSystemScan.scan – stale data is removed", () => {
     );
     expect(callOrder.indexOf("listFiles")).toBeLessThan(
       callOrder.indexOf("deleteArtists"),
+    );
+
+    expect(mocks.artistDeleteNotExisting).toHaveBeenCalledWith(
+      DB_CLIENT,
+      PLUGIN_ID,
+    );
+    expect(mocks.albumDeleteNotExisting).toHaveBeenCalledWith(
+      DB_CLIENT,
+      PLUGIN_ID,
+    );
+    expect(mocks.songDeleteNotExisting).toHaveBeenCalledWith(
+      DB_CLIENT,
+      PLUGIN_ID,
     );
   });
 });
