@@ -19,6 +19,7 @@ export class AlbumDbModel {
   pluginId: string = "";
   artists: string[] = [];
   cover?: string = undefined;
+  exists?: boolean;
 
   static fromJson(json: Partial<AlbumDbModel>): AlbumDbModel {
     const album = new AlbumDbModel();
@@ -27,6 +28,7 @@ export class AlbumDbModel {
     album.pluginId = json.pluginId ?? "";
     album.artists = json.artists ?? [];
     album.cover = json.cover;
+    album.exists = json.exists;
     return album;
   }
 
@@ -36,24 +38,41 @@ export class AlbumDbModel {
     await collection.deleteMany({ pluginId: pluginId });
   }
 
+  static async markAllAsNotExisting(db: Db, pluginId: string): Promise<void> {
+    const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
+    await collection.updateMany(
+      { pluginId: pluginId },
+      { $set: { exists: false } },
+    );
+  }
+
+  static async deleteNotExisting(db: Db, pluginId: string): Promise<void> {
+    const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
+    await collection.deleteMany({ pluginId: pluginId, exists: false });
+  }
+
   static async find(
     db: Db,
     name: string,
     pluginId: string,
+    artists: string[] = [],
   ): Promise<AlbumDbModel | undefined> {
     const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
 
-    const album = await collection.findOne(
-      {
-        name: name,
-        pluginId: pluginId,
+    const query: Record<string, unknown> = {
+      name: name,
+      pluginId: pluginId,
+    };
+
+    if (artists.length > 0) {
+      query.artists = { $all: artists };
+    }
+
+    const album = await collection.findOne(query, {
+      projection: {
+        cover: 0,
       },
-      {
-        projection: {
-          cover: 0,
-        },
-      },
-    );
+    });
 
     return album ? AlbumDbModel.fromJson(album) : undefined;
   }
