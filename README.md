@@ -2,7 +2,7 @@
 
 # Music Server – Backend
 
-**Music Server** is a lightweight, self-hosted music streaming server built for broad compatibility.
+**Music Server** is a lightweight music streaming server built for broad compatibility.
 All client interaction is handled through well-defined **REST APIs**, making it easy to integrate
 with any HTTP-capable client — whether a web browser, a mobile app, or a third-party application.
 
@@ -31,18 +31,17 @@ This repository contains the **backend** component of the Music Server project.
 
 From day one, the server is built around the concept of **plugins**.
 Every music source is a plugin that can be installed without modifying the core server.
-This design allows the server to be expanded with new capabilities simply by dropping a new plugin
-directory into the configured plugin folder — no rebuild required.
+This design allows the server to be expanded with new capabilities simply by dropping a new plugin into the configured plugin folder — no rebuild required.
 
 Key technologies:
 
-| Technology     | Role                            |
-| -------------- | ------------------------------- |
-| **Fastify**    | HTTP framework                  |
-| **MongoDB**    | Persistent storage              |
-| **TypeScript** | Language                        |
-| **Vitest**     | Unit testing                    |
-| **pino-roll**  | Rolling-file structured logging |
+| Technology     | Role               |
+| -------------- | ------------------ |
+| **Fastify**    | HTTP framework     |
+| **MongoDB**    | Persistent storage |
+| **TypeScript** | Language           |
+| **Vitest**     | Unit testing       |
+| **Docker**.    | Containerization   |
 
 ---
 
@@ -50,9 +49,8 @@ Key technologies:
 
 ### Prerequisites
 
-- **Node.js**. We develop Music Server using the latest stable version.
-- **MongoDB** instance (local or remote)
-- `MONGO_URI` environment variable with the MongoDB connection string (default: `mongodb://localhost:27017`)
+- **Node.js**. We develop Music Server using the latest stable version, please use the same. Current version: [25.9.0](https://nodejs.org/en/blog/release/v25.9.0)
+- **MongoDB** instance (local or remote)ì
 
 ### Installation
 
