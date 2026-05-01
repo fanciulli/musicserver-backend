@@ -2,12 +2,6 @@ name: Build and Push Docker Image
 
 on:
   workflow_run:
-    workflows:
-      - Unit Tests
-    types:
-      - completed
-    branches:
-      - main
 
 permissions:
   contents: read
@@ -44,6 +38,9 @@ jobs:
           echo "docker_tag=${dockerTag}" >> "$GITHUB_OUTPUT"
           echo "image=${image}" >> "$GITHUB_OUTPUT"
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -59,5 +56,6 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.vars.outputs.image }}:${{ steps.vars.outputs.docker_tag }}
