@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Resolve Docker tag
@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          firstTag="$(git tag --points-at "${{ github.event.workflow_run.head_sha }}" | head -n 1)"
+          firstTag="$(git tag --points-at "${{ github.ref_name }}" | head -n 1)"
 
           if [[ -n "$firstTag" ]]; then
             dockerTag="$firstTag"
