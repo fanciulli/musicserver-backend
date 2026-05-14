@@ -166,6 +166,27 @@ const makeMetadata = (overrides: Record<string, any> = {}) => ({
   },
 });
 
+const createDeferred = <T>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+
+  return { promise, resolve };
+};
+
+const waitFor = async (predicate: () => boolean, attempts = 20) => {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (predicate()) {
+      return;
+    }
+
+    await Promise.resolve();
+  }
+
+  throw new Error("Timed out waiting for condition");
+};
+
 describe("FileSystemScan.scan – lifecycle", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -212,6 +233,45 @@ describe("FileSystemScan.scan – lifecycle", () => {
       DB_CLIENT,
       PLUGIN_ID,
     );
+  });
+
+  it("serializes concurrent scans", async () => {
+    const deferredFiles = createDeferred<Array<string>>();
+
+    mocks.listFiles.mockReturnValue(deferredFiles.promise);
+    mocks.parseFile.mockResolvedValue(makeMetadata());
+    mocks.artistFind.mockResolvedValue(null);
+    mocks.albumFind.mockResolvedValue(null);
+    mocks.songFind.mockResolvedValue(null);
+    mocks.artistInsert.mockResolvedValue(undefined);
+    mocks.albumInsert.mockResolvedValue(undefined);
+    mocks.songInsert.mockResolvedValue(undefined);
+
+    const firstScan = FileSystemScan.scan(
+      makeContext(),
+      PLUGIN_ID,
+      MUSIC_FOLDER,
+    );
+    const secondScan = FileSystemScan.scan(
+      makeContext(),
+      PLUGIN_ID,
+      MUSIC_FOLDER,
+    );
+
+    try {
+      await waitFor(() => mocks.listFiles.mock.calls.length === 1);
+
+      expect(mocks.listFiles).toHaveBeenCalledTimes(1);
+
+      deferredFiles.resolve(["/music/song.mp3"]);
+
+      await firstScan;
+      await secondScan;
+
+      expect(mocks.listFiles).toHaveBeenCalledTimes(2);
+    } finally {
+      deferredFiles.resolve(["/music/song.mp3"]);
+    }
   });
 });
 
@@ -286,6 +346,8 @@ describe("Existing data is preserved and updated", () => {
     pluginId: PLUGIN_ID,
     albumId: "album-id-1",
     exists: false,
+    trackNumber: 1,
+    diskNumber: 1,
     metadata: { filePath: "/old/path/song.mp3" },
     update: vi.fn().mockResolvedValue(undefined),
   };

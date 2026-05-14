@@ -97,7 +97,7 @@ describe("ScanRoute", () => {
 
     await route.handler({ body: { id: "filesystem" } }, response);
 
-    expect(response.send).toHaveBeenCalledWith({ status: "Scan completed" });
+    expect(response.send).toHaveBeenCalledWith({ status: "Scan initiated" });
     expect(response.status).not.toHaveBeenCalled();
   });
 });

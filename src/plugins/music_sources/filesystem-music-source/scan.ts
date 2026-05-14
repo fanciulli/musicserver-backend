@@ -21,63 +21,96 @@ import { v4 } from "uuid";
 import { linkArtists } from "./utils.js";
 
 export class FileSystemScan {
+  static #scanQueue: Promise<void> = Promise.resolve();
+  static #artistMap: Map<string, ArtistDbModel> = new Map<
+    string,
+    ArtistDbModel
+  >();
+  static #albumMap: Map<string, AlbumDbModel> = new Map<string, AlbumDbModel>();
+
   static async scan(
     context: Context,
     pluginId: string,
     musicFolder: string,
   ): Promise<void> {
-    const db: Db = context.database;
-    const logger = context.logger;
     if (musicFolder.trim() === "") {
       throw new Error("musicFolder must be configured before scan");
     }
 
-    await ArtistDbModel.markAllAsNotExisting(db, pluginId);
-    await AlbumDbModel.markAllAsNotExisting(db, pluginId);
-    await SongDbModel.markAllAsNotExisting(db, pluginId);
+    let releaseScanQueue: (() => void) | undefined;
+    const previousScan = FileSystemScan.#scanQueue;
+    FileSystemScan.#scanQueue = new Promise<void>((resolve) => {
+      releaseScanQueue = resolve;
+    });
 
-    const files = await listFiles(musicFolder);
-    for (let filePath of files) {
-      try {
-        const fileMetadata: IAudioMetadata = await parseFile(filePath);
+    const db: Db = context.database;
+    const logger = context.logger;
 
-        const artists = await FileSystemScan.#upsertArtits(
-          db,
-          pluginId,
-          fileMetadata,
-        );
-        const album = await FileSystemScan.#upsertAlbum(
-          db,
-          pluginId,
-          fileMetadata,
-          artists,
-        );
-        await FileSystemScan.#upsertSong(
-          db,
-          pluginId,
-          fileMetadata,
-          album,
-          artists,
-          filePath,
-        );
-      } catch (ex: any) {
-        if (ex instanceof UnsupportedFileTypeError) {
-          logger.info(
-            `Skipping file ${filePath} because of and unsupported format`,
+    await previousScan;
+    const startTime = Date.now();
+    try {
+      logger.info(`Starting scan of music folder ${musicFolder}`);
+
+      await ArtistDbModel.markAllAsNotExisting(db, pluginId);
+      await AlbumDbModel.markAllAsNotExisting(db, pluginId);
+      await SongDbModel.markAllAsNotExisting(db, pluginId);
+
+      const files = await listFiles(musicFolder);
+      const totalFiles = files.length;
+      logger.info(`${totalFiles} files to scan.`);
+
+      for (let filePath of files) {
+        try {
+          const fileMetadata: IAudioMetadata = await parseFile(filePath);
+
+          const artists = await FileSystemScan.#upsertArtits(
+            db,
+            pluginId,
+            fileMetadata,
           );
-        } else if (ex instanceof CouldNotDetermineFileTypeError) {
-          logger.info(
-            `Skipping file ${filePath} because its file type cannot be determined`,
+          const album = await FileSystemScan.#upsertAlbum(
+            db,
+            pluginId,
+            fileMetadata,
+            artists,
           );
-        } else {
-          logger.error(ex);
+          await FileSystemScan.#upsertSong(
+            db,
+            pluginId,
+            fileMetadata,
+            album,
+            artists,
+            filePath,
+          );
+        } catch (ex: any) {
+          if (ex instanceof UnsupportedFileTypeError) {
+            logger.debug(
+              `Skipping file ${filePath} because of and unsupported format`,
+            );
+          } else if (ex instanceof CouldNotDetermineFileTypeError) {
+            logger.debug(
+              `Skipping file ${filePath} because its file type cannot be determined`,
+            );
+          } else {
+            logger.debug(ex);
+          }
         }
       }
-    }
 
-    await ArtistDbModel.deleteNotExisting(db, pluginId);
-    await AlbumDbModel.deleteNotExisting(db, pluginId);
-    await SongDbModel.deleteNotExisting(db, pluginId);
+      await ArtistDbModel.deleteNotExisting(db, pluginId);
+      await AlbumDbModel.deleteNotExisting(db, pluginId);
+      await SongDbModel.deleteNotExisting(db, pluginId);
+    } finally {
+      releaseScanQueue?.();
+
+      const stopTime = Date.now();
+      logger.info(
+        `Scan of music folder ${musicFolder} completed. Time taken: ${(stopTime - startTime) / 1000}s`,
+      );
+
+      FileSystemScan.#artistMap.clear();
+      FileSystemScan.#albumMap.clear();
+    }
   }
 
   static async #upsertAlbum(
@@ -92,7 +125,12 @@ export class FileSystemScan {
       const artistIds = artists
         .map((artist) => artist.id)
         .filter((id) => id !== undefined);
-      const albumInDb = await AlbumDbModel.find(db, name, pluginId, artistIds);
+
+      const cachedAlbumKey = `${name}-${artistIds.join("-")}`;
+      const cachedAlbum = FileSystemScan.#albumMap.get(cachedAlbumKey);
+      const albumInDb = cachedAlbum
+        ? cachedAlbum
+        : await AlbumDbModel.find(db, name, pluginId, artistIds);
       if (albumInDb) {
         albumInDb.exists = true;
         if (albumInDb.cover === undefined) {
@@ -102,6 +140,10 @@ export class FileSystemScan {
           }
         }
         await albumInDb.update(db);
+
+        if (!cachedAlbum) {
+          FileSystemScan.#albumMap.set(cachedAlbumKey, albumInDb);
+        }
         return albumInDb;
       } else {
         const album = new AlbumDbModel();
@@ -114,6 +156,10 @@ export class FileSystemScan {
         if (coverImage) {
           album.cover = Buffer.from(coverImage).toString("base64");
         }
+        if (!cachedAlbum) {
+          FileSystemScan.#albumMap.set(cachedAlbumKey, album);
+        }
+
         album.insert(db);
         return album;
       }
@@ -132,11 +178,19 @@ export class FileSystemScan {
     if (artists) {
       const dbArtists = [];
       for (let artist of artists) {
-        const artistInDb = await ArtistDbModel.find(db, artist, pluginId); // TODO: introduce cache
+        const cachedArtist = FileSystemScan.#artistMap.get(artist);
+
+        const artistInDb = cachedArtist
+          ? cachedArtist
+          : await ArtistDbModel.find(db, artist, pluginId); // TODO: introduce cache
         if (artistInDb) {
           artistInDb.exists = true;
           await artistInDb.update(db);
           dbArtists.push(artistInDb);
+
+          if (!cachedArtist) {
+            FileSystemScan.#artistMap.set(artist, artistInDb);
+          }
         } else {
           const dbArtist = new ArtistDbModel();
           dbArtist.id = v4();
@@ -146,6 +200,10 @@ export class FileSystemScan {
 
           await dbArtist.insert(db);
           dbArtists.push(dbArtist);
+
+          if (!cachedArtist) {
+            FileSystemScan.#artistMap.set(artist, dbArtist);
+          }
         }
       }
 
