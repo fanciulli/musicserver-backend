@@ -17,4 +17,8 @@ export class Logger {
   error(message: string): void {
     logger.error(message);
   }
+
+  debug(message: string): void {
+    logger.debug(message);
+  }
 }

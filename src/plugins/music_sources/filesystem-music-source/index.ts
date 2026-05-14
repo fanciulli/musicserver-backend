@@ -67,7 +67,8 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   }
 
   async scan(): Promise<void> {
-    await FileSystemScan.scan(this.context, this.id, this.#musicFolder);
+    // making this run asynchronously in order not to block to the API request.
+    FileSystemScan.scan(this.context, this.id, this.#musicFolder);
   }
 
   loadConfiguration = async (): Promise<void> => {
