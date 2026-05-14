@@ -3,6 +3,11 @@
 A machine-readable [OpenAPI 3.0 specification](./openapi.yaml) is available for download.
 It can be imported directly into tools such as Swagger UI, Postman, or Insomnia.
 
+- [← README](../README.md)
+- [Introduction](./introduction.md)
+- [Architecture](./architecture.md)
+- [Building Blocks](./building-blocks.md)
+
 The following sections summarise each endpoint.
 
 ---
@@ -84,6 +89,32 @@ The plugin discovers and indexes its sources and persists the results.
 
 ---
 
+### `POST /music/search`
+
+Searches the music library across all active music-source plugins, or within a specific plugin when `scheme` is provided.
+
+**Request body**
+
+```json
+{ "query": "nirvana", "category": "album", "scheme": "filesystem-music-source" }
+```
+
+| Field      | Type                                | Required | Description                                                      |
+| ---------- | ----------------------------------- | -------- | ---------------------------------------------------------------- |
+| `query`    | string                              | Yes      | Search term                                                      |
+| `category` | `"album"` \| `"artist"` \| `"song"` | Yes      | Type of content to search                                        |
+| `scheme`   | string                              | No       | Restricts the search to a single plugin identified by its scheme |
+
+**Response `200`** – flat array of `BrowseItem` objects matching the query
+
+**Response `404`**
+
+```json
+{ "error": "Specified plugin not found or not searchable" }
+```
+
+---
+
 ### `GET /music/stream`
 
 Streams an audio file to the client.
@@ -129,11 +160,15 @@ Returns the cover art image for an album.
 
 **Response `200`** – binary image (`application/octet-stream`)
 
+If no album art is found for the given `id`, a default SVG placeholder image (`image/svg+xml`) is returned with status `200`.
+
 **Response `404`**
 
 ```json
 { "error": "Album art not found" }
 ```
+
+Returned only when an unexpected error occurs while retrieving the art.
 
 ---
 

@@ -31,9 +31,9 @@ export class FileSystemScan {
       throw new Error("musicFolder must be configured before scan");
     }
 
-    await ArtistDbModel.deleteAll(db, pluginId);
-    await AlbumDbModel.deleteAll(db, pluginId);
-    await SongDbModel.deleteAll(db, pluginId);
+    await ArtistDbModel.markAllAsNotExisting(db, pluginId);
+    await AlbumDbModel.markAllAsNotExisting(db, pluginId);
+    await SongDbModel.markAllAsNotExisting(db, pluginId);
 
     const files = await listFiles(musicFolder);
     for (let filePath of files) {
@@ -73,6 +73,10 @@ export class FileSystemScan {
         }
       }
     }
+
+    await ArtistDbModel.deleteNotExisting(db, pluginId);
+    await AlbumDbModel.deleteNotExisting(db, pluginId);
+    await SongDbModel.deleteNotExisting(db, pluginId);
   }
 
   static async #upsertAlbum(
@@ -84,24 +88,27 @@ export class FileSystemScan {
     const name = fileMetadata.common?.album;
 
     if (name) {
-      const albumInDb = await AlbumDbModel.find(db, name, pluginId);
+      const artistIds = artists
+        .map((artist) => artist.id)
+        .filter((id) => id !== undefined);
+      const albumInDb = await AlbumDbModel.find(db, name, pluginId, artistIds);
       if (albumInDb) {
+        albumInDb.exists = true;
         if (albumInDb.cover === undefined) {
           const coverImage = fileMetadata.common?.picture?.[0]?.data;
           if (coverImage) {
             albumInDb.cover = Buffer.from(coverImage).toString("base64");
-            await albumInDb.update(db);
           }
         }
+        await albumInDb.update(db);
         return albumInDb;
       } else {
         const album = new AlbumDbModel();
         album.id = v4();
         album.name = name;
         album.pluginId = pluginId;
-        album.artists = artists
-          .map((artist) => artist.id)
-          .filter((id) => id !== undefined);
+        album.exists = true;
+        album.artists = artistIds;
         const coverImage = fileMetadata.common?.picture?.[0]?.data;
         if (coverImage) {
           album.cover = Buffer.from(coverImage).toString("base64");
@@ -126,12 +133,15 @@ export class FileSystemScan {
       for (let artist of artists) {
         const artistInDb = await ArtistDbModel.find(db, artist, pluginId); // TODO: introduce cache
         if (artistInDb) {
+          artistInDb.exists = true;
+          await artistInDb.update(db);
           dbArtists.push(artistInDb);
         } else {
           const dbArtist = new ArtistDbModel();
           dbArtist.id = v4();
           dbArtist.name = artist;
           dbArtist.pluginId = pluginId;
+          dbArtist.exists = true;
 
           await dbArtist.insert(db);
           dbArtists.push(dbArtist);
@@ -155,7 +165,12 @@ export class FileSystemScan {
     const songName = fileMetadata.common?.title;
 
     if (songName) {
-      const songInDb = await SongDbModel.find(db, songName, pluginId);
+      const songInDb = await SongDbModel.find(
+        db,
+        songName,
+        pluginId,
+        album?.id,
+      );
       if (!songInDb) {
         const song = new SongDbModel();
         song.name = songName;
@@ -173,10 +188,24 @@ export class FileSystemScan {
           : 1;
         song.metadata = {};
         song.metadata["filePath"] = filePath;
+        song.exists = true;
 
         await song.insert(db);
         return song;
       } else {
+        songInDb.artist = artists.map((artist) => artist.name).join(", ");
+        songInDb.artistsId = album?.artists;
+        songInDb.trackNumber = fileMetadata.common.track?.no
+          ? fileMetadata.common.track?.no
+          : 0;
+        songInDb.diskNumber = fileMetadata.common.disk?.no
+          ? fileMetadata.common.disk?.no
+          : 1;
+        songInDb.metadata = songInDb.metadata ?? {};
+        songInDb.metadata["filePath"] = filePath;
+        songInDb.exists = true;
+
+        await songInDb.update(db);
         return songInDb;
       }
     } else {

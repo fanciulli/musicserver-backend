@@ -24,12 +24,31 @@ export class SongDbModel {
   trackNumber?: number;
   diskNumber?: number;
   metadata?: Record<string, any>;
+  exists?: boolean;
+
+  static fromJson(json: Partial<SongDbModel>): SongDbModel {
+    const song = new SongDbModel();
+    song.id = json.id;
+    song.name = json.name;
+    song.pluginId = json.pluginId;
+    song.album = json.album;
+    song.albumId = json.albumId;
+    song.artist = json.artist;
+    song.artistsId = json.artistsId;
+    song.trackNumber = json.trackNumber;
+    song.diskNumber = json.diskNumber;
+    song.metadata = json.metadata;
+    song.exists = json.exists;
+    return song;
+  }
 
   static async findById(db: Db, id: string): Promise<SongDbModel | null> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
-    return await collection.findOne({
+    const song = await collection.findOne({
       id: id,
     });
+
+    return song ? SongDbModel.fromJson(song) : null;
   }
 
   static async findByIdAndPluginId(
@@ -38,23 +57,30 @@ export class SongDbModel {
     pluginId: string,
   ): Promise<SongDbModel | null> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
-    return await collection.findOne({
+    const song = await collection.findOne({
       id: id,
       pluginId: pluginId,
     });
+
+    return song ? SongDbModel.fromJson(song) : null;
   }
 
   static async find(
     db: Db,
     name: string,
     pluginId: string,
+    albumId?: string,
   ): Promise<SongDbModel | null> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
-    const filter = {
+    const filter: Record<string, any> = {
       name: name,
       pluginId: pluginId,
     };
-    return await collection.findOne(filter);
+    if (albumId !== undefined) {
+      filter["albumId"] = albumId;
+    }
+    const song = await collection.findOne(filter);
+    return song ? SongDbModel.fromJson(song) : null;
   }
 
   static async findSongsByAlbumId(
@@ -63,7 +89,7 @@ export class SongDbModel {
     pluginId: string,
   ): Promise<Array<SongDbModel>> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
-    return await collection
+    const songs = await collection
       .find(
         {
           albumId: albumId,
@@ -72,6 +98,8 @@ export class SongDbModel {
         {},
       )
       .toArray();
+
+      return songs.map((song) => SongDbModel.fromJson(song));
   }
 
   static async findSongsByPluginId(
@@ -79,7 +107,7 @@ export class SongDbModel {
     pluginId: string,
   ): Promise<Array<SongDbModel>> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
-    return await collection
+    const songs = await collection
       .find(
         {
           pluginId: pluginId,
@@ -87,6 +115,8 @@ export class SongDbModel {
         {},
       )
       .toArray();
+
+      return songs.map((song) => SongDbModel.fromJson(song));
   }
 
   static async findSongsByStartingLetter(
@@ -95,7 +125,7 @@ export class SongDbModel {
     letter: string,
   ): Promise<Array<SongDbModel>> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
-    return await collection
+    const songs = await collection
       .find(
         {
           pluginId: pluginId,
@@ -104,6 +134,8 @@ export class SongDbModel {
         {},
       )
       .toArray();
+
+      return songs.map((song) => SongDbModel.fromJson(song));
   }
 
   static async findSongsByArtistId(
@@ -112,7 +144,7 @@ export class SongDbModel {
     pluginId: string,
   ): Promise<Array<SongDbModel>> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
-    return await collection
+    const songs = await collection
       .find(
         {
           artistsId: artistId,
@@ -121,6 +153,8 @@ export class SongDbModel {
         {},
       )
       .toArray();
+
+      return songs.map((song) => SongDbModel.fromJson(song));
   }
 
   static async findSongsByQuery(
@@ -134,7 +168,7 @@ export class SongDbModel {
     }
 
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
-    return await collection
+    const songs = await collection
       .find(
         {
           pluginId: pluginId,
@@ -150,6 +184,8 @@ export class SongDbModel {
         {},
       )
       .toArray();
+
+      return songs.map((song) => SongDbModel.fromJson(song));
   }
 
   async insert(db: Db): Promise<void> {
@@ -158,10 +194,29 @@ export class SongDbModel {
     await collection.insertOne(this);
   }
 
+  async update(db: Db): Promise<void> {
+    const collection = db.collection<SongDbModel>(COLLECTION_NAME);
+    await collection.updateOne(
+      { id: this.id },
+      { $set: this },
+      { ignoreUndefined: true },
+    );
+  }
+
   static async deleteAll(db: Db, pluginId: string) {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
 
     await collection.deleteMany({ pluginId: pluginId });
+  }
+
+  static async markAllAsNotExisting(db: Db, pluginId: string): Promise<void> {
+    const collection = db.collection<SongDbModel>(COLLECTION_NAME);
+    await collection.updateMany({ pluginId: pluginId }, { $set: { exists: false } });
+  }
+
+  static async deleteNotExisting(db: Db, pluginId: string): Promise<void> {
+    const collection = db.collection<SongDbModel>(COLLECTION_NAME);
+    await collection.deleteMany({ pluginId: pluginId, exists: false });
   }
 }
 
