@@ -159,6 +159,11 @@ const makeMetadata = (overrides: Record<string, any> = {}) => ({
     picture: undefined,
     ...overrides,
   },
+  format: {
+    bitrate: 1000,
+    sampleRate: 44100,
+    container: "mp3",
+  },
 });
 
 describe("FileSystemScan.scan – lifecycle", () => {

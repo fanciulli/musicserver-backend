@@ -18,6 +18,7 @@ import {
   type IAudioMetadata,
 } from "music-metadata";
 import { v4 } from "uuid";
+import { linkArtists } from "./utils.js";
 
 export class FileSystemScan {
   static async scan(
@@ -176,34 +177,13 @@ export class FileSystemScan {
         song.name = songName;
         song.id = v4();
         song.pluginId = pluginId;
-        song.album = album?.name;
-        song.albumId = album?.id;
-        song.artist = artists.map((artist) => artist.name).join(", ");
-        song.artistsId = album?.artists;
-        song.trackNumber = fileMetadata.common.track?.no
-          ? fileMetadata.common.track?.no
-          : 0;
-        song.diskNumber = fileMetadata.common.disk?.no
-          ? fileMetadata.common.disk?.no
-          : 1;
-        song.metadata = {};
-        song.metadata["filePath"] = filePath;
-        song.exists = true;
+
+        this.#updateSongClass(song, fileMetadata, album, artists, filePath);
 
         await song.insert(db);
         return song;
       } else {
-        songInDb.artist = artists.map((artist) => artist.name).join(", ");
-        songInDb.artistsId = album?.artists;
-        songInDb.trackNumber = fileMetadata.common.track?.no
-          ? fileMetadata.common.track?.no
-          : 0;
-        songInDb.diskNumber = fileMetadata.common.disk?.no
-          ? fileMetadata.common.disk?.no
-          : 1;
-        songInDb.metadata = songInDb.metadata ?? {};
-        songInDb.metadata["filePath"] = filePath;
-        songInDb.exists = true;
+        this.#updateSongClass(songInDb, fileMetadata, album, artists, filePath);
 
         await songInDb.update(db);
         return songInDb;
@@ -211,5 +191,42 @@ export class FileSystemScan {
     } else {
       return;
     }
+  }
+
+  static #updateSongClass(
+    song: SongDbModel,
+    fileMetadata: IAudioMetadata,
+    album: AlbumDbModel | undefined,
+    artists: ArtistDbModel[],
+    filePath: string,
+  ): void {
+    song.album = album?.name;
+    song.albumId = album?.id;
+    song.format = fileMetadata.format?.container;
+    song.artist =
+      artists && artists.length > 0
+        ? linkArtists(artists)
+        : linkArtists(album?.artists);
+    song.artistsId = album?.artists;
+
+    song.trackNumber = fileMetadata.common.track?.no
+      ? fileMetadata.common.track?.no
+      : 0;
+    song.diskNumber = fileMetadata.common.disk?.no
+      ? fileMetadata.common.disk?.no
+      : 1;
+    song.sampleRate = fileMetadata.format.sampleRate;
+    song.bitRate = fileMetadata.format.bitrate;
+    song.duration = fileMetadata.format.duration
+      ? Math.trunc(fileMetadata.format.duration)
+      : undefined;
+    song.year = fileMetadata.common.year;
+    song.genre = fileMetadata.common.genre ?? [];
+    song.bpm = fileMetadata.common.bpm;
+    song.mood = fileMetadata.common.mood;
+    song.releaseDate = fileMetadata.common.releasedate;
+    song.metadata = {};
+    song.metadata["filePath"] = filePath;
+    song.exists = true;
   }
 }

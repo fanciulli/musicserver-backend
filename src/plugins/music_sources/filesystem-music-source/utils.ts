@@ -9,6 +9,7 @@ import { Folder } from "../../../types/api/folder.js";
 import { BrowseType, BrowseResponse } from "../../../types/api/browse.js";
 import { Song } from "../../../types/api/song.js";
 import { SongDbModel } from "../../../types/db/song.js";
+import type { ArtistDbModel } from "../../../types/db/artist.js";
 
 /**
  * Creates a folder browse response by composing a child path from prefix and section.
@@ -94,4 +95,18 @@ export function createSongBrowseResponses(
   return songs.map((song) =>
     createSongBrowseResponse(`${pathPrefix}/${song.id}`, song),
   );
+}
+
+export function linkArtists(
+  artists: ArtistDbModel[] | string[] | undefined,
+): string {
+  if (!artists || artists.length === 0) {
+    return "";
+  }
+
+  if (typeof artists[0] === "string") {
+    return (artists as string[]).join(", ");
+  }
+
+  return (artists as ArtistDbModel[]).map((artist) => artist.name).join(", ");
 }
