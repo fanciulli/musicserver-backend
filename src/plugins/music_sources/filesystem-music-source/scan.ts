@@ -217,6 +217,9 @@ export class FileSystemScan {
       : 1;
     song.sampleRate = fileMetadata.format.sampleRate;
     song.bitRate = fileMetadata.format.bitrate;
+    song.duration = fileMetadata.format.duration
+      ? Math.trunc(fileMetadata.format.duration)
+      : undefined;
     song.year = fileMetadata.common.year;
     song.genre = fileMetadata.common.genre ?? [];
     song.bpm = fileMetadata.common.bpm;

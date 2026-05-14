@@ -42,6 +42,7 @@ export class Song {
     song.releaseDate = model.releaseDate || "";
     song.sampleRate = model.sampleRate || 0;
     song.bitRate = model.bitRate || 0;
+    song.duration = model.duration || 0;
     song.format = (model.format?.toUpperCase() as Format) || Format.UNKNOWN;
 
     return song;

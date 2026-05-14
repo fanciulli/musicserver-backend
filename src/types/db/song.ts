@@ -33,6 +33,7 @@ export class SongDbModel {
   sampleRate?: number;
   bitRate?: number;
   format?: string;
+  duration?: number;
 
   static fromJson(json: Partial<SongDbModel>): SongDbModel {
     const song = new SongDbModel();
@@ -55,6 +56,7 @@ export class SongDbModel {
     song.sampleRate = json.sampleRate;
     song.bitRate = json.bitRate;
     song.format = json.format;
+    song.duration = json.duration;
     return song;
   }
 
