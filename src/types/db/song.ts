@@ -25,6 +25,14 @@ export class SongDbModel {
   diskNumber?: number;
   metadata?: Record<string, any>;
   exists?: boolean;
+  year?: number;
+  genre?: string[];
+  bpm?: number;
+  mood?: string;
+  releaseDate?: string;
+  sampleRate?: number;
+  bitRate?: number;
+  format?: string;
 
   static fromJson(json: Partial<SongDbModel>): SongDbModel {
     const song = new SongDbModel();
@@ -39,6 +47,14 @@ export class SongDbModel {
     song.diskNumber = json.diskNumber;
     song.metadata = json.metadata;
     song.exists = json.exists;
+    song.year = json.year;
+    song.genre = json.genre;
+    song.bpm = json.bpm;
+    song.mood = json.mood;
+    song.releaseDate = json.releaseDate;
+    song.sampleRate = json.sampleRate;
+    song.bitRate = json.bitRate;
+    song.format = json.format;
     return song;
   }
 
@@ -99,7 +115,7 @@ export class SongDbModel {
       )
       .toArray();
 
-      return songs.map((song) => SongDbModel.fromJson(song));
+    return songs.map((song) => SongDbModel.fromJson(song));
   }
 
   static async findSongsByPluginId(
@@ -116,7 +132,7 @@ export class SongDbModel {
       )
       .toArray();
 
-      return songs.map((song) => SongDbModel.fromJson(song));
+    return songs.map((song) => SongDbModel.fromJson(song));
   }
 
   static async findSongsByStartingLetter(
@@ -135,7 +151,7 @@ export class SongDbModel {
       )
       .toArray();
 
-      return songs.map((song) => SongDbModel.fromJson(song));
+    return songs.map((song) => SongDbModel.fromJson(song));
   }
 
   static async findSongsByArtistId(
@@ -154,7 +170,7 @@ export class SongDbModel {
       )
       .toArray();
 
-      return songs.map((song) => SongDbModel.fromJson(song));
+    return songs.map((song) => SongDbModel.fromJson(song));
   }
 
   static async findSongsByQuery(
@@ -185,7 +201,7 @@ export class SongDbModel {
       )
       .toArray();
 
-      return songs.map((song) => SongDbModel.fromJson(song));
+    return songs.map((song) => SongDbModel.fromJson(song));
   }
 
   async insert(db: Db): Promise<void> {
@@ -211,7 +227,10 @@ export class SongDbModel {
 
   static async markAllAsNotExisting(db: Db, pluginId: string): Promise<void> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
-    await collection.updateMany({ pluginId: pluginId }, { $set: { exists: false } });
+    await collection.updateMany(
+      { pluginId: pluginId },
+      { $set: { exists: false } },
+    );
   }
 
   static async deleteNotExisting(db: Db, pluginId: string): Promise<void> {

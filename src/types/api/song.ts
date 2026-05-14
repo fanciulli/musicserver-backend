@@ -20,6 +20,11 @@ export class Song {
   format: Format = Format.UNKNOWN;
   sampleRate: number = 0;
   bitRate: number = 0;
+  year: number = 0;
+  genre: string[] = [];
+  bpm: number = 0;
+  mood: string = "";
+  releaseDate: string = "";
 
   static fromDbModel(model: SongDbModel): Song {
     const song = new Song();
@@ -30,6 +35,14 @@ export class Song {
     song.albumId = model.albumId || "";
     song.artist = model.artist || "";
     song.artistsId = model.artistsId || [];
+    song.year = model.year || 0;
+    song.genre = model.genre || [];
+    song.bpm = model.bpm || 0;
+    song.mood = model.mood || "";
+    song.releaseDate = model.releaseDate || "";
+    song.sampleRate = model.sampleRate || 0;
+    song.bitRate = model.bitRate || 0;
+    song.format = (model.format?.toUpperCase() as Format) || Format.UNKNOWN;
 
     return song;
   }
