@@ -16,13 +16,17 @@ graph TD
         subgraph Routes
             direction TB
             R_HZ[GET /healthz]
-            R_BR[POST /browse]
-            R_SC[POST /scan]
-            R_ST[GET /stream]
-            R_AA[GET /albumart]
-            R_PL[GET /plugins]
-            R_PS[POST /plugins/start]
-            R_PP[POST /plugins/stop]
+            R_BR[POST /music/browse]
+            R_SC[POST /music/scan]
+            R_ST[GET /music/stream]
+            R_AA[GET /music/albumart]
+            R_SE[POST /music/search]
+            R_PL[GET /admin/plugins]
+            R_PS[POST /admin/plugins/start]
+            R_PP[POST /admin/plugins/stop]
+            R_CG[GET /admin/plugins/:id/config]
+            R_CU[PUT /admin/plugins/:id/config]
+            R_LG[GET /admin/logs]
         end
     end
 
@@ -45,14 +49,18 @@ graph TD
     R_SC --> PM
     R_ST --> PM
     R_AA --> PM
+    R_SE --> PM
     R_PL --> PM
     R_PS --> PM
     R_PP --> PM
+    R_CG --> PM
+    R_CU --> PM
     FSS --> DB
 ```
 
 ---
 
+- [← README](../README.md)
 - [Introduction](./introduction.md)
 - [Building Blocks](./building-blocks.md)
 - [API Reference](./api-reference.md)
