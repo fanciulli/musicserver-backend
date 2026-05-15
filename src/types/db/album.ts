@@ -227,13 +227,13 @@ export class AlbumDbModel {
   static async findByIdAcrossPlugins(
     db: Db,
     id: string,
-  ): Promise<AlbumDbModel | undefined> {
+  ): Promise<AlbumDbModel | null> {
     const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
     const album = await collection.findOne(
       { id: id },
       { projection: { cover: 0 } },
     );
-    return album ? AlbumDbModel.fromJson(album) : undefined;
+    return album ? AlbumDbModel.fromJson(album) : null;
   }
 }
 
