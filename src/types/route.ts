@@ -32,4 +32,8 @@ export abstract class Route implements IRoute {
 
     return this.#context;
   }
+
+  protected getDatabase() {
+    return this.getContext().database;
+  }
 }

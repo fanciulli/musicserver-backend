@@ -17,7 +17,7 @@ export default class DbSummaryRoute extends Route {
   url = "/admin/db/summary";
   schema = DbSummarySchema;
   handler = async (_request: any, response: any) => {
-    const db = this.getContext().database;
+    const db = this.getDatabase();
 
     const [artists, albums, songs] = await Promise.all([
       ArtistDbModel.count(db),

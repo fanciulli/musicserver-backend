@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   getDatabase: vi.fn(),
   artistCount: vi.fn(),
   artistFindAll: vi.fn(),
-  artistFindByIdAcrossPlugins: vi.fn(),
+  artistFindById: vi.fn(),
   albumCount: vi.fn(),
   albumFindAlbumsByArtistIdAllPlugins: vi.fn(),
   albumFindByIdAcrossPlugins: vi.fn(),
@@ -23,8 +23,7 @@ vi.mock("../../src/types/db/artist.js", () => ({
   ArtistDbModel: {
     count: (...args: unknown[]) => mocks.artistCount(...args),
     findAll: (...args: unknown[]) => mocks.artistFindAll(...args),
-    findByIdAcrossPlugins: (...args: unknown[]) =>
-      mocks.artistFindByIdAcrossPlugins(...args),
+    findById: (...args: unknown[]) => mocks.artistFindById(...args),
   },
 }));
 
@@ -129,7 +128,7 @@ describe("Admin DB routes", () => {
       const albums = [
         { id: "al1", name: "Album One", pluginId: "filesystem", artists: ["a1"] },
       ];
-      mocks.artistFindByIdAcrossPlugins.mockResolvedValue(artist);
+      mocks.artistFindById.mockResolvedValue(artist);
       mocks.albumFindAlbumsByArtistIdAllPlugins.mockResolvedValue(albums);
 
       const route = new DbAlbumsRoute(createRouteContext());
@@ -137,10 +136,7 @@ describe("Admin DB routes", () => {
 
       await route.handler({ params: { artistId: "a1" } }, response);
 
-      expect(mocks.artistFindByIdAcrossPlugins).toHaveBeenCalledWith(
-        "db-client",
-        "a1",
-      );
+      expect(mocks.artistFindById).toHaveBeenCalledWith("db-client", "a1");
       expect(mocks.albumFindAlbumsByArtistIdAllPlugins).toHaveBeenCalledWith(
         "db-client",
         "a1",
@@ -149,7 +145,7 @@ describe("Admin DB routes", () => {
     });
 
     it("returns 404 when artist is not found", async () => {
-      mocks.artistFindByIdAcrossPlugins.mockResolvedValue(null);
+      mocks.artistFindById.mockResolvedValue(null);
 
       const route = new DbAlbumsRoute(createRouteContext());
       const response = createResponseMock();

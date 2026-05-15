@@ -42,7 +42,7 @@ export class ArtistDbModel {
     return artist ? ArtistDbModel.fromJson(artist) : null;
   }
 
-  static async findById(db: Db, ids: string[]): Promise<ArtistDbModel[]> {
+  static async findByIds(db: Db, ids: string[]): Promise<ArtistDbModel[]> {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
     const filter = {
       id: { $in: ids },
@@ -161,10 +161,7 @@ export class ArtistDbModel {
     return artists.map((artist) => ArtistDbModel.fromJson(artist));
   }
 
-  static async findByIdAcrossPlugins(
-    db: Db,
-    id: string,
-  ): Promise<ArtistDbModel | null> {
+  static async findById(db: Db, id: string): Promise<ArtistDbModel | null> {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
     const artist = await collection.findOne({ id: id });
     return artist ? ArtistDbModel.fromJson(artist) : null;

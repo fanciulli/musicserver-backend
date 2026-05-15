@@ -17,9 +17,9 @@ export default class DbAlbumsRoute extends Route {
   schema = DbAlbumsSchema;
   handler = async (request: any, response: any) => {
     const { artistId } = request.params;
-    const db = this.getContext().database;
+    const db = this.getDatabase();
 
-    const artist = await ArtistDbModel.findByIdAcrossPlugins(db, artistId);
+    const artist = await ArtistDbModel.findById(db, artistId);
     if (!artist) {
       response.status(404).send();
       return;
