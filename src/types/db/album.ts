@@ -207,6 +207,34 @@ export class AlbumDbModel {
 
     return albums.map((album) => AlbumDbModel.fromJson(album));
   }
+
+  static async count(db: Db): Promise<number> {
+    const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
+    return collection.countDocuments();
+  }
+
+  static async findAlbumsByArtistIdAllPlugins(
+    db: Db,
+    artistId: string,
+  ): Promise<Array<AlbumDbModel>> {
+    const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
+    const albums = await collection
+      .find({ artists: artistId })
+      .toArray();
+    return albums.map((album) => AlbumDbModel.fromJson(album));
+  }
+
+  static async findByIdAcrossPlugins(
+    db: Db,
+    id: string,
+  ): Promise<AlbumDbModel | undefined> {
+    const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
+    const album = await collection.findOne(
+      { id: id },
+      { projection: { cover: 0 } },
+    );
+    return album ? AlbumDbModel.fromJson(album) : undefined;
+  }
 }
 
 export function init(db: Db): void {}

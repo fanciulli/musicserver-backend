@@ -149,6 +149,26 @@ export class ArtistDbModel {
 
     return artists.map((artist) => ArtistDbModel.fromJson(artist));
   }
+
+  static async count(db: Db): Promise<number> {
+    const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
+    return collection.countDocuments();
+  }
+
+  static async findAll(db: Db): Promise<Array<ArtistDbModel>> {
+    const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
+    const artists = await collection.find({}).toArray();
+    return artists.map((artist) => ArtistDbModel.fromJson(artist));
+  }
+
+  static async findByIdAcrossPlugins(
+    db: Db,
+    id: string,
+  ): Promise<ArtistDbModel | null> {
+    const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
+    const artist = await collection.findOne({ id: id });
+    return artist ? ArtistDbModel.fromJson(artist) : null;
+  }
 }
 
 export function init(db: Db): void {

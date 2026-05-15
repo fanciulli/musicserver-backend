@@ -239,6 +239,20 @@ export class SongDbModel {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
     await collection.deleteMany({ pluginId: pluginId, exists: false });
   }
+
+  static async count(db: Db): Promise<number> {
+    const collection = db.collection<SongDbModel>(COLLECTION_NAME);
+    return collection.countDocuments();
+  }
+
+  static async findSongsByAlbumIdAllPlugins(
+    db: Db,
+    albumId: string,
+  ): Promise<Array<SongDbModel>> {
+    const collection = db.collection<SongDbModel>(COLLECTION_NAME);
+    const songs = await collection.find({ albumId: albumId }).toArray();
+    return songs.map((song) => SongDbModel.fromJson(song));
+  }
 }
 
 export function init(db: Db): void {}
