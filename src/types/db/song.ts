@@ -108,7 +108,7 @@ export class SongDbModel {
   ): Promise<Array<SongDbModel>> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
     const filter: Record<string, string> = {
-      albumId: albumId,
+      albumId,
     };
     if (pluginId !== undefined) {
       filter["pluginId"] = pluginId;
