@@ -107,11 +107,11 @@ export class SongDbModel {
     pluginId?: string,
   ): Promise<Array<SongDbModel>> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
-    const filter: Record<string, string> = {
+    const filter: Partial<Pick<SongDbModel, "albumId" | "pluginId">> = {
       albumId,
     };
     if (pluginId !== undefined) {
-      filter["pluginId"] = pluginId;
+      filter.pluginId = pluginId;
     }
     const songs = await collection
       .find(
