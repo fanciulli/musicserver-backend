@@ -170,7 +170,7 @@ export class AlbumDbModel {
     return albums.map((album) => AlbumDbModel.fromJson(album));
   }
 
-  static async findAlbumsByArtistId(
+  static async findAlbumsByArtistIdAndPluginId(
     db: Db,
     pluginId: string,
     artistId: string,
@@ -213,7 +213,7 @@ export class AlbumDbModel {
     return collection.countDocuments();
   }
 
-  static async findAlbumsByArtistIdAllPlugins(
+  static async findAlbumsByArtistId(
     db: Db,
     artistId: string,
   ): Promise<Array<AlbumDbModel>> {

@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   artistFindAll: vi.fn(),
   artistFindById: vi.fn(),
   albumCount: vi.fn(),
-  albumFindAlbumsByArtistIdAllPlugins: vi.fn(),
+  albumFindAlbumsByArtistId: vi.fn(),
   albumFindByIdAcrossPlugins: vi.fn(),
   songCount: vi.fn(),
   songFindSongsByAlbumIdAllPlugins: vi.fn(),
@@ -30,8 +30,8 @@ vi.mock("../../src/types/db/artist.js", () => ({
 vi.mock("../../src/types/db/album.js", () => ({
   AlbumDbModel: {
     count: (...args: unknown[]) => mocks.albumCount(...args),
-    findAlbumsByArtistIdAllPlugins: (...args: unknown[]) =>
-      mocks.albumFindAlbumsByArtistIdAllPlugins(...args),
+    findAlbumsByArtistId: (...args: unknown[]) =>
+      mocks.albumFindAlbumsByArtistId(...args),
     findByIdAcrossPlugins: (...args: unknown[]) =>
       mocks.albumFindByIdAcrossPlugins(...args),
   },
@@ -129,7 +129,7 @@ describe("Admin DB routes", () => {
         { id: "al1", name: "Album One", pluginId: "filesystem", artists: ["a1"] },
       ];
       mocks.artistFindById.mockResolvedValue(artist);
-      mocks.albumFindAlbumsByArtistIdAllPlugins.mockResolvedValue(albums);
+      mocks.albumFindAlbumsByArtistId.mockResolvedValue(albums);
 
       const route = new DbAlbumsRoute(createRouteContext());
       const response = createResponseMock();
@@ -137,7 +137,7 @@ describe("Admin DB routes", () => {
       await route.handler({ params: { artistId: "a1" } }, response);
 
       expect(mocks.artistFindById).toHaveBeenCalledWith("db-client", "a1");
-      expect(mocks.albumFindAlbumsByArtistIdAllPlugins).toHaveBeenCalledWith(
+      expect(mocks.albumFindAlbumsByArtistId).toHaveBeenCalledWith(
         "db-client",
         "a1",
       );
@@ -154,7 +154,7 @@ describe("Admin DB routes", () => {
 
       expect(response.status).toHaveBeenCalledWith(404);
       expect(response.send).toHaveBeenCalledWith();
-      expect(mocks.albumFindAlbumsByArtistIdAllPlugins).not.toHaveBeenCalled();
+      expect(mocks.albumFindAlbumsByArtistId).not.toHaveBeenCalled();
     });
   });
 

@@ -192,7 +192,7 @@ async function browseAlbumsByArtistId(
   artistId: string,
   pathPrefix: string,
 ): Promise<BrowseResponse[]> {
-  const albums = await AlbumDbModel.findAlbumsByArtistId(
+  const albums = await AlbumDbModel.findAlbumsByArtistIdAndPluginId(
     db,
     PLUGIN_ID,
     artistId,
