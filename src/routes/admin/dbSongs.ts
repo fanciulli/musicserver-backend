@@ -25,7 +25,7 @@ export default class DbSongsRoute extends Route {
       return;
     }
 
-    const songs = await SongDbModel.findSongsByAlbumIdAllPlugins(db, albumId);
+    const songs = await SongDbModel.findSongsByAlbumId(db, albumId);
     response.send(songs);
   };
 }

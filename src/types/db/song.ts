@@ -104,15 +104,18 @@ export class SongDbModel {
   static async findSongsByAlbumId(
     db: Db,
     albumId: string,
-    pluginId: string,
+    pluginId?: string,
   ): Promise<Array<SongDbModel>> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
+    const filter: Record<string, string> = {
+      albumId: albumId,
+    };
+    if (pluginId !== undefined) {
+      filter["pluginId"] = pluginId;
+    }
     const songs = await collection
       .find(
-        {
-          albumId: albumId,
-          pluginId: pluginId,
-        },
+        filter,
         {},
       )
       .toArray();
@@ -245,14 +248,6 @@ export class SongDbModel {
     return collection.countDocuments();
   }
 
-  static async findSongsByAlbumIdAllPlugins(
-    db: Db,
-    albumId: string,
-  ): Promise<Array<SongDbModel>> {
-    const collection = db.collection<SongDbModel>(COLLECTION_NAME);
-    const songs = await collection.find({ albumId: albumId }).toArray();
-    return songs.map((song) => SongDbModel.fromJson(song));
-  }
 }
 
 export function init(db: Db): void {}

@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
   albumFindAlbumsByArtistId: vi.fn(),
   albumFindByIdAcrossPlugins: vi.fn(),
   songCount: vi.fn(),
-  songFindSongsByAlbumIdAllPlugins: vi.fn(),
+  songFindSongsByAlbumId: vi.fn(),
 }));
 
 vi.mock("../../src/types/db/artist.js", () => ({
@@ -40,8 +40,8 @@ vi.mock("../../src/types/db/album.js", () => ({
 vi.mock("../../src/types/db/song.js", () => ({
   SongDbModel: {
     count: (...args: unknown[]) => mocks.songCount(...args),
-    findSongsByAlbumIdAllPlugins: (...args: unknown[]) =>
-      mocks.songFindSongsByAlbumIdAllPlugins(...args),
+    findSongsByAlbumId: (...args: unknown[]) =>
+      mocks.songFindSongsByAlbumId(...args),
   },
 }));
 
@@ -171,7 +171,7 @@ describe("Admin DB routes", () => {
         { id: "s2", name: "Song Two", pluginId: "filesystem", albumId: "al1" },
       ];
       mocks.albumFindByIdAcrossPlugins.mockResolvedValue(album);
-      mocks.songFindSongsByAlbumIdAllPlugins.mockResolvedValue(songs);
+      mocks.songFindSongsByAlbumId.mockResolvedValue(songs);
 
       const route = new DbSongsRoute(createRouteContext());
       const response = createResponseMock();
@@ -182,10 +182,7 @@ describe("Admin DB routes", () => {
         "db-client",
         "al1",
       );
-      expect(mocks.songFindSongsByAlbumIdAllPlugins).toHaveBeenCalledWith(
-        "db-client",
-        "al1",
-      );
+      expect(mocks.songFindSongsByAlbumId).toHaveBeenCalledWith("db-client", "al1");
       expect(response.send).toHaveBeenCalledWith(songs);
     });
 
@@ -199,7 +196,7 @@ describe("Admin DB routes", () => {
 
       expect(response.status).toHaveBeenCalledWith(404);
       expect(response.send).toHaveBeenCalledWith();
-      expect(mocks.songFindSongsByAlbumIdAllPlugins).not.toHaveBeenCalled();
+      expect(mocks.songFindSongsByAlbumId).not.toHaveBeenCalled();
     });
   });
 });
