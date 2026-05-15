@@ -59,7 +59,6 @@ export const DbAlbumsSchema = {
         },
       },
     },
-    404: { type: "null" },
   },
 };
 
@@ -86,6 +85,5 @@ export const DbSongsSchema = {
         },
       },
     },
-    404: { type: "null" },
   },
 };
