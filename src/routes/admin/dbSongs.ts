@@ -21,7 +21,7 @@ export default class DbSongsRoute extends Route {
 
     const album = await AlbumDbModel.findByIdAcrossPlugins(db, albumId);
     if (!album) {
-      response.status(404).send({ error: `Album ${albumId} not found` });
+      response.status(404).send();
       return;
     }
 

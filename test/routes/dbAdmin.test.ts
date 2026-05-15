@@ -157,9 +157,7 @@ describe("Admin DB routes", () => {
       await route.handler({ params: { artistId: "missing" } }, response);
 
       expect(response.status).toHaveBeenCalledWith(404);
-      expect(response.send).toHaveBeenCalledWith({
-        error: "Artist missing not found",
-      });
+      expect(response.send).toHaveBeenCalledWith();
       expect(mocks.albumFindAlbumsByArtistIdAllPlugins).not.toHaveBeenCalled();
     });
   });
@@ -204,9 +202,7 @@ describe("Admin DB routes", () => {
       await route.handler({ params: { albumId: "missing" } }, response);
 
       expect(response.status).toHaveBeenCalledWith(404);
-      expect(response.send).toHaveBeenCalledWith({
-        error: "Album missing not found",
-      });
+      expect(response.send).toHaveBeenCalledWith();
       expect(mocks.songFindSongsByAlbumIdAllPlugins).not.toHaveBeenCalled();
     });
   });

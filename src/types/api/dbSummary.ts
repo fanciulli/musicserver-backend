@@ -28,7 +28,7 @@ export const DbArtistsSchema = {
         properties: {
           id: { type: "string", format: "uuid" },
           name: { type: "string" },
-          pluginId: { type: "string" },
+          pluginId: { type: "string", format: "uuid" },
         },
       },
     },
@@ -51,7 +51,7 @@ export const DbAlbumsSchema = {
         properties: {
           id: { type: "string", format: "uuid" },
           name: { type: "string" },
-          pluginId: { type: "string" },
+          pluginId: { type: "string", format: "uuid" },
           artists: {
             type: "array",
             items: { type: "string", format: "uuid" },
@@ -59,12 +59,7 @@ export const DbAlbumsSchema = {
         },
       },
     },
-    404: {
-      type: "object",
-      properties: {
-        error: { type: "string" },
-      },
-    },
+    404: { type: "null" },
   },
 };
 
@@ -84,18 +79,13 @@ export const DbSongsSchema = {
         properties: {
           id: { type: "string", format: "uuid" },
           name: { type: "string" },
-          pluginId: { type: "string" },
+          pluginId: { type: "string", format: "uuid" },
           albumId: { type: "string", format: "uuid" },
           trackNumber: { type: "number" },
           duration: { type: "number" },
         },
       },
     },
-    404: {
-      type: "object",
-      properties: {
-        error: { type: "string" },
-      },
-    },
+    404: { type: "null" },
   },
 };
