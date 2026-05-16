@@ -1,0 +1,20 @@
+meta {
+  name: Get Songs
+  type: http
+  seq: 6
+}
+
+get {
+  url: http://{{host}}:{{port}}/admin/db/albums/:albumId/songs
+  body: none
+  auth: inherit
+}
+
+params:path {
+  albumId: 9a638c80-7744-4550-997c-691860b388a3
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

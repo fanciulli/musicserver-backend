@@ -15,15 +15,15 @@ const SONG_UUID = "cccccccc-cccc-1ccc-8ccc-cccccccccccc";
 const DB_CLIENT = "db-client";
 
 const mocks = vi.hoisted(() => ({
-  findAlbumsByArtistId: vi.fn(),
+  findAlbumsByArtistIdAndPluginId: vi.fn(),
   findSongsByAlbumId: vi.fn(),
   findByIdAndPluginId: vi.fn(),
 }));
 
 vi.mock("../../src/types/db/album.js", () => ({
   AlbumDbModel: {
-    findAlbumsByArtistId: (...args: unknown[]) =>
-      mocks.findAlbumsByArtistId(...args),
+    findAlbumsByArtistIdAndPluginId: (...args: unknown[]) =>
+      mocks.findAlbumsByArtistIdAndPluginId(...args),
   },
 }));
 
@@ -50,7 +50,7 @@ describe("browseArtists – direct artist ID path", () => {
       pluginId: PLUGIN_ID,
       artists: [ARTIST_UUID],
     };
-    mocks.findAlbumsByArtistId.mockResolvedValue([album]);
+    mocks.findAlbumsByArtistIdAndPluginId.mockResolvedValue([album]);
 
     const result = await browseArtists(DB_CLIENT as any, [
       "artists",
@@ -62,7 +62,7 @@ describe("browseArtists – direct artist ID path", () => {
     expect(result[0].id).toBe(
       `${PLUGIN_ID}://artists/${ARTIST_UUID}/${ALBUM_UUID}`,
     );
-    expect(mocks.findAlbumsByArtistId).toHaveBeenCalledWith(
+    expect(mocks.findAlbumsByArtistIdAndPluginId).toHaveBeenCalledWith(
       DB_CLIENT,
       PLUGIN_ID,
       ARTIST_UUID,
@@ -70,7 +70,7 @@ describe("browseArtists – direct artist ID path", () => {
   });
 
   it("returns empty array when artist has no albums", async () => {
-    mocks.findAlbumsByArtistId.mockResolvedValue([]);
+    mocks.findAlbumsByArtistIdAndPluginId.mockResolvedValue([]);
 
     const result = await browseArtists(DB_CLIENT as any, [
       "artists",
@@ -87,7 +87,7 @@ describe("browseArtists – direct artist ID path", () => {
     ]);
 
     expect(result).toEqual([]);
-    expect(mocks.findAlbumsByArtistId).not.toHaveBeenCalled();
+    expect(mocks.findAlbumsByArtistIdAndPluginId).not.toHaveBeenCalled();
   });
 });
 

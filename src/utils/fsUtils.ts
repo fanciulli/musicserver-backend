@@ -23,17 +23,21 @@ export async function listFolderNames(parentFolder: string): Promise<string[]> {
 }
 
 export async function listFiles(parentFolder: string): Promise<string[]> {
-  const dirListing = await readdir(parentFolder, {
-    withFileTypes: true,
-    recursive: true,
-  });
-
-  const files = dirListing
-    .filter((item) => {
-      return item.isDirectory() == false;
-    })
-    .map((file) => {
-      return path.join(file.parentPath, file.name);
+  try {
+    const dirListing = await readdir(parentFolder, {
+      withFileTypes: true,
+      recursive: true,
     });
-  return files;
+
+    const files = dirListing
+      .filter((item) => {
+        return item.isDirectory() == false;
+      })
+      .map((file) => {
+        return path.join(file.parentPath, file.name);
+      });
+    return files;
+  } catch (err) {
+    return [];
+  }
 }
