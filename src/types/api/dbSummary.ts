@@ -52,10 +52,6 @@ export const DbAlbumsSchema = {
           id: { type: "string", format: "uuid" },
           name: { type: "string" },
           pluginId: { type: "string", format: "uuid" },
-          artists: {
-            type: "array",
-            items: { type: "string", format: "uuid" },
-          },
         },
       },
     },
@@ -79,7 +75,6 @@ export const DbSongsSchema = {
           id: { type: "string", format: "uuid" },
           name: { type: "string" },
           pluginId: { type: "string", format: "uuid" },
-          albumId: { type: "string", format: "uuid" },
           trackNumber: { type: "number" },
           duration: { type: "number" },
         },

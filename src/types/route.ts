@@ -34,6 +34,10 @@ export abstract class Route implements IRoute {
   }
 
   protected getDatabase() {
-    return this.getContext().database;
+    const db = this.getContext().database;
+    if (!db) {
+      throw new Error("Database is not available in the context");
+    }
+    return db;
   }
 }
