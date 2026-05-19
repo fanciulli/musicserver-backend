@@ -10,6 +10,11 @@ export const AdminLogsSchema = {
     type: "object",
     properties: {
       id: { type: "string", pattern: "^(main|fastify)$" },
+      level: { type: "string", pattern: "^(trace|debug|info|warn|error|fatal)$" },
+      from: { type: "string" },
+      to: { type: "string" },
+      page: { type: "integer", minimum: 1 },
+      limit: { type: "integer", minimum: 1, maximum: 200 },
     },
     required: ["id"],
     additionalProperties: false,
