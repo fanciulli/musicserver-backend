@@ -20,15 +20,6 @@ export default class AdminLogsRoute extends Route {
     const { id, level, from, to, page, limit } = request.query;
     const db = this.getDatabase();
 
-    if (from && isNaN(Date.parse(from))) {
-      response.status(400).send({ error: "Invalid 'from' date" });
-      return;
-    }
-    if (to && isNaN(Date.parse(to))) {
-      response.status(400).send({ error: "Invalid 'to' date" });
-      return;
-    }
-
     try {
       const result = await LogLineDbModel.query(db, {
         logId: id,

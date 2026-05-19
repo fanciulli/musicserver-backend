@@ -59,7 +59,7 @@ export default class SearchRoute extends Route {
       }
     }
 
-    const pluginManager = this.getContext().pluginManager;
+    const pluginManager = this.getPluginManager();
     return pluginManager.getPluginsInCategory(
       MUSIC_SOURCE_PLUGIN_CATEGORY,
     ) as MusicSourcePlugin[];

@@ -10,8 +10,8 @@ import { fastify } from "fastify";
 import type { FastifyInstance } from "fastify";
 import { RouteController } from "../routes/routeController.js";
 import { Database } from "./database.js";
-import { Logger } from "./logging.js";
 import { createDatabaseLogger } from "./loggingMongoTransport.js";
+import type { Logger as PinoLogger } from "pino";
 import { Context } from "../types/context.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,17 +21,16 @@ export class MusicServer {
   #database?: Database;
   #pluginManager?: PluginManager;
   #fastifyInstance?: FastifyInstance;
-  #logger: Logger = new Logger();
+  #logger?: PinoLogger;
 
   async run(): Promise<void> {
     if (!this.#initDone) {
       this.#initDone = true;
 
       try {
-        this.#logger.info("Starting Music Server");
-
         await this.#startDatabase();
-        this.#logger.setDatabase(this.#database!.client!);
+        this.#logger = createDatabaseLogger("main", this.#database!.client!);
+        this.#logger.info("Starting Music Server");
         await this.#startPluginManager();
         await this.#startFastify();
       } catch (err) {
@@ -50,14 +49,16 @@ export class MusicServer {
   async #startFastify() {
     const logger = createDatabaseLogger("fastify", this.#database!.client!);
 
-    this.#fastifyInstance = fastify({ loggerInstance: logger }) as unknown as FastifyInstance;
+    this.#fastifyInstance = fastify({
+      loggerInstance: logger,
+    }) as unknown as FastifyInstance;
 
     const context = new Context(
-      this.#logger,
+      this.#logger!,
       this.#pluginManager!,
       this.#database!.client!,
     );
-    const rc = new RouteController(this.#logger, context);
+    const rc = new RouteController(this.#logger!, context);
     await rc.registerRoutes(this.#fastifyInstance);
 
     this.#fastifyInstance!.listen({ port: 3000, host: "0.0.0.0" }, (err) => {
@@ -75,8 +76,8 @@ export class MusicServer {
     );
 
     const context = new Context(
-      this.#logger,
-      undefined,
+      this.#logger!,
+      [] as any,
       this.#database!.client!,
     );
     this.#pluginManager = new PluginManager(pluginsDir, context);

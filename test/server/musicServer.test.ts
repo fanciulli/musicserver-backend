@@ -19,7 +19,6 @@ const state = vi.hoisted(() => ({
 const spies = vi.hoisted(() => ({
   loggerInfo: vi.fn(),
   loggerError: vi.fn(),
-  loggerSetDatabase: vi.fn(),
   consoleError: vi.fn(),
   processExit: vi.fn(),
   rm: vi.fn(),
@@ -42,28 +41,6 @@ vi.mock("node:fs/promises", () => ({
     }
 
     return Promise.resolve();
-  },
-}));
-
-vi.mock("../../src/server/logging.js", () => ({
-  Logger: class MockLogger {
-    constructor() {
-      if (state.loggerCtorError) {
-        throw state.loggerCtorError;
-      }
-    }
-
-    setDatabase(_db: unknown) {
-      spies.loggerSetDatabase(_db);
-    }
-
-    info(message: string) {
-      spies.loggerInfo(message);
-    }
-
-    error(message: string) {
-      spies.loggerError(message);
-    }
   },
 }));
 
@@ -136,8 +113,13 @@ vi.mock("../../src/plugins/pluginManager.js", () => ({
 }));
 
 vi.mock("../../src/server/loggingMongoTransport.js", () => ({
-  createDatabaseLogger: (...args: unknown[]) =>
-    spies.createDatabaseLogger(...args),
+  createDatabaseLogger: (...args: unknown[]) => {
+    spies.createDatabaseLogger(...args);
+    return {
+      info: spies.loggerInfo,
+      error: spies.loggerError,
+    };
+  },
 }));
 
 describe("MusicServer.run", () => {
@@ -164,7 +146,7 @@ describe("MusicServer.run", () => {
 
     expect(spies.loggerInfo).toHaveBeenCalledWith("Starting Music Server");
     expect(spies.databaseStart).toHaveBeenCalledTimes(1);
-    expect(spies.loggerSetDatabase).toHaveBeenCalledTimes(1);
+    expect(spies.createDatabaseLogger).toHaveBeenCalledTimes(2);
     expect(spies.registerRoutes).toHaveBeenCalledTimes(1);
     expect(spies.loadPlugins).toHaveBeenCalledTimes(1);
     expect(spies.startPlugins).toHaveBeenCalledTimes(1);
@@ -173,7 +155,7 @@ describe("MusicServer.run", () => {
     expect(spies.processExit).not.toHaveBeenCalled();
   });
 
-  it("handles #startDatabase exception with logger.error and exit code 1", async () => {
+  it("handles #startDatabase exception with console.error and exit code 1", async () => {
     const databaseError = new Error("database start failed");
     state.databaseStartError = databaseError;
 
@@ -182,11 +164,11 @@ describe("MusicServer.run", () => {
 
     await expect(musicServerInstance.run()).resolves.toBeUndefined();
 
-    expect(spies.loggerError).toHaveBeenCalledTimes(1);
-    expect(spies.loggerError.mock.calls[0][0]).toContain(
+    expect(spies.loggerError).not.toHaveBeenCalled();
+    expect(spies.consoleError).toHaveBeenCalledTimes(1);
+    expect(spies.consoleError.mock.calls[0][0]).toContain(
       "Error during Music Server initialization:",
     );
-    expect(spies.consoleError).not.toHaveBeenCalled();
     expect(spies.processExit).toHaveBeenCalledWith(1);
   });
 

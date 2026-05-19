@@ -5,16 +5,16 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { Logger } from "../server/logging.js";
+import type { Logger as PinoLogger } from "pino";
 import { PluginManager } from "../plugins/pluginManager.js";
 import type { Db } from "mongodb";
 
 export class Context {
-  logger: Logger;
-  pluginManager!: PluginManager;
+  logger: PinoLogger;
+  pluginManager?: PluginManager;
   database: Db;
 
-  constructor(logger: Logger, pluginManager: PluginManager | undefined, database: Db) {
+  constructor(logger: PinoLogger, pluginManager: PluginManager, database: Db) {
     this.logger = logger;
     if (pluginManager !== undefined) {
       this.pluginManager = pluginManager;

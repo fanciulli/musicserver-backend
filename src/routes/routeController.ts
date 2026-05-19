@@ -5,18 +5,18 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import type { FastifyInstance } from "fastify";
-import type { Logger } from "../server/logging.js";
+import type { Logger as PinoLogger } from "pino";
 import type { Context } from "../types/context.js";
+import type { FastifyInstance } from "fastify";
 import { Route } from "../types/route.js";
 import { listFiles } from "../utils/fsUtils.js";
 import path from "node:path";
 
 export class RouteController {
-  #logger: Logger;
+  #logger: PinoLogger;
   #context?: Context;
 
-  constructor(logger: Logger, context?: Context) {
+  constructor(logger: PinoLogger, context?: Context) {
     this.#logger = logger;
     this.#context = context;
   }
@@ -51,7 +51,7 @@ export class RouteController {
    * @param fastifyInstance The instance of Fastify to add the route to.
    * @param routeClass The Route definition.
    */
-  async registerRoute(fastifyInstance: FastifyInstance, routeClass: Route): Promise<void> {
+  async registerRoute(fastifyInstance: any, routeClass: Route): Promise<void> {
     fastifyInstance.route({
       method: routeClass.method,
       url: routeClass.url,

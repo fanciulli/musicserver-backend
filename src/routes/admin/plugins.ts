@@ -23,10 +23,8 @@ export default class PluginsRoute extends Route {
   };
 
   getInstalledPlugins = async (): Promise<Array<PluginListItem>> => {
-    const context: Context = this.getContext();
-    const db = context.database;
-
-    const plugins = context.pluginManager.getAllPlugins();
+    const db = this.getDatabase();
+    const plugins = this.getPluginManager().getAllPlugins();
     const response: Array<PluginListItem> = [];
 
     for (const plugin of plugins) {
