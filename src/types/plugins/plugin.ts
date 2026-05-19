@@ -29,18 +29,18 @@ export abstract class Plugin {
 
   start: () => Promise<void> = async () => {
     this.context.logger.info(
-      "Starting plugin " + this.category + "/" + this.id,
+      `Starting plugin ${this.category}/${this.id}`,
     );
   };
   stop: () => Promise<void> = async () => {
     this.context.logger.info(
-      "Stopping plugin " + this.category + "/" + this.id,
+      `Stopping plugin ${this.category}/${this.id}`,
     );
   };
 
   loadConfiguration: () => Promise<void> = async () => {
     this.context.logger.info(
-      "Loading configuration for plugin " + this.category + "/" + this.id,
+      `Loading configuration for plugin ${this.category}/${this.id}`,
     );
   };
 
@@ -54,7 +54,7 @@ export abstract class Plugin {
   updateConfiguration: (settings: PluginConfigurationValues) => Promise<void> =
     async (_settings: PluginConfigurationValues) => {
       this.context.logger.info(
-        "Updating configuration for plugin " + this.category + "/" + this.id,
+        `Updating configuration for plugin ${this.category}/${this.id}`,
       );
     };
 

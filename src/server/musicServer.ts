@@ -17,7 +17,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export class MusicServer {
-  #initDone: Boolean = false;
+  #initDone: boolean = false;
   #database?: Database;
   #pluginManager?: PluginManager;
   #fastifyInstance?: FastifyInstance;
@@ -49,7 +49,7 @@ export class MusicServer {
   async #startFastify() {
     const logger = createRollingLogger("fastify");
 
-    this.#fastifyInstance = fastify({ loggerInstance: logger }) as any;
+    this.#fastifyInstance = fastify({ loggerInstance: logger }) as unknown as FastifyInstance;
 
     const context = new Context(
       this.#logger,
@@ -76,7 +76,7 @@ export class MusicServer {
 
     const context = new Context(
       this.#logger,
-      [] as any,
+      undefined,
       this.#database!.client!,
     );
     this.#pluginManager = new PluginManager(pluginsDir, context);
@@ -88,10 +88,6 @@ export class MusicServer {
 
   async #startDatabase(): Promise<void> {
     this.#database = new Database();
-
-    if (!this.#database) {
-      throw new Error("Database initialization failed");
-    }
     await this.#database.start();
   }
 }

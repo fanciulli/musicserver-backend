@@ -5,6 +5,7 @@
  *
  * GitHub: https://github.com/fanciulli
  */
+import type { FastifyInstance } from "fastify";
 import type { Logger } from "../server/logging.js";
 import type { Context } from "../types/context.js";
 import { Route } from "../types/route.js";
@@ -24,7 +25,7 @@ export class RouteController {
    * Function to register all the routes into Fastify instance
    * @param fastifyInstance The Fastify instance
    */
-  async registerRoutes(fastifyInstance: any): Promise<void> {
+  async registerRoutes(fastifyInstance: FastifyInstance): Promise<void> {
     const routeFiles: string[] = await this.getRouteFiles();
 
     for (const routeFile of routeFiles) {
@@ -50,7 +51,7 @@ export class RouteController {
    * @param fastifyInstance The instance of Fastify to add the route to.
    * @param routeClass The Route definition.
    */
-  async registerRoute(fastifyInstance: any, routeClass: Route): Promise<void> {
+  async registerRoute(fastifyInstance: FastifyInstance, routeClass: Route): Promise<void> {
     fastifyInstance.route({
       method: routeClass.method,
       url: routeClass.url,

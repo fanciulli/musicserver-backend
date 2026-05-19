@@ -31,6 +31,7 @@ export const letters = [
   "T",
   "U",
   "V",
+  "W",
   "X",
   "Y",
   "Z",
