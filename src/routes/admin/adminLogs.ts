@@ -10,6 +10,8 @@ import { HttpMethods } from "../../misc/constants.js";
 import { AdminLogsSchema } from "../../types/api/adminLogs.js";
 import { LogLineDbModel } from "../../types/db/logLine.js";
 
+const VALID_LOG_IDS = new Set(["main", "fastify"]);
+
 export default class AdminLogsRoute extends Route {
   method = HttpMethods.GET;
   url = "/admin/logs";

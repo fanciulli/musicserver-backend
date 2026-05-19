@@ -77,7 +77,7 @@ class PluginList {
     const pluginClass = pluginModule.default;
     const pluginInstance: Plugin = new pluginClass(this.#context);
 
-    PluginDBModel.assertPluginIsRegisteredInDB(
+    await PluginDBModel.assertPluginIsRegisteredInDB(
       this.#context.database,
       pluginInstance.name,
       pluginInstance.category,

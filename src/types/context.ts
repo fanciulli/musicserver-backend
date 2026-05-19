@@ -11,12 +11,14 @@ import type { Db } from "mongodb";
 
 export class Context {
   logger: Logger;
-  pluginManager: PluginManager;
+  pluginManager!: PluginManager;
   database: Db;
 
-  constructor(logger: Logger, pluginManager: PluginManager, database: Db) {
+  constructor(logger: Logger, pluginManager: PluginManager | undefined, database: Db) {
     this.logger = logger;
-    this.pluginManager = pluginManager;
+    if (pluginManager !== undefined) {
+      this.pluginManager = pluginManager;
+    }
     this.database = database;
   }
 }
