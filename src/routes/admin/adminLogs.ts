@@ -11,12 +11,19 @@ import { Route } from "../../types/route.js";
 import { HttpMethods, MimeTypes } from "../../misc/constants.js";
 import { AdminLogsSchema } from "../../types/api/adminLogs.js";
 
+const VALID_LOG_IDS = new Set(["main", "fastify"]);
+
 export default class AdminLogsRoute extends Route {
   method = HttpMethods.GET;
   url = "/admin/logs";
   schema = AdminLogsSchema;
   handler = async (request: any, response: any) => {
     const logId = request.query.id;
+
+    if (!VALID_LOG_IDS.has(logId)) {
+      response.status(400).send({ error: "Invalid log id" });
+      return;
+    }
 
     const now = new Date();
     const year = now.getFullYear();

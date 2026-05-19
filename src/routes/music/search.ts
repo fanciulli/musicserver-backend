@@ -26,7 +26,7 @@ export default class SearchRoute extends Route {
   schema = SearchSchema;
   handler = async (request: any, response: any) => {
     const body = request.body as SearchRequestBody;
-    const plugins = await this.#resolvePlugins(response, body.scheme);
+    const plugins = await this.#resolvePlugins(body.scheme);
     if (plugins === undefined) {
       response
         .status(404)
@@ -43,7 +43,6 @@ export default class SearchRoute extends Route {
   };
 
   async #resolvePlugins(
-    response: any,
     scheme?: string,
   ): Promise<MusicSourcePlugin[] | undefined> {
     if (scheme) {

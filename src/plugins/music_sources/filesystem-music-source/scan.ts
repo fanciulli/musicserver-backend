@@ -160,7 +160,7 @@ export class FileSystemScan {
           FileSystemScan.#albumMap.set(cachedAlbumKey, album);
         }
 
-        album.insert(db);
+        await album.insert(db);
         return album;
       }
     } else {
