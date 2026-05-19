@@ -60,27 +60,27 @@ export class SongDbModel {
     return song;
   }
 
-  static async findById(db: Db, id: string): Promise<SongDbModel | null> {
+  static async findById(db: Db, id: string): Promise<SongDbModel | undefined> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
     const song = await collection.findOne({
       id: id,
     });
 
-    return song ? SongDbModel.fromJson(song) : null;
+    return song ? SongDbModel.fromJson(song) : undefined;
   }
 
   static async findByIdAndPluginId(
     db: Db,
     id: string,
     pluginId: string,
-  ): Promise<SongDbModel | null> {
+  ): Promise<SongDbModel | undefined> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
     const song = await collection.findOne({
       id: id,
       pluginId: pluginId,
     });
 
-    return song ? SongDbModel.fromJson(song) : null;
+    return song ? SongDbModel.fromJson(song) : undefined;
   }
 
   static async find(
@@ -88,7 +88,7 @@ export class SongDbModel {
     name: string,
     pluginId: string,
     albumId?: string,
-  ): Promise<SongDbModel | null> {
+  ): Promise<SongDbModel | undefined> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
     const filter: Record<string, any> = {
       name: name,
@@ -98,7 +98,7 @@ export class SongDbModel {
       filter["albumId"] = albumId;
     }
     const song = await collection.findOne(filter);
-    return song ? SongDbModel.fromJson(song) : null;
+    return song ? SongDbModel.fromJson(song) : undefined;
   }
 
   static async findSongsByAlbumId(

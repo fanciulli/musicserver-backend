@@ -32,14 +32,14 @@ export class ArtistDbModel {
     db: Db,
     name: string,
     pluginId: string,
-  ): Promise<ArtistDbModel | null> {
+  ): Promise<ArtistDbModel | undefined> {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
     const filter = {
       name: name,
       pluginId: pluginId,
     };
     const artist = await collection.findOne(filter);
-    return artist ? ArtistDbModel.fromJson(artist) : null;
+    return artist ? ArtistDbModel.fromJson(artist) : undefined;
   }
 
   static async findByIds(db: Db, ids: string[]): Promise<ArtistDbModel[]> {
@@ -87,7 +87,7 @@ export class ArtistDbModel {
     db: Db,
     pluginId: string,
     id: string,
-  ): Promise<ArtistDbModel | null> {
+  ): Promise<ArtistDbModel | undefined> {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
 
     const artist = await collection.findOne({
@@ -95,7 +95,7 @@ export class ArtistDbModel {
       pluginId: pluginId,
     });
 
-    return artist ? ArtistDbModel.fromJson(artist) : null;
+    return artist ? ArtistDbModel.fromJson(artist) : undefined;
   }
 
   async insert(db: Db): Promise<void> {
@@ -161,10 +161,10 @@ export class ArtistDbModel {
     return artists.map((artist) => ArtistDbModel.fromJson(artist));
   }
 
-  static async findById(db: Db, id: string): Promise<ArtistDbModel | null> {
+  static async findById(db: Db, id: string): Promise<ArtistDbModel | undefined> {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
     const artist = await collection.findOne({ id: id });
-    return artist ? ArtistDbModel.fromJson(artist) : null;
+    return artist ? ArtistDbModel.fromJson(artist) : undefined;
   }
 }
 
