@@ -18,15 +18,27 @@ export default class AdminLogsRoute extends Route {
     const { id, level, from, to, page, limit } = request.query;
     const db = this.getDatabase();
 
-    const result = await LogLineDbModel.query(db, {
-      logId: id,
-      level,
-      from: from ? new Date(from) : undefined,
-      to: to ? new Date(to) : undefined,
-      page: page !== undefined ? Number(page) : undefined,
-      limit: limit !== undefined ? Number(limit) : undefined,
-    });
+    if (from && isNaN(Date.parse(from))) {
+      response.status(400).send({ error: "Invalid 'from' date" });
+      return;
+    }
+    if (to && isNaN(Date.parse(to))) {
+      response.status(400).send({ error: "Invalid 'to' date" });
+      return;
+    }
 
-    response.send(result);
+    try {
+      const result = await LogLineDbModel.query(db, {
+        logId: id,
+        level,
+        from: from ? new Date(from) : undefined,
+        to: to ? new Date(to) : undefined,
+        page: page !== undefined ? Number(page) : undefined,
+        limit: limit !== undefined ? Number(limit) : undefined,
+      });
+      response.send(result);
+    } catch {
+      response.status(500).send({ error: "Failed to retrieve logs" });
+    }
   };
 }

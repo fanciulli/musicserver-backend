@@ -85,25 +85,6 @@ describe("LogLineDbModel.query", () => {
   });
 });
 
-describe("LogLineDbModel.insert", () => {
-  it("inserts the instance into the logs collection", async () => {
-    const insertOneMock = vi.fn().mockResolvedValue({});
-    const collectionMock = { insertOne: insertOneMock };
-    const dbMock = { collection: vi.fn().mockReturnValue(collectionMock) };
-
-    const entry = new LogLineDbModel();
-    entry.logId = "main";
-    entry.timestamp = new Date("2026-05-19T10:00:00Z");
-    entry.level = "info";
-    entry.message = "hello";
-
-    await entry.insert(dbMock as any);
-
-    expect(dbMock.collection).toHaveBeenCalledWith("logs");
-    expect(insertOneMock).toHaveBeenCalledWith(entry);
-  });
-});
-
 describe("LogLineDbModel.fromJson", () => {
   it("maps all four fields from a plain object", () => {
     const ts = new Date("2026-05-19T10:00:00Z");

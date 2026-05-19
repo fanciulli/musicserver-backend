@@ -113,4 +113,40 @@ describe("AdminLogsRoute", () => {
       );
     });
   });
+
+  describe("GET /admin/logs — error handling", () => {
+    it("returns 500 when LogLineDbModel.query throws", async () => {
+      mocks.logLineQuery.mockRejectedValue(new Error("DB connection lost"));
+
+      const route = new AdminLogsRoute(createContext());
+      const response = createResponseMock();
+
+      await route.handler({ query: { id: "main" } }, response);
+
+      expect(response.status).toHaveBeenCalledWith(500);
+      expect(response.send).toHaveBeenCalledWith({ error: "Failed to retrieve logs" });
+    });
+
+    it("returns 400 for invalid from date", async () => {
+      const route = new AdminLogsRoute(createContext());
+      const response = createResponseMock();
+
+      await route.handler({ query: { id: "main", from: "bananas" } }, response);
+
+      expect(response.status).toHaveBeenCalledWith(400);
+      expect(response.send).toHaveBeenCalledWith({ error: "Invalid 'from' date" });
+      expect(mocks.logLineQuery).not.toHaveBeenCalled();
+    });
+
+    it("returns 400 for invalid to date", async () => {
+      const route = new AdminLogsRoute(createContext());
+      const response = createResponseMock();
+
+      await route.handler({ query: { id: "main", to: "not-a-date" } }, response);
+
+      expect(response.status).toHaveBeenCalledWith(400);
+      expect(response.send).toHaveBeenCalledWith({ error: "Invalid 'to' date" });
+      expect(mocks.logLineQuery).not.toHaveBeenCalled();
+    });
+  });
 });

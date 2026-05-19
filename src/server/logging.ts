@@ -6,8 +6,7 @@
  * GitHub: https://github.com/fanciulli
  */
 import type { Db } from "mongodb";
-
-const COLLECTION_NAME = "logs";
+import { LOGS_COLLECTION } from "../types/db/logLine.js";
 
 interface BufferedEntry {
   level: string;
@@ -27,7 +26,7 @@ export class Logger {
 
   #flushBuffer(): void {
     if (!this.#db) return;
-    const collection = this.#db.collection(COLLECTION_NAME);
+    const collection = this.#db.collection(LOGS_COLLECTION);
     for (const entry of this.#buffer) {
       collection.insertOne({ ...entry, logId: "main" }).catch((e) => console.error("[Logger] insertOne failed:", e));
     }
@@ -38,7 +37,7 @@ export class Logger {
     const entry: BufferedEntry = { level, message, timestamp: new Date() };
     if (this.#db) {
       this.#db
-        .collection(COLLECTION_NAME)
+        .collection(LOGS_COLLECTION)
         .insertOne({ ...entry, logId: "main" })
         .catch((e) => console.error("[Logger] insertOne failed:", e));
     } else {

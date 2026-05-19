@@ -8,8 +8,7 @@
 import { Writable } from "stream";
 import type { Db } from "mongodb";
 import pino from "pino";
-
-const COLLECTION_NAME = "logs";
+import { LOGS_COLLECTION } from "../types/db/logLine.js";
 
 function pinoLevelToString(level: number): string {
   if (level >= 60) return "fatal";
@@ -35,7 +34,7 @@ export function createDatabaseLogger(logId: string, db: Db) {
         cb();
         return;
       }
-      db.collection(COLLECTION_NAME)
+      db.collection(LOGS_COLLECTION)
         .insertOne({
           logId,
           timestamp: new Date(parsed.time),
@@ -43,7 +42,10 @@ export function createDatabaseLogger(logId: string, db: Db) {
           message: parsed.msg,
         })
         .then(() => cb())
-        .catch((err) => cb(err));
+        .catch((err) => {
+          console.error("[MongoTransport] insertOne failed:", err);
+          cb();
+        });
     },
   });
   return pino(stream);

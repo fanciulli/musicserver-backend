@@ -7,7 +7,7 @@
  */
 import { Db } from "mongodb";
 
-const COLLECTION_NAME = "logs";
+export const LOGS_COLLECTION = "logs";
 
 export interface LogLineQuery {
   logId: string;
@@ -47,7 +47,7 @@ export class LogLineDbModel {
 
     const limit = filter.limit ?? 50;
     const skip = ((filter.page ?? 1) - 1) * limit;
-    const collection = db.collection<LogLineDbModel>(COLLECTION_NAME);
+    const collection = db.collection<LogLineDbModel>(LOGS_COLLECTION);
 
     const [docs, total] = await Promise.all([
       collection.find(query).sort({ timestamp: -1 }).skip(skip).limit(limit).toArray(),
@@ -57,14 +57,10 @@ export class LogLineDbModel {
     return { entries: docs.map(LogLineDbModel.fromJson), total };
   }
 
-  async insert(db: Db): Promise<void> {
-    const collection = db.collection<LogLineDbModel>(COLLECTION_NAME);
-    await collection.insertOne(this);
-  }
 }
 
 export function init(db: Db): void {
-  db.collection(COLLECTION_NAME)
+  db.collection(LOGS_COLLECTION)
     .createIndex({ logId: 1, timestamp: -1 })
     .catch((err) => console.error("Failed to create logs index:", err));
 }
