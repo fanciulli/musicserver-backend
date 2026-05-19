@@ -10,7 +10,7 @@ import type { Context } from "./context.js";
 
 export interface IRoute {
   method: HttpMethods;
-  url: String;
+  url: string;
   handler: (request: any, response: any) => any;
 }
 
@@ -18,7 +18,7 @@ export abstract class Route implements IRoute {
   #context: Context;
   method: HttpMethods = HttpMethods.GET;
   schema: object = {};
-  abstract url: String;
+  abstract url: string;
   abstract handler: (request: any, response: any) => any;
 
   constructor(context: Context) {
