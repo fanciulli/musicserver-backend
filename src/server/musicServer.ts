@@ -11,7 +11,7 @@ import type { FastifyInstance } from "fastify";
 import { RouteController } from "../routes/routeController.js";
 import { Database } from "./database.js";
 import { Logger } from "./logging.js";
-import { createRollingLogger } from "./loggingRollingTransport.js";
+import { createDatabaseLogger } from "./loggingMongoTransport.js";
 import { Context } from "../types/context.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,6 +31,7 @@ export class MusicServer {
         this.#logger.info("Starting Music Server");
 
         await this.#startDatabase();
+        this.#logger.setDatabase(this.#database!.client!);
         await this.#startPluginManager();
         await this.#startFastify();
       } catch (err) {
@@ -47,7 +48,7 @@ export class MusicServer {
   }
 
   async #startFastify() {
-    const logger = createRollingLogger("fastify");
+    const logger = createDatabaseLogger("fastify", this.#database!.client!);
 
     this.#fastifyInstance = fastify({ loggerInstance: logger }) as any;
 
@@ -59,7 +60,6 @@ export class MusicServer {
     const rc = new RouteController(this.#logger, context);
     await rc.registerRoutes(this.#fastifyInstance);
 
-    // Run the server!
     this.#fastifyInstance!.listen({ port: 3000, host: "0.0.0.0" }, (err) => {
       if (err) {
         this.#fastifyInstance!.log.error(err);

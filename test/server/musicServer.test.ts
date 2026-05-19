@@ -19,6 +19,7 @@ const state = vi.hoisted(() => ({
 const spies = vi.hoisted(() => ({
   loggerInfo: vi.fn(),
   loggerError: vi.fn(),
+  loggerSetDatabase: vi.fn(),
   consoleError: vi.fn(),
   processExit: vi.fn(),
   rm: vi.fn(),
@@ -29,8 +30,7 @@ const spies = vi.hoisted(() => ({
   pluginManagerCtor: vi.fn(),
   loadPlugins: vi.fn(),
   startPlugins: vi.fn(),
-  pinoTransport: vi.fn(),
-  pinoFactory: vi.fn(),
+  createDatabaseLogger: vi.fn(),
 }));
 
 vi.mock("node:fs/promises", () => ({
@@ -51,6 +51,10 @@ vi.mock("../../src/server/logging.js", () => ({
       if (state.loggerCtorError) {
         throw state.loggerCtorError;
       }
+    }
+
+    setDatabase(_db: unknown) {
+      spies.loggerSetDatabase(_db);
     }
 
     info(message: string) {
@@ -131,18 +135,10 @@ vi.mock("../../src/plugins/pluginManager.js", () => ({
   },
 }));
 
-vi.mock("pino", () => {
-  const pinoMock = Object.assign(
-    (...args: unknown[]) => spies.pinoFactory(...args),
-    {
-      transport: (...args: unknown[]) => spies.pinoTransport(...args),
-    },
-  );
-
-  return {
-    default: pinoMock,
-  };
-});
+vi.mock("../../src/server/loggingMongoTransport.js", () => ({
+  createDatabaseLogger: (...args: unknown[]) =>
+    spies.createDatabaseLogger(...args),
+}));
 
 describe("MusicServer.run", () => {
   beforeEach(() => {
@@ -156,9 +152,6 @@ describe("MusicServer.run", () => {
     state.loadPluginsError = null;
     state.startPluginsError = null;
 
-    spies.pinoTransport.mockReturnValue("transport-instance");
-    spies.pinoFactory.mockReturnValue("pino-instance");
-
     vi.spyOn(console, "error").mockImplementation(spies.consoleError);
     vi.spyOn(process, "exit").mockImplementation(spies.processExit as never);
   });
@@ -171,6 +164,7 @@ describe("MusicServer.run", () => {
 
     expect(spies.loggerInfo).toHaveBeenCalledWith("Starting Music Server");
     expect(spies.databaseStart).toHaveBeenCalledTimes(1);
+    expect(spies.loggerSetDatabase).toHaveBeenCalledTimes(1);
     expect(spies.registerRoutes).toHaveBeenCalledTimes(1);
     expect(spies.loadPlugins).toHaveBeenCalledTimes(1);
     expect(spies.startPlugins).toHaveBeenCalledTimes(1);
