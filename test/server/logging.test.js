@@ -5,73 +5,110 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { join } from "path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { transportMock, pinoFactoryMock, infoMock, errorMock } = vi.hoisted(
-  () => ({
-    transportMock: vi.fn(),
-    pinoFactoryMock: vi.fn(),
-    infoMock: vi.fn(),
-    errorMock: vi.fn(),
-  }),
-);
-
-vi.mock("pino", () => {
-  const pinoMock = Object.assign((...args) => pinoFactoryMock(...args), {
-    transport: (...args) => transportMock(...args),
-  });
-
-  return {
-    default: pinoMock,
-  };
-});
-
 describe("Logger", () => {
+  let insertOneMock;
+  let collectionMock;
+  let dbMock;
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules();
-
-    transportMock.mockReturnValue("transport-instance");
-    pinoFactoryMock.mockReturnValue({
-      info: infoMock,
-      error: errorMock,
-    });
+    insertOneMock = vi.fn().mockResolvedValue({});
+    collectionMock = { insertOne: insertOneMock };
+    dbMock = { collection: vi.fn().mockReturnValue(collectionMock) };
   });
 
-  it("configures pino with the rolling transport", async () => {
-    await import("../../src/server/logging.js");
-
-    expect(transportMock).toHaveBeenCalledWith({
-      target: "pino-roll",
-      options: {
-        file: join("logs", "main"),
-        size: 1,
-        frequency: "daily",
-        mkdir: true,
-        dateFormat: "yyyy-MM-dd",
-      },
-    });
-    expect(pinoFactoryMock).toHaveBeenCalledWith("transport-instance");
-  });
-
-  it("forwards info messages to the underlying logger", async () => {
+  it("buffers log entries before setDatabase is called", async () => {
     const { Logger } = await import("../../src/server/logging.js");
-
     const logger = new Logger();
-    logger.info("scan started");
 
-    expect(infoMock).toHaveBeenCalledWith("scan started");
-    expect(errorMock).not.toHaveBeenCalled();
+    logger.info("startup message");
+    logger.error("startup error");
+
+    expect(insertOneMock).not.toHaveBeenCalled();
   });
 
-  it("forwards error messages to the underlying logger", async () => {
+  it("flushes buffered entries to DB on setDatabase", async () => {
     const { Logger } = await import("../../src/server/logging.js");
-
     const logger = new Logger();
-    logger.error("scan failed");
 
-    expect(errorMock).toHaveBeenCalledWith("scan failed");
-    expect(infoMock).not.toHaveBeenCalled();
+    logger.info("before db");
+    logger.error("also before db");
+
+    logger.setDatabase(dbMock);
+
+    // allow async flush
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(dbMock.collection).toHaveBeenCalledWith("logs");
+    expect(insertOneMock).toHaveBeenCalledTimes(2);
+    expect(insertOneMock).toHaveBeenCalledWith(
+      expect.objectContaining({ level: "info", message: "before db", logId: "main" })
+    );
+    expect(insertOneMock).toHaveBeenCalledWith(
+      expect.objectContaining({ level: "error", message: "also before db", logId: "main" })
+    );
+
+    // verify buffer was cleared — post-setDatabase write is direct (not re-flushed)
+    logger.info("after db");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(insertOneMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("writes info directly to DB after setDatabase", async () => {
+    const { Logger } = await import("../../src/server/logging.js");
+    const logger = new Logger();
+    logger.setDatabase(dbMock);
+
+    logger.info("direct info");
+
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(insertOneMock).toHaveBeenCalledWith(
+      expect.objectContaining({ level: "info", message: "direct info", logId: "main" })
+    );
+  });
+
+  it("writes error directly to DB after setDatabase", async () => {
+    const { Logger } = await import("../../src/server/logging.js");
+    const logger = new Logger();
+    logger.setDatabase(dbMock);
+
+    logger.error("direct error");
+
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(insertOneMock).toHaveBeenCalledWith(
+      expect.objectContaining({ level: "error", message: "direct error", logId: "main" })
+    );
+  });
+
+  it("writes debug directly to DB after setDatabase", async () => {
+    const { Logger } = await import("../../src/server/logging.js");
+    const logger = new Logger();
+    logger.setDatabase(dbMock);
+
+    logger.debug("direct debug");
+
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(insertOneMock).toHaveBeenCalledWith(
+      expect.objectContaining({ level: "debug", message: "direct debug", logId: "main" })
+    );
+  });
+
+  it("inserts entries with a timestamp", async () => {
+    const { Logger } = await import("../../src/server/logging.js");
+    const logger = new Logger();
+    logger.setDatabase(dbMock);
+
+    logger.info("timestamped");
+
+    await new Promise((r) => setTimeout(r, 0));
+
+    const [doc] = insertOneMock.mock.calls[0];
+    expect(doc.timestamp).toBeInstanceOf(Date);
   });
 });
