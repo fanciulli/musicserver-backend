@@ -40,4 +40,14 @@ export abstract class Route implements IRoute {
     }
     return db;
   }
+
+  protected getPluginManager() {
+    const pluginManager = this.getContext().pluginManager;
+
+    if (!pluginManager) {
+      throw new Error("Plugin Manager is not available in the context");
+    }
+
+    return pluginManager;
+  }
 }

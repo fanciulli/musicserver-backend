@@ -18,7 +18,7 @@ export default class PluginConfigGetRoute extends Route {
   schema = PluginConfigGetSchema;
   handler = async (request: any, response: any) => {
     const pluginId = request.params.pluginId;
-    const pluginManager = this.getContext().pluginManager;
+    const pluginManager = this.getPluginManager();
 
     const configResult = await pluginManager.getPluginConfiguration(pluginId);
     if ("error" in configResult) {

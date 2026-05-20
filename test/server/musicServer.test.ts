@@ -29,8 +29,7 @@ const spies = vi.hoisted(() => ({
   pluginManagerCtor: vi.fn(),
   loadPlugins: vi.fn(),
   startPlugins: vi.fn(),
-  pinoTransport: vi.fn(),
-  pinoFactory: vi.fn(),
+  createDatabaseLogger: vi.fn(),
 }));
 
 vi.mock("node:fs/promises", () => ({
@@ -42,24 +41,6 @@ vi.mock("node:fs/promises", () => ({
     }
 
     return Promise.resolve();
-  },
-}));
-
-vi.mock("../../src/server/logging.js", () => ({
-  Logger: class MockLogger {
-    constructor() {
-      if (state.loggerCtorError) {
-        throw state.loggerCtorError;
-      }
-    }
-
-    info(message: string) {
-      spies.loggerInfo(message);
-    }
-
-    error(message: string) {
-      spies.loggerError(message);
-    }
   },
 }));
 
@@ -131,18 +112,15 @@ vi.mock("../../src/plugins/pluginManager.js", () => ({
   },
 }));
 
-vi.mock("pino", () => {
-  const pinoMock = Object.assign(
-    (...args: unknown[]) => spies.pinoFactory(...args),
-    {
-      transport: (...args: unknown[]) => spies.pinoTransport(...args),
-    },
-  );
-
-  return {
-    default: pinoMock,
-  };
-});
+vi.mock("../../src/server/loggingMongoTransport.js", () => ({
+  createDatabaseLogger: (...args: unknown[]) => {
+    spies.createDatabaseLogger(...args);
+    return {
+      info: spies.loggerInfo,
+      error: spies.loggerError,
+    };
+  },
+}));
 
 describe("MusicServer.run", () => {
   beforeEach(() => {
@@ -156,9 +134,6 @@ describe("MusicServer.run", () => {
     state.loadPluginsError = null;
     state.startPluginsError = null;
 
-    spies.pinoTransport.mockReturnValue("transport-instance");
-    spies.pinoFactory.mockReturnValue("pino-instance");
-
     vi.spyOn(console, "error").mockImplementation(spies.consoleError);
     vi.spyOn(process, "exit").mockImplementation(spies.processExit as never);
   });
@@ -171,6 +146,7 @@ describe("MusicServer.run", () => {
 
     expect(spies.loggerInfo).toHaveBeenCalledWith("Starting Music Server");
     expect(spies.databaseStart).toHaveBeenCalledTimes(1);
+    expect(spies.createDatabaseLogger).toHaveBeenCalledTimes(2);
     expect(spies.registerRoutes).toHaveBeenCalledTimes(1);
     expect(spies.loadPlugins).toHaveBeenCalledTimes(1);
     expect(spies.startPlugins).toHaveBeenCalledTimes(1);
@@ -179,7 +155,7 @@ describe("MusicServer.run", () => {
     expect(spies.processExit).not.toHaveBeenCalled();
   });
 
-  it("handles #startDatabase exception with logger.error and exit code 1", async () => {
+  it("handles #startDatabase exception with console.error and exit code 1", async () => {
     const databaseError = new Error("database start failed");
     state.databaseStartError = databaseError;
 
@@ -188,11 +164,11 @@ describe("MusicServer.run", () => {
 
     await expect(musicServerInstance.run()).resolves.toBeUndefined();
 
-    expect(spies.loggerError).toHaveBeenCalledTimes(1);
-    expect(spies.loggerError.mock.calls[0][0]).toContain(
+    expect(spies.loggerError).not.toHaveBeenCalled();
+    expect(spies.consoleError).toHaveBeenCalledTimes(1);
+    expect(spies.consoleError.mock.calls[0][0]).toContain(
       "Error during Music Server initialization:",
     );
-    expect(spies.consoleError).not.toHaveBeenCalled();
     expect(spies.processExit).toHaveBeenCalledWith(1);
   });
 

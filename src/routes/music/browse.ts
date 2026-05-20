@@ -37,10 +37,9 @@ export default class BrowseRoute extends Route {
   };
 
   async browserRoot() {
-    const context = this.getContext();
-    const database = context.database;
+    const database = this.getDatabase();
 
-    const plugins: Array<Plugin> = context.pluginManager.getPluginsInCategory(
+    const plugins: Array<Plugin> = this.getPluginManager().getPluginsInCategory(
       MUSIC_SOURCE_PLUGIN_CATEGORY,
     );
 

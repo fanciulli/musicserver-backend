@@ -17,9 +17,8 @@ export default class PluginStartRoute extends Route {
   handler = async (request: any, response: any) => {
     const pluginId = request.body.pluginId;
 
-    const context = this.getContext();
-    const database = context.database;
-    const plugin = context.pluginManager.getPluginById(pluginId);
+    const database = this.getDatabase();
+    const plugin = this.getPluginManager().getPluginById(pluginId);
 
     if (plugin === undefined) {
       response.status(404).send({ error: `Plugin ${pluginId} not found` });
