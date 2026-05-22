@@ -16,6 +16,7 @@ export default class AlbumArtRoute extends Route {
   method = HttpMethods.GET;
   url = "/music/albumart";
   schema = AlbumArtSchema;
+  requiresAuth = true;
   handler = async (request: any, response: any) => {
     const uri = request.query.id;
     const pluginId = extractPluginId(uri);
