@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "fastify": "5.8.5",
+    "fastify-auth-by-api-key": "^1.0.1",
     "mongodb": "7.2.0",
     "music-metadata": "11.12.3",
     "uuid": "14.0.0"
