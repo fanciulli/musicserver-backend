@@ -6,7 +6,7 @@
  * GitHub: https://github.com/fanciulli
  */
 import { describe, it, expect, vi } from "vitest";
-import { ApiKeyDbModel } from "../../../src/types/db/apiKey.js";
+import { ApiKeyDbModel, init } from "../../../src/types/db/apiKey.js";
 
 function makeDb(findOneResult: unknown = null, deleteResult = { deletedCount: 1 }) {
   const collection = {
@@ -18,6 +18,16 @@ function makeDb(findOneResult: unknown = null, deleteResult = { deletedCount: 1 
   };
   return { db: { collection: vi.fn().mockReturnValue(collection) }, _col: collection } as any;
 }
+
+describe("init", () => {
+  it("creates an index on keyHash", () => {
+    const createIndex = vi.fn();
+    const db = { collection: vi.fn().mockReturnValue({ createIndex }) } as any;
+    init(db);
+    expect(db.collection).toHaveBeenCalledWith("api_keys");
+    expect(createIndex).toHaveBeenCalledWith({ keyHash: 1 });
+  });
+});
 
 describe("ApiKeyDbModel.findByHash", () => {
   it("queries by keyHash and returns model", async () => {
@@ -37,12 +47,14 @@ describe("ApiKeyDbModel.findByHash", () => {
 
 describe("ApiKeyDbModel.findAll", () => {
   it("returns all records without keyHash field", async () => {
-    const col = {
-      find: vi.fn().mockReturnValue({ project: vi.fn().mockReturnValue({ toArray: vi.fn().mockResolvedValue([{ id: "1", name: "k" }]) }) }),
-    };
+    const toArray = vi.fn().mockResolvedValue([{ id: "1", name: "k" }]);
+    const project = vi.fn().mockReturnValue({ toArray });
+    const find = vi.fn().mockReturnValue({ project });
+    const col = { find };
     const db = { collection: vi.fn().mockReturnValue(col) } as any;
     const result = await ApiKeyDbModel.findAll(db);
-    expect(col.find).toHaveBeenCalled();
+    expect(find).toHaveBeenCalled();
+    expect(project).toHaveBeenCalledWith({ keyHash: 0 });
     expect(result).toHaveLength(1);
   });
 });
