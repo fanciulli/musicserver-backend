@@ -26,7 +26,7 @@ export async function validateApiKey(
       .findOne({ keyHash: hash });
 
     if (!found) return ApiKeyCheckStatus.Invalid;
-    if (found.expiresAt !== null && new Date() > found.expiresAt) {
+    if (found.expiresAt !== null && new Date() > new Date(found.expiresAt)) {
       return ApiKeyCheckStatus.Invalid;
     }
     return ApiKeyCheckStatus.Valid;
