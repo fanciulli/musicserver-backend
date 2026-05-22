@@ -11,6 +11,8 @@ import type { FastifyInstance } from "fastify";
 import { Route } from "../types/route.js";
 import { listFiles } from "../utils/fsUtils.js";
 import path from "node:path";
+import { apiKeyPlugin } from "fastify-auth-by-api-key";
+import { validateApiKey } from "../utils/apiKeyUtils.js";
 
 export class RouteController {
   #logger: PinoLogger;
@@ -27,14 +29,33 @@ export class RouteController {
    */
   async registerRoutes(fastifyInstance: FastifyInstance): Promise<void> {
     const routeFiles: string[] = await this.getRouteFiles();
+    const allRoutes: Route[] = [];
 
     for (const routeFile of routeFiles) {
       const routeModule = await import(routeFile);
       const route: Route = new routeModule.default(this.#context);
+      allRoutes.push(route);
+    }
 
-      this.#logger.info(`Registering route: [${route.method}] ${route.url}`);
+    const publicRoutes = allRoutes.filter((r) => !r.requiresAuth);
+    const authenticatedRoutes = allRoutes.filter((r) => r.requiresAuth);
+
+    for (const route of publicRoutes) {
+      this.#logger.info(`Registering public route: [${route.method}] ${route.url}`);
       await this.registerRoute(fastifyInstance, route);
     }
+
+    await fastifyInstance.register(async (app) => {
+      const db = this.#context!.database;
+      await app.register(apiKeyPlugin, {
+        checkApiKey: (key) => validateApiKey(db, key),
+      });
+
+      for (const route of authenticatedRoutes) {
+        this.#logger.info(`Registering authenticated route: [${route.method}] ${route.url}`);
+        await this.registerRoute(app, route);
+      }
+    });
   }
 
   private async getRouteFiles(): Promise<string[]> {
