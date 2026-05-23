@@ -18,7 +18,6 @@ export default class StreamRoute extends Route {
   method = HttpMethods.GET;
   url = "/music/stream";
   schema = StreamSchema;
-  requiresAuth = true;
   handler = async (request: any, response: any) => {
     const streamId = request.query.id;
     const pluginId: string = extractPluginId(streamId);
