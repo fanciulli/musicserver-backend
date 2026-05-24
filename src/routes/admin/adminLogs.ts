@@ -5,11 +5,10 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { readFile, readdir } from "fs/promises";
-import { join } from "path";
 import { Route } from "../../types/route.js";
-import { HttpMethods, MimeTypes } from "../../misc/constants.js";
+import { HttpMethods } from "../../misc/constants.js";
 import { AdminLogsSchema } from "../../types/api/adminLogs.js";
+import { LogLineDbModel } from "../../types/db/logLine.js";
 
 const VALID_LOG_IDS = new Set(["main", "fastify"]);
 
@@ -18,54 +17,21 @@ export default class AdminLogsRoute extends Route {
   url = "/admin/logs";
   schema = AdminLogsSchema;
   handler = async (request: any, response: any) => {
-    const logId = request.query.id;
-
-    if (!VALID_LOG_IDS.has(logId)) {
-      response.status(400).send({ error: "Invalid log id" });
-      return;
-    }
-
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    const date = `${year}-${month}-${day}`;
+    const { id, level, from, to, page, limit } = request.query;
+    const db = this.getDatabase();
 
     try {
-      const latestLogFile = (await readdir("logs")).reduce<{
-        fileName: string;
-        index: number;
-      } | null>((latestFile, fileName) => {
-        const match = fileName.match(
-          new RegExp(`^${logId}\\.${date}\\.(\\d+)\\.log$`),
-        );
-
-        if (!match) {
-          return latestFile;
-        }
-
-        const candidateFile = {
-          fileName,
-          index: Number(match[1]),
-        };
-
-        if (!latestFile || candidateFile.index > latestFile.index) {
-          return candidateFile;
-        }
-
-        return latestFile;
-      }, null);
-
-      if (!latestLogFile) {
-        response.status(404).send({ error: "Log file not found" });
-        return;
-      }
-
-      const filePath = join("logs", latestLogFile.fileName);
-      const logContent = await readFile(filePath, "utf-8");
-      response.type(MimeTypes.TEXT_PLAIN).send(logContent);
-    } catch (error) {
-      response.status(404).send({ error: "Log file not found" });
+      const result = await LogLineDbModel.query(db, {
+        logId: id,
+        level,
+        from: from ? new Date(from) : undefined,
+        to: to ? new Date(to) : undefined,
+        page: page !== undefined ? Number(page) : undefined,
+        limit: limit !== undefined ? Number(limit) : undefined,
+      });
+      response.send(result);
+    } catch {
+      response.status(500).send({ error: "Failed to retrieve logs" });
     }
   };
 }

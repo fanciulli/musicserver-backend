@@ -193,7 +193,6 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     const song = await SongDbModel.findById(db, id);
     let albumId: string | undefined;
 
-    this.context.logger.info(`Searching for id ${id}`);
     if (!song) {
       albumId = id; // Trying if the id is an album id
     } else {

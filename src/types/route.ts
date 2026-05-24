@@ -18,6 +18,7 @@ export abstract class Route implements IRoute {
   #context: Context;
   method: HttpMethods = HttpMethods.GET;
   schema: object = {};
+  requiresAuth: boolean = false;
   abstract url: string;
   abstract handler: (request: any, response: any) => any;
 
@@ -39,5 +40,15 @@ export abstract class Route implements IRoute {
       throw new Error("Database is not available in the context");
     }
     return db;
+  }
+
+  protected getPluginManager() {
+    const pluginManager = this.getContext().pluginManager;
+
+    if (!pluginManager) {
+      throw new Error("Plugin Manager is not available in the context");
+    }
+
+    return pluginManager;
   }
 }

@@ -5,18 +5,20 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import type { FastifyInstance } from "fastify";
-import type { Logger } from "../server/logging.js";
+import type { Logger as PinoLogger } from "pino";
 import type { Context } from "../types/context.js";
+import type { FastifyInstance } from "fastify";
 import { Route } from "../types/route.js";
 import { listFiles } from "../utils/fsUtils.js";
 import path from "node:path";
+import { apiKeyPlugin } from "fastify-auth-by-api-key";
+import { validateApiKey } from "../utils/apiKeyUtils.js";
 
 export class RouteController {
-  #logger: Logger;
+  #logger: PinoLogger;
   #context?: Context;
 
-  constructor(logger: Logger, context?: Context) {
+  constructor(logger: PinoLogger, context?: Context) {
     this.#logger = logger;
     this.#context = context;
   }
@@ -27,14 +29,39 @@ export class RouteController {
    */
   async registerRoutes(fastifyInstance: FastifyInstance): Promise<void> {
     const routeFiles: string[] = await this.getRouteFiles();
+    const allRoutes: Route[] = [];
 
     for (const routeFile of routeFiles) {
       const routeModule = await import(routeFile);
       const route: Route = new routeModule.default(this.#context);
+      allRoutes.push(route);
+    }
 
-      this.#logger.info(`Registering route: [${route.method}] ${route.url}`);
+    const publicRoutes = allRoutes.filter((r) => !r.requiresAuth);
+    const authenticatedRoutes = allRoutes.filter((r) => r.requiresAuth);
+
+    for (const route of publicRoutes) {
+      this.#logger.info(
+        `Registering public route: [${route.method}] ${route.url}`,
+      );
       await this.registerRoute(fastifyInstance, route);
     }
+
+    await fastifyInstance.register(async (app) => {
+      const db = this.#context!.database;
+      await app.register(apiKeyPlugin, {
+        checkApiKey: (key: string) => validateApiKey(db, key),
+        allowInHeader: true,
+        allowAsQueryParameter: true,
+      });
+
+      for (const route of authenticatedRoutes) {
+        this.#logger.info(
+          `Registering authenticated route: [${route.method}] ${route.url}`,
+        );
+        await this.registerRoute(app, route);
+      }
+    });
   }
 
   private async getRouteFiles(): Promise<string[]> {
@@ -51,7 +78,7 @@ export class RouteController {
    * @param fastifyInstance The instance of Fastify to add the route to.
    * @param routeClass The Route definition.
    */
-  async registerRoute(fastifyInstance: FastifyInstance, routeClass: Route): Promise<void> {
+  async registerRoute(fastifyInstance: any, routeClass: Route): Promise<void> {
     fastifyInstance.route({
       method: routeClass.method,
       url: routeClass.url,

@@ -27,7 +27,7 @@ export async function getPluginById(
   pluginId: string,
   context: Context,
 ): Promise<PluginResolutionResult> {
-  const plugin = context.pluginManager.getPlugin(
+  const plugin = context.pluginManager?.getPlugin(
     MUSIC_SOURCE_PLUGIN_CATEGORY,
     pluginId,
   ) as MusicSourcePlugin;
