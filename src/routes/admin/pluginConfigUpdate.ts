@@ -21,7 +21,7 @@ export default class PluginConfigUpdateRoute extends Route {
     const settings = request.body.settings as Record<string, unknown>;
 
     const configResult =
-      await this.getContext().pluginManager.updatePluginConfiguration(
+      await this.getPluginManager().updatePluginConfiguration(
         pluginId,
         settings,
       );

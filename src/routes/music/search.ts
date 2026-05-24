@@ -24,9 +24,10 @@ export default class SearchRoute extends Route {
   method = HttpMethods.POST;
   url = "/music/search";
   schema = SearchSchema;
+  requiresAuth = true;
   handler = async (request: any, response: any) => {
     const body = request.body as SearchRequestBody;
-    const plugins = await this.#resolvePlugins(response, body.scheme);
+    const plugins = await this.#resolvePlugins(body.scheme);
     if (plugins === undefined) {
       response
         .status(404)
@@ -43,7 +44,6 @@ export default class SearchRoute extends Route {
   };
 
   async #resolvePlugins(
-    response: any,
     scheme?: string,
   ): Promise<MusicSourcePlugin[] | undefined> {
     if (scheme) {
@@ -60,7 +60,7 @@ export default class SearchRoute extends Route {
       }
     }
 
-    const pluginManager = this.getContext().pluginManager;
+    const pluginManager = this.getPluginManager();
     return pluginManager.getPluginsInCategory(
       MUSIC_SOURCE_PLUGIN_CATEGORY,
     ) as MusicSourcePlugin[];

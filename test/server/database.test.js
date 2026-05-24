@@ -21,6 +21,10 @@ vi.mock("../../src/utils/fsUtils.js", () => ({
   listFiles: listFilesMock,
 }));
 
+const { closeMock } = vi.hoisted(() => ({
+  closeMock: vi.fn(),
+}));
+
 vi.mock("mongodb", () => {
   class MockMongoClient {
     constructor(uri, options) {
@@ -33,6 +37,10 @@ vi.mock("mongodb", () => {
 
     db(name) {
       return dbMock(name);
+    }
+
+    close() {
+      return closeMock();
     }
   }
 
@@ -110,11 +118,13 @@ describe("Database.start", () => {
 
 describe("Database.disconnect", () => {
   it("closes the underlying MongoDB client", async () => {
-    const closeMock = vi.fn().mockResolvedValue(undefined);
+    closeMock.mockResolvedValue(undefined);
+    connectMock.mockResolvedValue(undefined);
+    dbMock.mockReturnValue({});
+    listFilesMock.mockResolvedValue([]);
+
     const database = new Database();
-    database.client = {
-      client: { close: closeMock },
-    };
+    await database.connect();
 
     await expect(database.disconnect()).resolves.toBeUndefined();
     expect(closeMock).toHaveBeenCalledTimes(1);

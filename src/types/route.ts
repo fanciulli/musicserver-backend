@@ -10,7 +10,7 @@ import type { Context } from "./context.js";
 
 export interface IRoute {
   method: HttpMethods;
-  url: String;
+  url: string;
   handler: (request: any, response: any) => any;
 }
 
@@ -18,7 +18,8 @@ export abstract class Route implements IRoute {
   #context: Context;
   method: HttpMethods = HttpMethods.GET;
   schema: object = {};
-  abstract url: String;
+  requiresAuth: boolean = false;
+  abstract url: string;
   abstract handler: (request: any, response: any) => any;
 
   constructor(context: Context) {
@@ -39,5 +40,15 @@ export abstract class Route implements IRoute {
       throw new Error("Database is not available in the context");
     }
     return db;
+  }
+
+  protected getPluginManager() {
+    const pluginManager = this.getContext().pluginManager;
+
+    if (!pluginManager) {
+      throw new Error("Plugin Manager is not available in the context");
+    }
+
+    return pluginManager;
   }
 }

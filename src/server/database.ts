@@ -11,16 +11,17 @@ import path from "node:path";
 
 export class Database {
   client?: Db;
+  #mongoClient?: MongoClient;
 
   async connect(): Promise<void> {
     const uri = process.env.MONGO_URI || "mongodb://localhost:27017";
-    const mongoClient = new MongoClient(uri, {
+    this.#mongoClient = new MongoClient(uri, {
       connectTimeoutMS: 5000,
       serverSelectionTimeoutMS: 5000,
     });
-    await mongoClient.connect();
+    await this.#mongoClient.connect();
 
-    this.client = mongoClient.db("music-server");
+    this.client = this.#mongoClient.db("music-server");
   }
 
   async #initModels(): Promise<void> {
@@ -29,7 +30,7 @@ export class Database {
 
     for (const modelFile of modelFiles) {
       const modelModule = await import(modelFile);
-      modelModule.init(this.client);
+      await modelModule.init(this.client);
     }
   }
 
@@ -39,6 +40,6 @@ export class Database {
   }
 
   async disconnect(): Promise<void> {
-    await this.client?.client.close();
+    await this.#mongoClient?.close();
   }
 }

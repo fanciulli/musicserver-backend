@@ -7,7 +7,10 @@
  */
 import { PluginDBModel, PluginStatus } from "../types/db/plugin.js";
 import type { Context } from "../types/context.js";
-import { MusicSourcePlugin } from "../types/plugins/music_sources.js";
+import {
+  MusicSourcePlugin,
+  MUSIC_SOURCE_PLUGIN_CATEGORY,
+} from "../types/plugins/music_sources.js";
 
 export type PluginResolutionError = {
   status: number;
@@ -24,8 +27,8 @@ export async function getPluginById(
   pluginId: string,
   context: Context,
 ): Promise<PluginResolutionResult> {
-  const plugin = context.pluginManager.getPlugin(
-    "music_sources",
+  const plugin = context.pluginManager?.getPlugin(
+    MUSIC_SOURCE_PLUGIN_CATEGORY,
     pluginId,
   ) as MusicSourcePlugin;
 
