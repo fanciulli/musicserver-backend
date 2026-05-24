@@ -14,6 +14,7 @@ export default class ScanRoute extends Route {
   method = HttpMethods.POST;
   url = "/music/scan";
   schema = ScanSchema;
+  requiresAuth = true;
   handler = async (request: any, response: any) => {
     const pluginId = request.body.id;
     const pluginResult = await getPluginById(pluginId, this.getContext());
