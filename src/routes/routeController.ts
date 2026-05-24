@@ -41,18 +41,24 @@ export class RouteController {
     const authenticatedRoutes = allRoutes.filter((r) => r.requiresAuth);
 
     for (const route of publicRoutes) {
-      this.#logger.info(`Registering public route: [${route.method}] ${route.url}`);
+      this.#logger.info(
+        `Registering public route: [${route.method}] ${route.url}`,
+      );
       await this.registerRoute(fastifyInstance, route);
     }
 
     await fastifyInstance.register(async (app) => {
       const db = this.#context!.database;
       await app.register(apiKeyPlugin, {
-        checkApiKey: (key) => validateApiKey(db, key),
+        checkApiKey: (key: string) => validateApiKey(db, key),
+        allowInHeader: true,
+        allowAsQueryParameter: true,
       });
 
       for (const route of authenticatedRoutes) {
-        this.#logger.info(`Registering authenticated route: [${route.method}] ${route.url}`);
+        this.#logger.info(
+          `Registering authenticated route: [${route.method}] ${route.url}`,
+        );
         await this.registerRoute(app, route);
       }
     });
