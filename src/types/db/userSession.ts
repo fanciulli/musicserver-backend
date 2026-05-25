@@ -35,9 +35,9 @@ export class UserSessionDbModel {
   }
 }
 
-export function init(db: Db): void {
-  void db.collection(COLLECTION_NAME).createIndex({ tokenHash: 1 });
-  void db
+export async function init(db: Db): Promise<void> {
+  await db.collection(COLLECTION_NAME).createIndex({ tokenHash: 1 });
+  await db
     .collection(COLLECTION_NAME)
     .createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 }
