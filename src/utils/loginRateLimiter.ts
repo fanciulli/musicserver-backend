@@ -11,7 +11,7 @@ const store = new Map<string, RateLimitEntry>();
 export function isRateLimited(ip: string): boolean {
   const entry = store.get(ip);
   if (!entry) return false;
-  if (new Date() > entry.resetAt) {
+  if (new Date() >= entry.resetAt) {
     store.delete(ip);
     return false;
   }
