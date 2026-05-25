@@ -14,6 +14,7 @@ export default class PluginStartRoute extends Route {
   method = HttpMethods.POST;
   url = "/admin/plugins/start";
   schema = PluginStartSchema;
+  requiresAuth = true;
   handler = async (request: any, response: any) => {
     const pluginId = request.body.pluginId;
 

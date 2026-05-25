@@ -14,6 +14,7 @@ export default class DbArtistsRoute extends Route {
   method = HttpMethods.GET;
   url = "/admin/db/artists";
   schema = DbArtistsSchema;
+  requiresAuth = true;
   handler = async (_request: any, response: any) => {
     const db = this.getDatabase();
     const artists = await ArtistDbModel.findAll(db);

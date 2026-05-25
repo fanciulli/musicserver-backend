@@ -16,6 +16,7 @@ export default class ApiKeysCreate extends Route {
   method = HttpMethods.POST;
   url = "/admin/api-keys";
   schema = ApiKeyCreateSchema;
+  requiresAuth = true;
 
   constructor(context: Context) {
     super(context);

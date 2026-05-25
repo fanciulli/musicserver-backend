@@ -15,6 +15,7 @@ export default class ApiKeysList extends Route {
   method = HttpMethods.GET;
   url = "/admin/api-keys";
   schema = ApiKeyListSchema;
+  requiresAuth = true;
 
   constructor(context: Context) {
     super(context);

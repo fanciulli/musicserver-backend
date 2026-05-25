@@ -15,6 +15,7 @@ export default class ApiKeysDelete extends Route {
   method = HttpMethods.DELETE;
   url = "/admin/api-keys/:id";
   schema = ApiKeyDeleteSchema;
+  requiresAuth = true;
 
   constructor(context: Context) {
     super(context);
