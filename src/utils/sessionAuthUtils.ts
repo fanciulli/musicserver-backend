@@ -34,6 +34,9 @@ export async function verifyPassword(
     const N = parseInt(N_str, 10);
     const r = parseInt(r_str, 10);
     const p = parseInt(p_str, 10);
+    if (!Number.isInteger(N) || N < 1024 || N > 1048576) return false;
+    if (!Number.isInteger(r) || r < 1 || r > 32) return false;
+    if (!Number.isInteger(p) || p < 1 || p > 32) return false;
     const salt = Buffer.from(saltHex, "hex");
     const storedHash = Buffer.from(hashHex, "hex");
     const derived = (await scryptAsync(password, salt, storedHash.length, {
