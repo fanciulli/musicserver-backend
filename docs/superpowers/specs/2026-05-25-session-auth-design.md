@@ -145,34 +145,37 @@ Logic:
 
 ### Modified: `src/routes/routeController.ts`
 
-Remove `apiKeyPlugin` and replace with session-token scoped plugin:
+Keep `apiKeyPlugin` for non-admin authenticated routes (e.g. `/music`). Add a **second** scoped plugin for admin routes. Split `authenticatedRoutes` into `apiKeyRoutes` (non-admin) and `adminRoutes` (`/admin/*`):
 
 ```ts
-// Login: registered outside the plugin (public)
-await registerRoute(fastifyInstance, loginRoute);
+// Login: public (requiresAuth = false) — registered outside both plugins
 
-// All other /admin routes: inside scoped plugin with auth hook
+// Plugin 1: API key auth for /music and other non-admin routes
+await fastifyInstance.register(async (app) => {
+  await app.register(apiKeyPlugin, {
+    checkApiKey: (key) => validateApiKey(db, key),
+    allowInHeader: true,
+    allowAsQueryParameter: true,
+  });
+  for (const route of apiKeyRoutes) { await registerRoute(app, route); }
+});
+
+// Plugin 2: Session token auth for /admin/* routes
 await fastifyInstance.register(async (app) => {
   app.addHook('onRequest', async (request, reply) => {
     const authHeader = request.headers['authorization'];
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
     if (!token) { reply.code(401).send({ error: 'Unauthorized' }); return; }
-
     const username = extractUsernameFromToken(token);
     if (!username) { reply.code(401).send({ error: 'Unauthorized' }); return; }
-
     const hash = hashToken(token);
     const session = await db.collection('user_sessions').findOne({
       username, tokenHash: hash, expiresAt: { $gt: new Date() }
     });
     if (!session) { reply.code(401).send({ error: 'Unauthorized' }); return; }
-
-    (request as any).username = username; // available to downstream handlers
+    (request as any).username = username;
   });
-
-  for (const route of authenticatedRoutes) {
-    await registerRoute(app, route);
-  }
+  for (const route of adminRoutes) { await registerRoute(app, route); }
 });
 ```
 
@@ -313,7 +316,7 @@ New files:
 - `routes/admin/changePassword.ts`
 
 Modified files:
-- `routes/routeController.ts` — remove apiKeyPlugin, add session token scoped plugin
+- `routes/routeController.ts` — keep apiKeyPlugin for non-admin routes; add session token scoped plugin for `/admin/*` routes
 - `routes/admin/adminLogs.ts` — set `requiresAuth = true`
 - `routes/admin/apiKeysCreate.ts` — set `requiresAuth = true`
 - `routes/admin/apiKeysDelete.ts` — set `requiresAuth = true`
@@ -350,7 +353,7 @@ Modified files:
 
 ## Open Questions / Notes
 
-- `fastify-auth-by-api-key` dependency removed from backend; can be pruned from `package.json` after confirming no other use.
+- `fastify-auth-by-api-key` is **kept** — it continues to protect `/music` routes via API key auth.
 - "Remember me" checkbox removed from login (8h fixed expiry; no persistent sessions for security).
 - Multi-session support not implemented (each login invalidates previous session for that user).
 - No password reset flow (out of scope).

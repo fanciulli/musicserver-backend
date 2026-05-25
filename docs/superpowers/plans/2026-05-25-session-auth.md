@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace API-key auth on all `/admin` routes with username/password login that issues a session token stored as an HttpOnly cookie in the browser.
+**Goal:** Add session-token auth to all `/admin` routes while keeping the existing API-key auth for `/music` routes unchanged.
 
-**Architecture:** The backend adds two MongoDB collections (`user_passwords`, `user_sessions`), pure utility functions for scrypt hashing and token generation, a login route at `POST /admin/login` (public), and a Fastify scoped plugin that validates Bearer tokens on all other `/admin` routes. The frontend adds Next.js middleware for page-level protection, three `/api/auth/` proxy route handlers that manage the `session_token` HttpOnly cookie, updated admin proxy routes that forward the cookie as a Bearer header, and a change-password form in the profile section.
+**Architecture:** The backend adds two MongoDB collections (`user_passwords`, `user_sessions`), pure utility functions for scrypt hashing and token generation, a login route at `POST /admin/login` (public), and a **new** Fastify scoped plugin that validates Bearer tokens on all other `/admin` routes. The existing `apiKeyPlugin` for `/music` routes is kept untouched — `routeController` now runs two separate auth plugins: API-key for non-admin routes, session-token for admin routes. The frontend adds Next.js middleware for page-level protection, three `/api/auth/` proxy route handlers that manage the `session_token` HttpOnly cookie, updated admin proxy routes that forward the cookie as a Bearer header, and a change-password form in the profile section.
 
 **Tech Stack:** Fastify 5, TypeScript, MongoDB (native driver), Node.js `crypto` (scrypt + randomBytes), Next.js 16 App Router, React 19, TailwindCSS
 
@@ -31,8 +31,7 @@
 ### Backend — Modified files
 | Path | Change |
 |------|--------|
-| `src/routes/routeController.ts` | Remove `apiKeyPlugin`; add session-token scoped plugin |
-| `src/utils/apiKeyUtils.ts` | Remove `validateApiKey` function (no longer called) and `fastify-auth-by-api-key` import |
+| `src/routes/routeController.ts` | Keep `apiKeyPlugin` for non-admin routes; **add** session-token scoped plugin for admin routes |
 | `src/routes/admin/adminLogs.ts` | `requiresAuth = true` |
 | `src/routes/admin/apiKeysCreate.ts` | `requiresAuth = true` |
 | `src/routes/admin/apiKeysDelete.ts` | `requiresAuth = true` |
@@ -46,7 +45,8 @@
 | `src/routes/admin/pluginStart.ts` | `requiresAuth = true` |
 | `src/routes/admin/pluginStop.ts` | `requiresAuth = true` |
 | `src/routes/admin/plugins.ts` | `requiresAuth = true` |
-| `package.json` | Remove `fastify-auth-by-api-key` dependency |
+
+> **NOT modified:** `src/utils/apiKeyUtils.ts`, `package.json` — `fastify-auth-by-api-key` stays in place for `/music` routes.
 
 ### Frontend — New files
 | Path | Responsibility |
@@ -818,22 +818,49 @@ git commit -m "feat: mark all existing admin routes as requiresAuth = true"
 
 ---
 
-## Task 8: Update RouteController
+## Task 8: Update RouteController (Dual-Plugin Approach)
 
-Replace the `apiKeyPlugin` block with a session-token scoped plugin.
+Keep `apiKeyPlugin` for non-admin routes. Add a **second** scoped plugin for admin routes that validates session tokens.
 
 **Files:**
 - Modify: `src/routes/routeController.ts`
 
-- [ ] **Step 8.1: Read the current `src/routes/routeController.ts` to understand exact imports and the plugin block**
+- [ ] **Step 8.1: Add the session auth utils import**
 
-The current file imports:
+The existing imports at the top of `src/routes/routeController.ts` include:
 ```typescript
 import { apiKeyPlugin } from "fastify-auth-by-api-key";
 import { validateApiKey } from "../utils/apiKeyUtils.js";
 ```
 
-And the authenticated block is:
+Keep both. Add below them:
+```typescript
+import {
+  extractUsernameFromToken,
+  hashToken,
+} from "../utils/sessionAuthUtils.js";
+```
+
+- [ ] **Step 8.2: Split `authenticatedRoutes` into two groups**
+
+In `registerRoutes`, replace:
+```typescript
+const authenticatedRoutes = allRoutes.filter((r) => r.requiresAuth);
+```
+
+With:
+```typescript
+const apiKeyRoutes = allRoutes.filter(
+  (r) => r.requiresAuth && !r.url.startsWith("/admin"),
+);
+const adminRoutes = allRoutes.filter(
+  (r) => r.requiresAuth && r.url.startsWith("/admin"),
+);
+```
+
+- [ ] **Step 8.3: Replace the single authenticated plugin block with two plugin blocks**
+
+Remove the existing:
 ```typescript
 await fastifyInstance.register(async (app) => {
   const db = this.#context!.database;
@@ -842,34 +869,35 @@ await fastifyInstance.register(async (app) => {
     allowInHeader: true,
     allowAsQueryParameter: true,
   });
+
   for (const route of authenticatedRoutes) {
-    this.#logger.info(...);
+    this.#logger.info(
+      `Registering authenticated route: [${route.method}] ${route.url}`,
+    );
     await this.registerRoute(app, route);
   }
 });
 ```
 
-- [ ] **Step 8.2: Replace the two old imports with the new auth utils import**
-
-Remove:
-```typescript
-import { apiKeyPlugin } from "fastify-auth-by-api-key";
-import { validateApiKey } from "../utils/apiKeyUtils.js";
-```
-
-Add:
-```typescript
-import {
-  extractUsernameFromToken,
-  hashToken,
-} from "../utils/sessionAuthUtils.js";
-```
-
-- [ ] **Step 8.3: Replace the authenticated plugin block**
-
-Replace the entire `await fastifyInstance.register(async (app) => { ... })` block (the one that registers `apiKeyPlugin`) with:
+Replace with these two blocks:
 
 ```typescript
+await fastifyInstance.register(async (app) => {
+  const db = this.#context!.database;
+  await app.register(apiKeyPlugin, {
+    checkApiKey: (key: string) => validateApiKey(db, key),
+    allowInHeader: true,
+    allowAsQueryParameter: true,
+  });
+
+  for (const route of apiKeyRoutes) {
+    this.#logger.info(
+      `Registering api-key-auth route: [${route.method}] ${route.url}`,
+    );
+    await this.registerRoute(app, route);
+  }
+});
+
 await fastifyInstance.register(async (app) => {
   const db = this.#context!.database;
 
@@ -901,9 +929,9 @@ await fastifyInstance.register(async (app) => {
     (request as any).username = username;
   });
 
-  for (const route of authenticatedRoutes) {
+  for (const route of adminRoutes) {
     this.#logger.info(
-      `Registering authenticated route: [${route.method}] ${route.url}`,
+      `Registering session-auth admin route: [${route.method}] ${route.url}`,
     );
     await this.registerRoute(app, route);
   }
@@ -922,72 +950,14 @@ Expected: all existing tests still PASS (TypeScript compile must succeed too)
 
 ```bash
 git add src/routes/routeController.ts
-git commit -m "feat: replace API key plugin with session token middleware in routeController"
+git commit -m "feat: add session token plugin for admin routes alongside existing API key plugin"
 ```
 
 ---
 
-## Task 9: Remove fastify-auth-by-api-key Dependency
+## ~~Task 9: Remove fastify-auth-by-api-key~~ — SKIPPED
 
-**Files:**
-- Modify: `src/utils/apiKeyUtils.ts`
-- Modify: `package.json`
-
-- [ ] **Step 9.1: Update `src/utils/apiKeyUtils.ts` — remove `validateApiKey` and the `fastify-auth-by-api-key` import**
-
-The current file has:
-```typescript
-import { ApiKeyCheckStatus } from "fastify-auth-by-api-key";
-// ...
-export async function validateApiKey(db: Db, key: string): Promise<ApiKeyCheckStatus> { ... }
-```
-
-Remove both the import and the `validateApiKey` function entirely. Keep `hashApiKey` and `generateApiKey`. The final file:
-
-```typescript
-import { createHash, randomBytes } from "node:crypto";
-
-export function hashApiKey(key: string): string {
-  return createHash("sha256").update(key).digest("hex");
-}
-
-export function generateApiKey(): { key: string; prefix: string; hash: string } {
-  const key = `ms_${randomBytes(32).toString("hex")}`;
-  const prefix = key.substring(0, 10);
-  const hash = hashApiKey(key);
-  return { key, prefix, hash };
-}
-```
-
-- [ ] **Step 9.2: Update `test/utils/apiKeyUtils.test.ts` — remove `validateApiKey` tests**
-
-Remove the entire `describe("validateApiKey", ...)` block and its import of `ApiKeyCheckStatus`. Keep the `describe("hashApiKey", ...)` and `describe("generateApiKey", ...)` blocks unchanged.
-
-The import line becomes:
-```typescript
-import { hashApiKey, generateApiKey } from "../../src/utils/apiKeyUtils.js";
-```
-
-- [ ] **Step 9.3: Uninstall the package**
-
-```bash
-npm uninstall fastify-auth-by-api-key
-```
-
-- [ ] **Step 9.4: Run full test suite**
-
-```bash
-npm test
-```
-
-Expected: all tests PASS with no TypeScript errors referencing `fastify-auth-by-api-key`
-
-- [ ] **Step 9.5: Commit**
-
-```bash
-git add src/utils/apiKeyUtils.ts test/utils/apiKeyUtils.test.ts package.json package-lock.json
-git commit -m "chore: remove fastify-auth-by-api-key dependency"
-```
+`fastify-auth-by-api-key` is kept. `/music` routes continue using API key auth unchanged.
 
 ---
 
