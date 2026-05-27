@@ -24,6 +24,7 @@ export default class SearchRoute extends Route {
   method = HttpMethods.POST;
   url = "/music/search";
   schema = SearchSchema;
+  requiresAuth = true;
   handler = async (request: any, response: any) => {
     const body = request.body as SearchRequestBody;
     const plugins = await this.#resolvePlugins(body.scheme);
