@@ -18,6 +18,7 @@ export abstract class Route implements IRoute {
   #context: Context;
   method: HttpMethods = HttpMethods.GET;
   schema: object = {};
+  requiresAuth: boolean = false;
   abstract url: string;
   abstract handler: (request: any, response: any) => any;
 
