@@ -14,7 +14,7 @@
   "type": "module",
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@types/node": "25.9.0",
+    "@types/node": "25.9.1",
     "@vitest/coverage-v8": "4.1.7",
     "eslint": "10.4.0",
     "globals": "17.6.0",
