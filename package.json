@@ -26,6 +26,7 @@
     "fastify-auth-by-api-key": "1.1.0",
     "mongodb": "7.2.0",
     "music-metadata": "11.12.3",
+    "selfsigned": "^5.5.0",
     "uuid": "14.0.0"
   }
 }
