@@ -15,6 +15,7 @@ describe("RouteController", () => {
   it("registers routes discovered by folder scan", async () => {
     const fastifyInstance = {
       route: vi.fn(),
+      register: vi.fn(),
     };
     const logger = {
       info: vi.fn(),
