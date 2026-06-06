@@ -25,9 +25,7 @@ test("TEST_01: login with wrong password returns 401 and shows error", async ({
   ]);
 
   expect(response.status()).toBe(401);
-  await expect(
-    page.locator("p.text-red-600"),
-  ).toBeVisible();
+  await expect(page.locator("p.text-red-600")).toBeVisible();
   await expect(page).toHaveURL(/sign-in/);
 });
 
@@ -43,9 +41,7 @@ test("TEST_02: login with wrong username returns 401 and shows error", async ({
   ]);
 
   expect(response.status()).toBe(401);
-  await expect(
-    page.locator("p.text-red-600"),
-  ).toBeVisible();
+  await expect(page.locator("p.text-red-600")).toBeVisible();
   await expect(page).toHaveURL(/sign-in/);
 });
 
@@ -80,8 +76,8 @@ test("TEST_03: login/logout cycle invalidates session token", async ({
   });
   expect(logsBefore.status()).toBe(200);
 
-  // 4. Logout via profile menu
-  await page.getByLabel("My Account").click();
+  // 4. Logout via profile menu — click the username dropdown, then the button
+  await page.locator("figcaption").click();
   await page.getByRole("button", { name: "Log out" }).click();
   await expect(page).toHaveURL(/sign-in/);
 
