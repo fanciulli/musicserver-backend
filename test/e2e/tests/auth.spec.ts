@@ -13,8 +13,7 @@ async function fillLoginForm(
   await page.fill('input[name="password"]', password);
 }
 
-// ─── TEST_01: Wrong password ─────────────────────────────────────────────────
-test("TEST_01: login with wrong password returns 401 and shows error", async ({
+test("AUTH_001: Login with wrong password returns 401 and shows error", async ({
   page,
 }) => {
   await fillLoginForm(page, "admin", "wrong");
@@ -29,8 +28,7 @@ test("TEST_01: login with wrong password returns 401 and shows error", async ({
   await expect(page).toHaveURL(/sign-in/);
 });
 
-// ─── TEST_02: Wrong username ─────────────────────────────────────────────────
-test("TEST_02: login with wrong username returns 401 and shows error", async ({
+test("AUTH_0_02: Login with wrong username returns 401 and shows error", async ({
   page,
 }) => {
   await fillLoginForm(page, "admin1", "admin");
@@ -45,8 +43,7 @@ test("TEST_02: login with wrong username returns 401 and shows error", async ({
   await expect(page).toHaveURL(/sign-in/);
 });
 
-// ─── TEST_03: Full login/logout cycle ────────────────────────────────────────
-test("TEST_03: login/logout cycle invalidates session token", async ({
+test("AUTH_003: Login/logout cycle invalidates session token", async ({
   page,
   context,
   request,
