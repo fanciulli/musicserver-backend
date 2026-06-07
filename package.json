@@ -8,7 +8,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test --config=test/e2e/playwright.config.ts",
     "start": "npx tsc -p tsconfig.json; cd dist; node index.js",
-    "build": "npx tsc -p tsconfig.json"
+    "build": "npx tsc -p tsconfig.json",
+    "knip": "knip"
   },
   "author": "Massimiliano Fanciulli",
   "license": "ISC",
@@ -16,11 +17,12 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@playwright/test": "^1.60.0",
-    "@types/node": "25.9.1",
+    "@types/node": "^25.9.1",
     "@vitest/coverage-v8": "4.1.7",
     "eslint": "10.4.0",
     "globals": "17.6.0",
-    "typescript": "6.0.3",
+    "knip": "^6.15.0",
+    "typescript": "^6.0.3",
     "vitest": "4.1.7"
   },
   "dependencies": {
