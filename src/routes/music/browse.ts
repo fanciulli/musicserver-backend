@@ -26,6 +26,7 @@ export default class BrowseRoute extends Route {
   method = HttpMethods.POST;
   url = "/music/browse";
   schema = BrowseSchema;
+  requiresAuth = true;
   handler = async (request: any, response: any) => {
     const path = request.body.path;
     if (path === "/" || path === "") {

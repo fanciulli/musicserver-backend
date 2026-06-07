@@ -16,6 +16,7 @@ export default class DbSummaryRoute extends Route {
   method = HttpMethods.GET;
   url = "/admin/db/summary";
   schema = DbSummarySchema;
+  requiresAuth = true;
   handler = async (_request: any, response: any) => {
     const db = this.getDatabase();
 
