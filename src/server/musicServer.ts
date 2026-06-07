@@ -15,6 +15,7 @@ import type { Logger as PinoLogger } from "pino";
 import { Context } from "../types/context.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadTlsConfig } from "../utils/tlsUtils.js";
 
 export class MusicServer {
   #initDone: boolean = false;
@@ -48,9 +49,11 @@ export class MusicServer {
 
   async #startFastify() {
     const logger = createDatabaseLogger("fastify", this.#database!.client!);
+    const tlsConfig = await loadTlsConfig();
 
     this.#fastifyInstance = fastify({
       loggerInstance: logger,
+      ...(tlsConfig ? { https: tlsConfig } : {}),
     }) as unknown as FastifyInstance;
 
     const context = new Context(

@@ -26,6 +26,7 @@ COPY --from=build /app/dist ./dist
 WORKDIR /app/dist
 
 RUN mkdir -p /app/dist/logs
+RUN mkdir -p /app/dist/config/certs
 
 EXPOSE 3000
 

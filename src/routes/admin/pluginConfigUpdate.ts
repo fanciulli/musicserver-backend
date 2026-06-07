@@ -16,6 +16,7 @@ export default class PluginConfigUpdateRoute extends Route {
   method = HttpMethods.PUT;
   url = "/admin/plugins/:pluginId/config";
   schema = PluginConfigUpdateSchema;
+  requiresAuth = true;
   handler = async (request: any, response: any) => {
     const pluginId = request.params.pluginId;
     const settings = request.body.settings as Record<string, unknown>;

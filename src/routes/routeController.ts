@@ -11,6 +11,13 @@ import type { FastifyInstance } from "fastify";
 import { Route } from "../types/route.js";
 import { listFiles } from "../utils/fsUtils.js";
 import path from "node:path";
+import { apiKeyPlugin } from "fastify-auth-by-api-key";
+import { validateApiKey } from "../utils/apiKeyUtils.js";
+import {
+  extractUsernameFromToken,
+  hashToken,
+} from "../utils/sessionAuthUtils.js";
+import { UserSessionDbModel } from "../types/db/userSession.js";
 
 export class RouteController {
   #logger: PinoLogger;
@@ -26,15 +33,91 @@ export class RouteController {
    * @param fastifyInstance The Fastify instance
    */
   async registerRoutes(fastifyInstance: FastifyInstance): Promise<void> {
+    fastifyInstance.setErrorHandler(
+      async (error: any, _request: any, reply: any) => {
+        const statusCode: number = error?.statusCode ?? 500;
+        const errorMessage: string = error?.message ?? "Internal Server Error";
+        this.#logger.error(`Unhandled route error: ${errorMessage}`);
+        await reply.code(statusCode).send();
+      },
+    );
+
     const routeFiles: string[] = await this.getRouteFiles();
+    const allRoutes: Route[] = [];
 
     for (const routeFile of routeFiles) {
       const routeModule = await import(routeFile);
       const route: Route = new routeModule.default(this.#context);
+      allRoutes.push(route);
+    }
 
-      this.#logger.info(`Registering route: [${route.method}] ${route.url}`);
+    const publicRoutes = allRoutes.filter((r) => !r.requiresAuth);
+    const apiKeyRoutes = allRoutes.filter(
+      (r) => r.requiresAuth && !r.url.startsWith("/admin"),
+    );
+    const adminRoutes = allRoutes.filter(
+      (r) => r.requiresAuth && r.url.startsWith("/admin"),
+    );
+
+    for (const route of publicRoutes) {
+      this.#logger.info(
+        `Registering public route: [${route.method}] ${route.url}`,
+      );
       await this.registerRoute(fastifyInstance, route);
     }
+
+    await fastifyInstance.register(async (app) => {
+      const db = this.#context!.database;
+      await app.register(apiKeyPlugin, {
+        checkApiKey: (key: string) => validateApiKey(db, key),
+        allowInHeader: true,
+        allowAsQueryParameter: true,
+      });
+
+      for (const route of apiKeyRoutes) {
+        this.#logger.info(
+          `Registering api-key-auth route: [${route.method}] ${route.url}`,
+        );
+        await this.registerRoute(app, route);
+      }
+    });
+
+    await fastifyInstance.register(async (app) => {
+      const db = this.#context!.database;
+
+      app.addHook("onRequest", async (request: any, reply: any) => {
+        const authHeader = request.headers["authorization"] as
+          | string
+          | undefined;
+        const token = authHeader?.startsWith("Bearer ")
+          ? authHeader.slice(7)
+          : null;
+
+        if (!token) {
+          return reply.code(401).send();
+        }
+
+        const username = extractUsernameFromToken(token);
+        if (!username) {
+          return reply.code(401).send();
+        }
+
+        const hash = hashToken(token);
+        const session = await UserSessionDbModel.findValid(db, username, hash);
+        if (!session) {
+          return reply.code(401).send();
+        }
+
+        (request as any).username = username;
+      });
+
+      for (const route of adminRoutes) {
+        this.#logger.info(
+          `Registering session-auth admin route: [${route.method}] ${route.url}`,
+        );
+        await this.registerRoute(app, route);
+      }
+    });
   }
 
   private async getRouteFiles(): Promise<string[]> {

@@ -6,25 +6,30 @@
   "scripts": {
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test --config=test/e2e/playwright.config.ts",
     "start": "npx tsc -p tsconfig.json; cd dist; node index.js",
-    "build": "npx tsc -p tsconfig.json"
+    "build": "npx tsc -p tsconfig.json",
+    "knip": "knip"
   },
   "author": "Massimiliano Fanciulli",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@types/node": "25.9.0",
-    "@vitest/coverage-v8": "4.1.5",
-    "eslint": "10.4.0",
-    "globals": "17.5.0",
-    "typescript": "6.0.3",
-    "vitest": "4.1.5"
+    "@playwright/test": "^1.60.0",
+    "@types/node": "25.9.1",
+    "@vitest/coverage-v8": "4.1.8",
+    "eslint": "10.4.1",
+    "globals": "17.6.0",
+    "typescript": "^6.0.3",
+    "vitest": "4.1.8"
   },
   "dependencies": {
     "fastify": "5.8.5",
+    "fastify-auth-by-api-key": "1.1.0",
     "mongodb": "7.2.0",
     "music-metadata": "11.12.3",
+    "selfsigned": "^5.5.0",
     "uuid": "14.0.0"
   }
 }

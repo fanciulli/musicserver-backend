@@ -6,6 +6,7 @@
  * GitHub: https://github.com/fanciulli
  */
 import { readdir } from "fs/promises";
+import * as fs from "node:fs/promises";
 import path from "path";
 
 export async function listFolderNames(parentFolder: string): Promise<string[]> {
@@ -39,5 +40,14 @@ export async function listFiles(parentFolder: string): Promise<string[]> {
     return files;
   } catch (err) {
     return [];
+  }
+}
+
+export async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
   }
 }

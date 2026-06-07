@@ -14,6 +14,7 @@ export default class PluginStopRoute extends Route {
   method = HttpMethods.POST;
   url = "/admin/plugins/stop";
   schema = PluginStopSchema;
+  requiresAuth = true;
   handler = async (request: any, response: any) => {
     const pluginId = request.body.pluginId;
 

@@ -12,8 +12,9 @@ import { getPluginById } from "../../utils/musicSourcePluginResolver.js";
 
 export default class ScanRoute extends Route {
   method = HttpMethods.POST;
-  url = "/music/scan";
+  url = "/admin/scan";
   schema = ScanSchema;
+  requiresAuth = true;
   handler = async (request: any, response: any) => {
     const pluginId = request.body.id;
     const pluginResult = await getPluginById(pluginId, this.getContext());
@@ -31,7 +32,7 @@ export default class ScanRoute extends Route {
 
       response.send({ status: "Scan initiated" });
     } else {
-      response.status(404).send({ error: "Plugin not found" });
+      response.status(404).send();
     }
   };
 }
