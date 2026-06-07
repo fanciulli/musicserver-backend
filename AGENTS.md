@@ -10,6 +10,7 @@ Code review
 - Report major security criticality.
 - Report any usage of console.log. Console.log is only allowed on index.ts
 - Report string concatenation via + operator. Enforce using ` instead.
+- Report unused imports.
 
 Pull Requests
 
