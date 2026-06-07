@@ -15,6 +15,7 @@ export default class DbSongsRoute extends Route {
   method = HttpMethods.GET;
   url = "/admin/db/albums/:albumId/songs";
   schema = DbSongsSchema;
+  requiresAuth = true;
   handler = async (request: any, response: any) => {
     const { albumId } = request.params;
     const db = this.getDatabase();

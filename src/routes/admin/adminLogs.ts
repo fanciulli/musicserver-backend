@@ -16,6 +16,7 @@ export default class AdminLogsRoute extends Route {
   method = HttpMethods.GET;
   url = "/admin/logs";
   schema = AdminLogsSchema;
+  requiresAuth = true;
   handler = async (request: any, response: any) => {
     const { id, level, from, to, page, limit } = request.query;
     const db = this.getDatabase();

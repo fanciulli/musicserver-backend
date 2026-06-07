@@ -16,6 +16,7 @@ export default class PluginsRoute extends Route {
   method = HttpMethods.GET;
   url = "/admin/plugins";
   schema = PluginsSchema;
+  requiresAuth = true;
   handler = async (request: any, response: any) => {
     const plugins = await this.getInstalledPlugins();
 
