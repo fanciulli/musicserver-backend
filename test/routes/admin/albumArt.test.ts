@@ -6,23 +6,23 @@
  * GitHub: https://github.com/fanciulli
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { HttpHeaders, MimeTypes } from "../../src/misc/constants.js";
-import { DEFAULT_ALBUM_ART } from "../../src/resources/defaultAlbumArt.js";
+import { HttpHeaders, MimeTypes } from "../../../src/misc/constants.js";
+import { DEFAULT_ALBUM_ART } from "../../../src/resources/defaultAlbumArt.js";
 
 const mocks = vi.hoisted(() => ({
   extractPluginId: vi.fn(),
   getPluginById: vi.fn(),
 }));
 
-vi.mock("../../src/utils/pathUtils.js", () => ({
+vi.mock("../../../src/utils/pathUtils.js", () => ({
   extractPluginId: (...args: unknown[]) => mocks.extractPluginId(...args),
 }));
 
-vi.mock("../../src/utils/musicSourcePluginResolver.js", () => ({
+vi.mock("../../../src/utils/musicSourcePluginResolver.js", () => ({
   getPluginById: (...args: unknown[]) => mocks.getPluginById(...args),
 }));
 
-import { default as AlbumArtRoute } from "../../src/routes/music/albumArt.js";
+import { default as AlbumArtRoute } from "../../../src/routes/music/albumArt.js";
 
 function createResponseMock() {
   return {

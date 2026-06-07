@@ -15,7 +15,7 @@ import type { Logger as PinoLogger } from "pino";
 import { Context } from "../types/context.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadTlsConfig } from "../tls/tlsManager.js";
+import { loadTlsConfig } from "../utils/tlsUtils.js";
 
 export class MusicServer {
   #initDone: boolean = false;

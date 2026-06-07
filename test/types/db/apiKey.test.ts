@@ -24,7 +24,7 @@ describe("init", () => {
     const createIndex = vi.fn();
     const db = { collection: vi.fn().mockReturnValue({ createIndex }) } as any;
     init(db);
-    expect(db.collection).toHaveBeenCalledWith("api_keys");
+    expect(db.collection).toHaveBeenCalledWith("apiKeys");
     expect(createIndex).toHaveBeenCalledWith({ keyHash: 1 });
   });
 });

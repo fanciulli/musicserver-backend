@@ -9,10 +9,6 @@ export default class LogoutRoute extends Route {
   requiresAuth = true;
   schema = {};
 
-  constructor(context: Context) {
-    super(context);
-  }
-
   handler = async (request: any, response: any) => {
     const username: string = (request as any).username;
     const db = this.getDatabase();

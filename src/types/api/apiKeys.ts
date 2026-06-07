@@ -6,6 +6,30 @@
  * GitHub: https://github.com/fanciulli
  */
 
+export type ApiKeyCreateRequest = {
+  name: string;
+  durationDays: number | null;
+};
+
+export type ApiKeyCreateResponse = {
+  id: string;
+  name: string;
+  key: string;
+  createdAt: string;
+  expiresAt: string;
+};
+
+export const ApiKeySchema = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    name: { type: "string" },
+    key: { type: "string" },
+    createdAt: { type: "string" },
+    expiresAt: { type: ["string", "null"] },
+  },
+};
+
 export const ApiKeyCreateSchema = {
   body: {
     type: "object",
@@ -16,16 +40,7 @@ export const ApiKeyCreateSchema = {
     },
   },
   response: {
-    200: {
-      type: "object",
-      properties: {
-        id: { type: "string" },
-        name: { type: "string" },
-        key: { type: "string" },
-        createdAt: { type: "string" },
-        expiresAt: { type: ["string", "null"] },
-      },
-    },
+    200: ApiKeySchema,
   },
 };
 
@@ -33,16 +48,7 @@ export const ApiKeyListSchema = {
   response: {
     200: {
       type: "array",
-      items: {
-        type: "object",
-        properties: {
-          id: { type: "string" },
-          name: { type: "string" },
-          keyPrefix: { type: "string" },
-          createdAt: { type: "string" },
-          expiresAt: { type: ["string", "null"] },
-        },
-      },
+      items: ApiKeySchema,
     },
   },
 };
@@ -53,20 +59,6 @@ export const ApiKeyDeleteSchema = {
     required: ["id"],
     properties: {
       id: { type: "string" },
-    },
-  },
-  response: {
-    200: {
-      type: "object",
-      properties: {
-        status: { type: "string" },
-      },
-    },
-    404: {
-      type: "object",
-      properties: {
-        error: { type: "string" },
-      },
     },
   },
 };

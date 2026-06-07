@@ -10,14 +10,13 @@ import { HttpMethods } from "../../misc/constants.js";
 import { PluginsSchema } from "../../types/api/plugins.js";
 import { PluginListItem } from "../../types/api/plugins.js";
 import { PluginDBModel, PluginStatus } from "../../types/db/plugin.js";
-import type { Context } from "../../types/context.js";
 
 export default class PluginsRoute extends Route {
   method = HttpMethods.GET;
   url = "/admin/plugins";
   schema = PluginsSchema;
   requiresAuth = true;
-  handler = async (request: any, response: any) => {
+  handler = async (_: any, response: any) => {
     const plugins = await this.getInstalledPlugins();
 
     response.send(plugins);

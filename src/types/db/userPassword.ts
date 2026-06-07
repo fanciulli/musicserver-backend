@@ -2,7 +2,7 @@ import type { Db } from "mongodb";
 import { v4 } from "uuid";
 import { hashPassword } from "../../utils/sessionAuthUtils.js";
 
-const COLLECTION_NAME = "user_passwords";
+const COLLECTION_NAME = "userPasswords";
 
 export class UserPasswordDbModel {
   id: string = v4();
@@ -31,9 +31,7 @@ export class UserPasswordDbModel {
   }
 
   async insert(db: Db): Promise<void> {
-    await db
-      .collection<UserPasswordDbModel>(COLLECTION_NAME)
-      .insertOne(this);
+    await db.collection<UserPasswordDbModel>(COLLECTION_NAME).insertOne(this);
   }
 }
 
@@ -49,7 +47,7 @@ export async function init(db: Db): Promise<void> {
   if (!adminExists) {
     const model = new UserPasswordDbModel();
     model.username = "admin";
-    model.passwordHash = await hashPassword("admin");
+    model.passwordHash = await hashPassword("password");
     await model.insert(db);
   }
 }

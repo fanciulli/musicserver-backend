@@ -12,47 +12,33 @@ import {
   recordFailedAttempt,
   resetAttempts,
 } from "../../utils/loginRateLimiter.js";
-import type { Context } from "../../types/context.js";
+import {
+  LoginRequestSchema,
+  type LoginRequest,
+  type LoginResponse,
+} from "../../types/api/login.js";
 
 export default class LoginRoute extends Route {
   method = HttpMethods.POST;
   url = "/admin/login";
   requiresAuth = false;
-  schema = {
-    body: {
-      type: "object",
-      required: ["username", "password"],
-      properties: {
-        username: { type: "string" },
-        password: { type: "string" },
-      },
-    },
-  };
-
-  constructor(context: Context) {
-    super(context);
-  }
+  schema = LoginRequestSchema;
 
   handler = async (request: any, response: any) => {
     const ip: string = request.ip ?? "unknown";
 
     if (isRateLimited(ip)) {
-      return response
-        .code(429)
-        .send({ error: "Too many attempts. Try again later." });
+      return response.code(429).send();
     }
 
-    const { username, password } = request.body as {
-      username: string;
-      password: string;
-    };
+    const { username, password } = request.body as LoginRequest;
     const db = this.getDatabase();
 
     const user = await UserPasswordDbModel.findByUsername(db, username);
 
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
       recordFailedAttempt(ip);
-      return response.code(401).send({ error: "Invalid credentials" });
+      return response.code(401).send();
     }
 
     resetAttempts(ip);
@@ -64,6 +50,10 @@ export default class LoginRoute extends Route {
     session.tokenHash = hashToken(token);
     await session.insert(db);
 
-    return response.send({ token, expiresAt: session.expiresAt.toISOString() });
+    const respondeBody: LoginResponse = {
+      token,
+      expiresAt: session.expiresAt.toISOString(),
+    };
+    return response.send(respondeBody);
   };
 }

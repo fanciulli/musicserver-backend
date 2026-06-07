@@ -8,7 +8,7 @@
 import { Db } from "mongodb";
 import { v4 } from "uuid";
 
-const COLLECTION_NAME = "api_keys";
+const COLLECTION_NAME = "apiKeys";
 
 export class ApiKeyDbModel {
   id: string = v4();
@@ -18,7 +18,10 @@ export class ApiKeyDbModel {
   createdAt: Date = new Date();
   expiresAt: Date | null = null;
 
-  static async findByHash(db: Db, hash: string): Promise<ApiKeyDbModel | undefined> {
+  static async findByHash(
+    db: Db,
+    hash: string,
+  ): Promise<ApiKeyDbModel | undefined> {
     const result = await db
       .collection<ApiKeyDbModel>(COLLECTION_NAME)
       .findOne({ keyHash: hash });
@@ -47,4 +50,5 @@ export class ApiKeyDbModel {
 
 export function init(db: Db): void {
   void db.collection(COLLECTION_NAME).createIndex({ keyHash: 1 });
+  void db.collection(COLLECTION_NAME).createIndex({ id: 1 });
 }

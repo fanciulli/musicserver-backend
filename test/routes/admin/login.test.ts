@@ -99,9 +99,6 @@ describe("LoginRoute", () => {
     await route.handler(createRequest(), response);
 
     expect(response.code).toHaveBeenCalledWith(429);
-    expect(response.send).toHaveBeenCalledWith({
-      error: "Too many attempts. Try again later.",
-    });
   });
 
   it("uses request.ip for rate limiting", async () => {
@@ -137,7 +134,6 @@ describe("LoginRoute", () => {
     await route.handler(createRequest(), response);
 
     expect(response.code).toHaveBeenCalledWith(401);
-    expect(response.send).toHaveBeenCalledWith({ error: "Invalid credentials" });
     expect(mocks.recordFailedAttempt).toHaveBeenCalledWith("127.0.0.1");
   });
 
@@ -151,7 +147,6 @@ describe("LoginRoute", () => {
     await route.handler(createRequest(), response);
 
     expect(response.code).toHaveBeenCalledWith(401);
-    expect(response.send).toHaveBeenCalledWith({ error: "Invalid credentials" });
     expect(mocks.recordFailedAttempt).toHaveBeenCalledWith("127.0.0.1");
   });
 

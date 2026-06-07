@@ -17,6 +17,7 @@ import {
   extractUsernameFromToken,
   hashToken,
 } from "../utils/sessionAuthUtils.js";
+import { UserSessionDbModel } from "../types/db/userSession.js";
 
 export class RouteController {
   #logger: PinoLogger;
@@ -32,6 +33,15 @@ export class RouteController {
    * @param fastifyInstance The Fastify instance
    */
   async registerRoutes(fastifyInstance: FastifyInstance): Promise<void> {
+    fastifyInstance.setErrorHandler(
+      async (error: any, _request: any, reply: any) => {
+        const statusCode: number = error?.statusCode ?? 500;
+        const errorMessage: string = error?.message ?? "Internal Server Error";
+        this.#logger.error(`Unhandled route error: ${errorMessage}`);
+        await reply.code(statusCode).send();
+      },
+    );
+
     const routeFiles: string[] = await this.getRouteFiles();
     const allRoutes: Route[] = [];
 
@@ -79,27 +89,23 @@ export class RouteController {
         const authHeader = request.headers["authorization"] as
           | string
           | undefined;
-        const token =
-          authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+        const token = authHeader?.startsWith("Bearer ")
+          ? authHeader.slice(7)
+          : null;
 
         if (!token) {
-          return reply.code(401).send({ error: "Unauthorized" });
+          return reply.code(401).send();
         }
 
         const username = extractUsernameFromToken(token);
         if (!username) {
-          return reply.code(401).send({ error: "Unauthorized" });
+          return reply.code(401).send();
         }
 
         const hash = hashToken(token);
-        const session = await db.collection("user_sessions").findOne({
-          username,
-          tokenHash: hash,
-          expiresAt: { $gt: new Date() },
-        });
-
+        const session = await UserSessionDbModel.findValid(db, username, hash);
         if (!session) {
-          return reply.code(401).send({ error: "Unauthorized" });
+          return reply.code(401).send();
         }
 
         (request as any).username = username;

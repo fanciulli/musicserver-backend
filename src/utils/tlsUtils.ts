@@ -2,6 +2,8 @@ import * as fs from "node:fs/promises";
 import path from "node:path";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 import selfsigned from "selfsigned";
+import { fileExists } from "./fsUtils.js";
+import { MILLISECONDS_PER_DAY } from "../misc/constants.js";
 
 const DEFAULT_CERT_PATH = "config/certs/server.crt";
 const DEFAULT_KEY_PATH = "config/certs/server.key";
@@ -22,15 +24,6 @@ export async function loadTlsConfig(): Promise<TlsConfig | null> {
   const keyPath = process.env.TLS_KEY_PATH ?? DEFAULT_KEY_PATH;
 
   return await ensureCert(certPath, keyPath);
-}
-
-async function fileExists(filePath: string): Promise<boolean> {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 async function ensureCert(
@@ -66,7 +59,9 @@ async function generateAndPersist(
   keyPath: string,
 ): Promise<TlsConfig> {
   const attrs = [{ name: "commonName", value: "musicserver" }];
-  const notAfterDate = new Date(Date.now() + CERT_VALIDITY_DAYS * 24 * 60 * 60 * 1000);
+  const notAfterDate = new Date(
+    Date.now() + CERT_VALIDITY_DAYS * MILLISECONDS_PER_DAY,
+  );
   const pems = await selfsigned.generate(attrs, {
     notAfterDate,
     algorithm: "sha256",

@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
   songFindSongsByAlbumId: vi.fn(),
 }));
 
-vi.mock("../../src/types/db/artist.js", () => ({
+vi.mock("../../../src/types/db/artist.js", () => ({
   ArtistDbModel: {
     count: (...args: unknown[]) => mocks.artistCount(...args),
     findAll: (...args: unknown[]) => mocks.artistFindAll(...args),
@@ -27,7 +27,7 @@ vi.mock("../../src/types/db/artist.js", () => ({
   },
 }));
 
-vi.mock("../../src/types/db/album.js", () => ({
+vi.mock("../../../src/types/db/album.js", () => ({
   AlbumDbModel: {
     count: (...args: unknown[]) => mocks.albumCount(...args),
     findAlbumsByArtistId: (...args: unknown[]) =>
@@ -37,7 +37,7 @@ vi.mock("../../src/types/db/album.js", () => ({
   },
 }));
 
-vi.mock("../../src/types/db/song.js", () => ({
+vi.mock("../../../src/types/db/song.js", () => ({
   SongDbModel: {
     count: (...args: unknown[]) => mocks.songCount(...args),
     findSongsByAlbumId: (...args: unknown[]) =>
@@ -45,10 +45,10 @@ vi.mock("../../src/types/db/song.js", () => ({
   },
 }));
 
-import { default as DbSummaryRoute } from "../../src/routes/admin/dbSummary.js";
-import { default as DbArtistsRoute } from "../../src/routes/admin/dbArtists.js";
-import { default as DbAlbumsRoute } from "../../src/routes/admin/dbAlbums.js";
-import { default as DbSongsRoute } from "../../src/routes/admin/dbSongs.js";
+import { default as DbSummaryRoute } from "../../../src/routes/admin/dbSummary.js";
+import { default as DbArtistsRoute } from "../../../src/routes/admin/dbArtists.js";
+import { default as DbAlbumsRoute } from "../../../src/routes/admin/dbAlbums.js";
+import { default as DbSongsRoute } from "../../../src/routes/admin/dbSongs.js";
 
 function createResponseMock() {
   return {
@@ -126,7 +126,12 @@ describe("Admin DB routes", () => {
     it("returns albums for an existing artist", async () => {
       const artist = { id: "a1", name: "Artist One", pluginId: "filesystem" };
       const albums = [
-        { id: "al1", name: "Album One", pluginId: "filesystem", artists: ["a1"] },
+        {
+          id: "al1",
+          name: "Album One",
+          pluginId: "filesystem",
+          artists: ["a1"],
+        },
       ];
       mocks.artistFindById.mockResolvedValue(artist);
       mocks.albumFindAlbumsByArtistId.mockResolvedValue(albums);
@@ -182,7 +187,10 @@ describe("Admin DB routes", () => {
         "db-client",
         "al1",
       );
-      expect(mocks.songFindSongsByAlbumId).toHaveBeenCalledWith("db-client", "al1");
+      expect(mocks.songFindSongsByAlbumId).toHaveBeenCalledWith(
+        "db-client",
+        "al1",
+      );
       expect(response.send).toHaveBeenCalledWith(songs);
     });
 

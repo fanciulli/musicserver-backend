@@ -18,10 +18,12 @@ vi.mock("selfsigned", () => ({
   default: { generate: (...args: unknown[]) => mockGenerate(...args) },
 }));
 
-import { loadTlsConfig } from "../../src/tls/tlsManager.js";
+import { loadTlsConfig } from "../../src/utils/tlsUtils.js";
 
-const FAKE_CERT = "-----BEGIN CERTIFICATE-----\nMOCK\n-----END CERTIFICATE-----\n";
-const FAKE_KEY = "-----BEGIN PRIVATE KEY-----\nMOCK\n-----END PRIVATE KEY-----\n";
+const FAKE_CERT =
+  "-----BEGIN CERTIFICATE-----\nMOCK\n-----END CERTIFICATE-----\n";
+const FAKE_KEY =
+  "-----BEGIN PRIVATE KEY-----\nMOCK\n-----END PRIVATE KEY-----\n";
 const ENOENT = Object.assign(new Error("ENOENT"), { code: "ENOENT" });
 
 describe("loadTlsConfig", () => {
@@ -49,8 +51,10 @@ describe("loadTlsConfig", () => {
 
     mockAccess.mockResolvedValue(undefined);
     mockReadFile.mockImplementation((p: string) => {
-      if (p === "/certs/server.crt") return Promise.resolve(Buffer.from(FAKE_CERT));
-      if (p === "/certs/server.key") return Promise.resolve(Buffer.from(FAKE_KEY));
+      if (p === "/certs/server.crt")
+        return Promise.resolve(Buffer.from(FAKE_CERT));
+      if (p === "/certs/server.key")
+        return Promise.resolve(Buffer.from(FAKE_KEY));
       return Promise.reject(new Error(`unexpected path: ${p}`));
     });
 

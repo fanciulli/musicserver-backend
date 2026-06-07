@@ -6,16 +6,17 @@
  * GitHub: https://github.com/fanciulli
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { HttpMethods } from "../../../src/misc/constants.js";
 
 const mocks = vi.hoisted(() => ({
   getPluginById: vi.fn(),
 }));
 
-vi.mock("../../src/utils/musicSourcePluginResolver.js", () => ({
+vi.mock("../../../src/utils/musicSourcePluginResolver.js", () => ({
   getPluginById: (...args: unknown[]) => mocks.getPluginById(...args),
 }));
 
-import { default as ScanRoute } from "../../src/routes/music/scan.js";
+import { default as ScanRoute } from "../../../src/routes/admin/scan.js";
 
 function createResponseMock() {
   return {
@@ -35,6 +36,35 @@ describe("ScanRoute", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("has correct URL", () => {
+    expect(createRoute().url).toBe("/admin/scan");
+  });
+
+  it("uses POST method", () => {
+    expect(createRoute().method).toBe(HttpMethods.POST);
+  });
+
+  it("requires auth", () => {
+    expect(createRoute().requiresAuth).toBe(true);
+  });
+
+  it("passes plugin id from request body to getPluginById", async () => {
+    mocks.getPluginById.mockResolvedValue({
+      pluginId: "myPlugin",
+      plugin: { scan: vi.fn().mockResolvedValue(undefined) },
+    });
+
+    const route = createRoute();
+    const response = createResponseMock();
+
+    await route.handler({ body: { id: "myPlugin" } }, response);
+
+    expect(mocks.getPluginById).toHaveBeenCalledWith(
+      "myPlugin",
+      expect.anything(),
+    );
   });
 
   it("fails when getPluginById invocation throws", async () => {

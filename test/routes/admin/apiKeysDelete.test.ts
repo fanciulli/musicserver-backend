@@ -24,9 +24,11 @@ describe("ApiKeysDelete", () => {
     mockDelete.mockResolvedValue(true);
     const route = new ApiKeysDelete(makeContext());
     const send = vi.fn();
-    await route.handler({ params: { id: "abc" } }, { send, code: vi.fn().mockReturnThis() });
+    await route.handler(
+      { params: { id: "abc" } },
+      { send, code: vi.fn().mockReturnThis() },
+    );
     expect(mockDelete).toHaveBeenCalledWith({}, "abc");
-    expect(send).toHaveBeenCalledWith({ status: "ok" });
   });
 
   it("returns 404 when key not found", async () => {

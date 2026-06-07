@@ -12,13 +12,13 @@ const mocks = vi.hoisted(() => ({
   getDatabase: vi.fn(),
 }));
 
-vi.mock("../../src/types/db/logLine.js", () => ({
+vi.mock("../../../src/types/db/logLine.js", () => ({
   LogLineDbModel: {
     query: (...args) => mocks.logLineQuery(...args),
   },
 }));
 
-import { default as AdminLogsRoute } from "../../src/routes/admin/adminLogs.js";
+import { default as AdminLogsRoute } from "../../../src/routes/admin/adminLogs.js";
 
 function createResponseMock() {
   return {

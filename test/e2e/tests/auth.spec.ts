@@ -16,7 +16,7 @@ async function fillLoginForm(
 test("AUTH_001: Login with wrong password returns 401 and shows error", async ({
   page,
 }) => {
-  await fillLoginForm(page, "admin", "wrong");
+  await fillLoginForm(page, "admin", "wrongpassword");
 
   const [response] = await Promise.all([
     page.waitForResponse((r) => r.url().includes("/api/auth/login")),
@@ -28,10 +28,10 @@ test("AUTH_001: Login with wrong password returns 401 and shows error", async ({
   await expect(page).toHaveURL(/sign-in/);
 });
 
-test("AUTH_0_02: Login with wrong username returns 401 and shows error", async ({
+test("AUTH_002: Login with wrong username returns 401 and shows error", async ({
   page,
 }) => {
-  await fillLoginForm(page, "admin1", "admin");
+  await fillLoginForm(page, "admin1", "password");
 
   const [response] = await Promise.all([
     page.waitForResponse((r) => r.url().includes("/api/auth/login")),
@@ -49,7 +49,7 @@ test("AUTH_003: Login/logout cycle invalidates session token", async ({
   request,
 }) => {
   // 1. Login via UI
-  await fillLoginForm(page, "admin", "admin");
+  await fillLoginForm(page, "admin", "password");
 
   const [loginResponse] = await Promise.all([
     page.waitForResponse((r) => r.url().includes("/api/auth/login")),
