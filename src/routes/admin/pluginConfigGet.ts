@@ -16,6 +16,7 @@ export default class PluginConfigGetRoute extends Route {
   method = HttpMethods.GET;
   url = "/admin/plugins/:pluginId/config";
   schema = PluginConfigGetSchema;
+  requiresAuth = true;
   handler = async (request: any, response: any) => {
     const pluginId = request.params.pluginId;
     const pluginManager = this.getPluginManager();

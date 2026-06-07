@@ -112,6 +112,10 @@ vi.mock("../../src/plugins/pluginManager.js", () => ({
   },
 }));
 
+vi.mock("../../src/tls/tlsManager.js", () => ({
+  loadTlsConfig: vi.fn().mockResolvedValue(null),
+}));
+
 vi.mock("../../src/server/loggingMongoTransport.js", () => ({
   createDatabaseLogger: (...args: unknown[]) => {
     spies.createDatabaseLogger(...args);
