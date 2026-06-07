@@ -31,7 +31,7 @@ import {
   getConfiguration,
   loadConfiguration,
   updateConfiguration,
-} from "./configurationManager.js";
+} from "./configuration.js";
 
 export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   id: string = PLUGIN_ID;
