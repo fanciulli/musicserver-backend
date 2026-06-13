@@ -102,6 +102,12 @@ export const PluginConfigGetSchema = {
                 },
               },
             },
+            labels: {
+              type: "object",
+              additionalProperties: {
+                type: "string",
+              },
+            },
             values: {
               type: "object",
               additionalProperties: true,

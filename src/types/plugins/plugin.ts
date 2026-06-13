@@ -10,10 +10,13 @@ import { Db } from "mongodb";
 
 export type PluginConfigurationVariables = Array<Record<string, string>>;
 
+export type PluginConfigurationLabels = Record<string, string>;
+
 export type PluginConfigurationValues = Record<string, unknown>;
 
 export type PluginConfigurationSettings = {
   variables: PluginConfigurationVariables;
+  labels: PluginConfigurationLabels;
   values: PluginConfigurationValues;
 };
 
@@ -47,6 +50,7 @@ export abstract class Plugin {
   getConfiguration: () => Promise<PluginConfigurationSettings> = async () => {
     return {
       variables: [],
+      labels: {},
       values: {},
     };
   };
