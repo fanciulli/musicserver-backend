@@ -8,6 +8,7 @@
 import { AlbumDbModel } from "../../../types/db/album.js";
 import { ArtistDbModel } from "../../../types/db/artist.js";
 import { SongDbModel } from "../../../types/db/song.js";
+import { NotificationDbModel } from "../../../types/db/notification.js";
 import type { Context } from "../../../types/context.js";
 import type { Db } from "mongodb";
 import { listFiles } from "../../../utils/fsUtils.js";
@@ -49,8 +50,14 @@ export class FileSystemScan {
 
     await previousScan;
     const startTime = Date.now();
+    let scannedSongs = 0;
     try {
       logger.info(`Starting scan of music folder ${musicFolder}`);
+      await NotificationDbModel.sendToAll(db, {
+        title: "Library scan started",
+        message: `Scanning ${musicFolder}`,
+        type: "info",
+      });
 
       await ArtistDbModel.markAllAsNotExisting(db, pluginId);
       await AlbumDbModel.markAllAsNotExisting(db, pluginId);
@@ -84,6 +91,7 @@ export class FileSystemScan {
             artists,
             filePath,
           );
+          scannedSongs++;
         } catch (ex: any) {
           if (ex instanceof UnsupportedFileTypeError) {
             logger.debug(
@@ -102,6 +110,19 @@ export class FileSystemScan {
       await ArtistDbModel.deleteNotExisting(db, pluginId);
       await AlbumDbModel.deleteNotExisting(db, pluginId);
       await SongDbModel.deleteNotExisting(db, pluginId);
+
+      await NotificationDbModel.sendToAll(db, {
+        title: "Library scan completed",
+        message: `${scannedSongs} tracks indexed`,
+        type: "success",
+      });
+    } catch (ex: any) {
+      await NotificationDbModel.sendToAll(db, {
+        title: "Library scan failed",
+        message: ex?.message ?? "Unknown error",
+        type: "error",
+      });
+      throw ex;
     } finally {
       releaseScanQueue?.();
 
