@@ -17,7 +17,7 @@ export default class NotificationRead extends Route {
   requiresAuth = true;
 
   handler = async (request: any, response: any) => {
-    const username = request.username as string;
+    const username = this.getUsername(request);
     const updated = await NotificationDbModel.markRead(
       this.getDatabase(),
       request.params.id,

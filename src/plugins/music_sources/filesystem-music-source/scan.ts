@@ -8,7 +8,10 @@
 import { AlbumDbModel } from "../../../types/db/album.js";
 import { ArtistDbModel } from "../../../types/db/artist.js";
 import { SongDbModel } from "../../../types/db/song.js";
-import { NotificationDbModel } from "../../../types/db/notification.js";
+import {
+  NotificationDbModel,
+  NotificationTypes,
+} from "../../../types/db/notification.js";
 import type { Context } from "../../../types/context.js";
 import type { Db } from "mongodb";
 import { listFiles } from "../../../utils/fsUtils.js";
@@ -53,10 +56,10 @@ export class FileSystemScan {
     let scannedSongs = 0;
     try {
       logger.info(`Starting scan of music folder ${musicFolder}`);
-      await NotificationDbModel.sendToAll(db, {
+      await NotificationDbModel.send(db, null, {
         title: "Library scan started",
         message: `Scanning ${musicFolder}`,
-        type: "info",
+        type: NotificationTypes.INFO,
       });
 
       await ArtistDbModel.markAllAsNotExisting(db, pluginId);
@@ -111,16 +114,16 @@ export class FileSystemScan {
       await AlbumDbModel.deleteNotExisting(db, pluginId);
       await SongDbModel.deleteNotExisting(db, pluginId);
 
-      await NotificationDbModel.sendToAll(db, {
+      await NotificationDbModel.send(db, null, {
         title: "Library scan completed",
         message: `${scannedSongs} tracks indexed`,
-        type: "success",
+        type: NotificationTypes.SUCCESS,
       });
     } catch (ex: any) {
-      await NotificationDbModel.sendToAll(db, {
+      await NotificationDbModel.send(db, null, {
         title: "Library scan failed",
         message: ex?.message ?? "Unknown error",
-        type: "error",
+        type: NotificationTypes.ERROR,
       });
       throw ex;
     } finally {

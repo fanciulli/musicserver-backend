@@ -17,7 +17,7 @@ export default class NotificationsList extends Route {
   requiresAuth = true;
 
   handler = async (request: any, response: any) => {
-    const username = request.username as string;
+    const username = this.getUsername(request);
     const notifications = await NotificationDbModel.findForUser(
       this.getDatabase(),
       username,

@@ -35,12 +35,18 @@ const mocks = vi.hoisted(() => ({
   songMarkAllAsNotExisting: vi.fn(),
   songDeleteNotExisting: vi.fn(),
 
-  sendToAll: vi.fn(),
+  send: vi.fn(),
 }));
 
 vi.mock("../../src/types/db/notification.js", () => ({
   NotificationDbModel: {
-    sendToAll: (...args: unknown[]) => mocks.sendToAll(...args),
+    send: (...args: unknown[]) => mocks.send(...args),
+  },
+  NotificationTypes: {
+    INFO: "info",
+    SUCCESS: "success",
+    WARNING: "warning",
+    ERROR: "error",
   },
 }));
 
@@ -251,12 +257,14 @@ describe("FileSystemScan.scan – lifecycle", () => {
   it("sends start and completion notifications around a scan", async () => {
     await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER, true);
 
-    expect(mocks.sendToAll).toHaveBeenCalledWith(
+    expect(mocks.send).toHaveBeenCalledWith(
       DB_CLIENT,
+      null,
       expect.objectContaining({ title: "Library scan started", type: "info" }),
     );
-    expect(mocks.sendToAll).toHaveBeenCalledWith(
+    expect(mocks.send).toHaveBeenCalledWith(
       DB_CLIENT,
+      null,
       expect.objectContaining({
         title: "Library scan completed",
         type: "success",

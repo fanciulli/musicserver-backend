@@ -10,7 +10,7 @@ export default class LogoutRoute extends Route {
   schema = {};
 
   handler = async (request: any, response: any) => {
-    const username: string = (request as any).username;
+    const username: string = this.getUsername(request);
     const db = this.getDatabase();
     await UserSessionDbModel.deleteByUsername(db, username);
     return response.send({ success: true });

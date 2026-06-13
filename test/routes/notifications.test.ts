@@ -12,6 +12,7 @@ vi.mock("../../src/types/db/notification.js", () => ({
     markRead: (...a: unknown[]) => mocks.markRead(...a),
     deleteById: (...a: unknown[]) => mocks.deleteById(...a),
   },
+  NOTIFICATION_TYPE_VALUES: ["info", "success", "warning", "error"],
 }));
 
 import { default as NotificationsList } from "../../src/routes/admin/notificationsList.js";

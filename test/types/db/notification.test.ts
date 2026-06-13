@@ -32,10 +32,10 @@ describe("init", () => {
   });
 });
 
-describe("NotificationDbModel.sendToUser", () => {
+describe("NotificationDbModel.send", () => {
   it("inserts a notification addressed to one user with a default expiry", async () => {
     const { db, col } = makeDb();
-    await NotificationDbModel.sendToUser(db, "alice", {
+    await NotificationDbModel.send(db, "alice", {
       title: "Hi",
       message: "msg",
       type: "info",
@@ -47,12 +47,10 @@ describe("NotificationDbModel.sendToUser", () => {
     expect(inserted.readBy).toEqual([]);
     expect(inserted.expiresAt.getTime()).toBeGreaterThan(Date.now());
   });
-});
 
-describe("NotificationDbModel.sendToAll", () => {
-  it("inserts a broadcast notification with null recipient", async () => {
+  it("inserts a broadcast notification when recipient is null", async () => {
     const { db, col } = makeDb();
-    await NotificationDbModel.sendToAll(db, {
+    await NotificationDbModel.send(db, null, {
       title: "All",
       message: "msg",
       type: "success",

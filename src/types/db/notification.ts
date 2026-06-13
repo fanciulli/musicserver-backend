@@ -11,7 +11,18 @@ import { MILLISECONDS_PER_DAY } from "../../misc/constants.js";
 
 const COLLECTION_NAME = "notifications";
 
-export type NotificationType = "info" | "success" | "warning" | "error";
+export const NotificationTypes = {
+  INFO: "info",
+  SUCCESS: "success",
+  WARNING: "warning",
+  ERROR: "error",
+} as const;
+
+export type NotificationType =
+  (typeof NotificationTypes)[keyof typeof NotificationTypes];
+
+export const NOTIFICATION_TYPE_VALUES: NotificationType[] =
+  Object.values(NotificationTypes);
 
 export type NotificationInput = {
   title: string;
@@ -29,22 +40,13 @@ export class NotificationDbModel {
   expiresAt: Date = new Date(Date.now() + MILLISECONDS_PER_DAY);
   readBy: string[] = [];
 
-  static async sendToUser(
+  static async send(
     db: Db,
-    username: string,
+    recipient: string | null,
     input: NotificationInput,
   ): Promise<void> {
     const model = new NotificationDbModel();
-    model.recipient = username;
-    model.title = input.title;
-    model.message = input.message;
-    model.type = input.type;
-    await db.collection<NotificationDbModel>(COLLECTION_NAME).insertOne(model);
-  }
-
-  static async sendToAll(db: Db, input: NotificationInput): Promise<void> {
-    const model = new NotificationDbModel();
-    model.recipient = null;
+    model.recipient = recipient;
     model.title = input.title;
     model.message = input.message;
     model.type = input.type;

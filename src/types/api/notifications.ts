@@ -5,6 +5,7 @@
  *
  * GitHub: https://github.com/fanciulli
  */
+import { NOTIFICATION_TYPE_VALUES } from "../db/notification.js";
 
 export type NotificationResponse = {
   id: string;
@@ -17,12 +18,13 @@ export type NotificationResponse = {
 
 export const NotificationSchema = {
   type: "object",
+  required: ["id", "title", "message", "type", "createdAt", "read"],
   properties: {
-    id: { type: "string" },
+    id: { type: "string", format: "uuid" },
     title: { type: "string" },
     message: { type: "string" },
-    type: { type: "string" },
-    createdAt: { type: "string" },
+    type: { type: "string", enum: NOTIFICATION_TYPE_VALUES },
+    createdAt: { type: "string", format: "date-time" },
     read: { type: "boolean" },
   },
 };
@@ -41,7 +43,7 @@ export const NotificationReadSchema = {
     type: "object",
     required: ["id"],
     properties: {
-      id: { type: "string" },
+      id: { type: "string", format: "uuid" },
     },
   },
 };
@@ -51,7 +53,7 @@ export const NotificationDeleteSchema = {
     type: "object",
     required: ["id"],
     properties: {
-      id: { type: "string" },
+      id: { type: "string", format: "uuid" },
     },
   },
 };
