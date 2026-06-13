@@ -66,7 +66,7 @@ export class MusicServer {
 
     this.#fastifyInstance!.listen({ port: 3000, host: "0.0.0.0" }, (err) => {
       if (err) {
-        this.#fastifyInstance!.log.error(err);
+        console.log(`Cannot start Music Server becase: ${err.message}`);
         process.exit(1);
       }
     });
