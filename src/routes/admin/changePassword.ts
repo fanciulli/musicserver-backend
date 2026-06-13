@@ -15,7 +15,7 @@ export default class ChangePasswordRoute extends Route {
   schema = ChangePasswordRequestSchema;
 
   handler = async (request: any, response: any) => {
-    const username: string = (request as any).username;
+    const username: string = this.getUsername(request);
     const { currentPassword, newPassword } =
       request.body as ChangePasswordRequest;
 

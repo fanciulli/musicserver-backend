@@ -34,6 +34,10 @@ export abstract class Route implements IRoute {
     return this.#context;
   }
 
+  protected getUsername(request: any): string {
+    return request.username as string;
+  }
+
   protected getDatabase() {
     const db = this.getContext().database;
     if (!db) {
