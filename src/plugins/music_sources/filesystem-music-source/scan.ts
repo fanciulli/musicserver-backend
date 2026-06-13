@@ -18,7 +18,7 @@ import {
   type IAudioMetadata,
 } from "music-metadata";
 import { v4 } from "uuid";
-import { linkArtists } from "./utils.js";
+import { linkArtists, pickBestArtistName } from "./utils.js";
 
 export class FileSystemScan {
   static #scanQueue: Promise<void> = Promise.resolve();
@@ -32,6 +32,7 @@ export class FileSystemScan {
     context: Context,
     pluginId: string,
     musicFolder: string,
+    smartMergeArtists: boolean = true,
   ): Promise<void> {
     if (musicFolder.trim() === "") {
       throw new Error("musicFolder must be configured before scan");
@@ -67,6 +68,7 @@ export class FileSystemScan {
             db,
             pluginId,
             fileMetadata,
+            smartMergeArtists,
           );
           const album = await FileSystemScan.#upsertAlbum(
             db,
@@ -172,24 +174,34 @@ export class FileSystemScan {
     db: Db,
     pluginId: string,
     fileMetadata: IAudioMetadata,
+    smartMergeArtists: boolean,
   ): Promise<Array<ArtistDbModel>> {
     const artists = fileMetadata.common?.albumartists;
 
     if (artists) {
       const dbArtists = [];
       for (let artist of artists) {
-        const cachedArtist = FileSystemScan.#artistMap.get(artist);
+        const cacheKey = smartMergeArtists
+          ? artist.toLowerCase()
+          : artist;
+        const cachedArtist = FileSystemScan.#artistMap.get(cacheKey);
 
         const artistInDb = cachedArtist
           ? cachedArtist
-          : await ArtistDbModel.find(db, artist, pluginId); // TODO: introduce cache
+          : smartMergeArtists
+            ? await ArtistDbModel.findCaseInsensitive(db, artist, pluginId)
+            : await ArtistDbModel.find(db, artist, pluginId);
         if (artistInDb) {
           artistInDb.exists = true;
+          if (smartMergeArtists && artistInDb.name) {
+            // Prefer the best-cased variant; updates a discarded name in the DB.
+            artistInDb.name = pickBestArtistName(artistInDb.name, artist);
+          }
           await artistInDb.update(db);
           dbArtists.push(artistInDb);
 
           if (!cachedArtist) {
-            FileSystemScan.#artistMap.set(artist, artistInDb);
+            FileSystemScan.#artistMap.set(cacheKey, artistInDb);
           }
         } else {
           const dbArtist = new ArtistDbModel();
@@ -202,7 +214,7 @@ export class FileSystemScan {
           dbArtists.push(dbArtist);
 
           if (!cachedArtist) {
-            FileSystemScan.#artistMap.set(artist, dbArtist);
+            FileSystemScan.#artistMap.set(cacheKey, dbArtist);
           }
         }
       }

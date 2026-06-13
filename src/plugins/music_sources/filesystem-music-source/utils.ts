@@ -97,6 +97,52 @@ export function createSongBrowseResponses(
   );
 }
 
+/**
+ * Scores how closely a name matches title case (each word starting with an
+ * upper case letter followed by lower case letters).
+ *
+ * @param name Name to score.
+ * @returns Fraction of words in title case, in the range [0, 1].
+ */
+function titleCaseScore(name: string): number {
+  const words = name
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0);
+  if (words.length === 0) {
+    return 0;
+  }
+
+  let titleCasedWords = 0;
+  for (const word of words) {
+    const first = word.charAt(0);
+    const rest = word.slice(1);
+    const startsUpperCase =
+      first === first.toUpperCase() && first !== first.toLowerCase();
+    if (startsUpperCase && rest === rest.toLowerCase()) {
+      titleCasedWords += 1;
+    }
+  }
+
+  return titleCasedWords / words.length;
+}
+
+/**
+ * Picks the preferred artist name between two case-insensitive variants.
+ *
+ * The variant closest to title case wins (e.g. "Artist Name" beats
+ * "ARTIST NAME"). Ties keep the current name to avoid needless writes.
+ *
+ * @param current Name currently stored.
+ * @param candidate Incoming name to compare against.
+ * @returns The preferred name.
+ */
+export function pickBestArtistName(current: string, candidate: string): string {
+  return titleCaseScore(candidate) > titleCaseScore(current)
+    ? candidate
+    : current;
+}
+
 export function linkArtists(
   artists: ArtistDbModel[] | string[] | undefined,
 ): string {
@@ -104,9 +150,15 @@ export function linkArtists(
     return "";
   }
 
+  let artistsArray: string[] = [];
+
   if (typeof artists[0] === "string") {
-    return (artists as string[]).join(", ");
+    artistsArray = artists as string[];
+  } else {
+    artistsArray = (artists as ArtistDbModel[])
+      .map((artist) => artist.name)
+      .filter((name) => name !== undefined);
   }
 
-  return (artists as ArtistDbModel[]).map((artist) => artist.name).join(", ");
+  return Array.from(new Set(artistsArray)).join(", ");
 }

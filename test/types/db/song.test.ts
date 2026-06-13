@@ -10,6 +10,7 @@ import { SongDbModel } from "../../../src/types/db/song.js";
 
 describe("SongDbModel.findSongsByAlbumId", () => {
   let toArrayMock: ReturnType<typeof vi.fn>;
+  let sortMock: ReturnType<typeof vi.fn>;
   let findMock: ReturnType<typeof vi.fn>;
   let collectionMock: { find: ReturnType<typeof vi.fn> };
   let dbMock: { collection: ReturnType<typeof vi.fn> };
@@ -18,7 +19,8 @@ describe("SongDbModel.findSongsByAlbumId", () => {
     vi.clearAllMocks();
 
     toArrayMock = vi.fn();
-    findMock = vi.fn().mockReturnValue({ toArray: toArrayMock });
+    sortMock = vi.fn().mockReturnValue({ toArray: toArrayMock });
+    findMock = vi.fn().mockReturnValue({ sort: sortMock });
     collectionMock = {
       find: findMock,
     };
@@ -53,6 +55,14 @@ describe("SongDbModel.findSongsByAlbumId", () => {
       },
       {},
     );
+  });
+
+  it("sorts songs by disk number then track number, ascending", async () => {
+    toArrayMock.mockResolvedValue([]);
+
+    await SongDbModel.findSongsByAlbumId(dbMock as any, "album-1");
+
+    expect(sortMock).toHaveBeenCalledWith({ diskNumber: 1, trackNumber: 1 });
   });
 
   it("maps DB results to SongDbModel instances", async () => {

@@ -42,6 +42,20 @@ export class ArtistDbModel {
     return artist ? ArtistDbModel.fromJson(artist) : undefined;
   }
 
+  static async findCaseInsensitive(
+    db: Db,
+    name: string,
+    pluginId: string,
+  ): Promise<ArtistDbModel | undefined> {
+    const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
+    const filter = {
+      name: { $regex: `^${escapeRegex(name)}$`, $options: "i" },
+      pluginId: pluginId,
+    };
+    const artist = await collection.findOne(filter);
+    return artist ? ArtistDbModel.fromJson(artist) : undefined;
+  }
+
   static async findByIds(db: Db, ids: string[]): Promise<ArtistDbModel[]> {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
     const filter = {
@@ -157,7 +171,11 @@ export class ArtistDbModel {
 
   static async findAll(db: Db): Promise<Array<ArtistDbModel>> {
     const collection = db.collection<ArtistDbModel>(COLLECTION_NAME);
-    const artists = await collection.find({}).toArray();
+    const artists = await collection
+      .find({})
+      .collation({ locale: "en", strength: 1 })
+      .sort({ name: 1 })
+      .toArray();
     return artists.map((artist) => ArtistDbModel.fromJson(artist));
   }
 
