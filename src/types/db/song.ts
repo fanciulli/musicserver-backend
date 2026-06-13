@@ -114,10 +114,8 @@ export class SongDbModel {
       filter.pluginId = pluginId;
     }
     const songs = await collection
-      .find(
-        filter,
-        {},
-      )
+      .find(filter, {})
+      .sort({ diskNumber: 1, trackNumber: 1 })
       .toArray();
 
     return songs.map((song) => SongDbModel.fromJson(song));

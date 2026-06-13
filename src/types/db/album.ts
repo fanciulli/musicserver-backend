@@ -220,6 +220,8 @@ export class AlbumDbModel {
     const collection = db.collection<AlbumDbModel>(COLLECTION_NAME);
     const albums = await collection
       .find({ artists: artistId })
+      .collation({ locale: "en", strength: 1 })
+      .sort({ name: 1 })
       .toArray();
     return albums.map((album) => AlbumDbModel.fromJson(album));
   }

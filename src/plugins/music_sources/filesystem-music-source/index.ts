@@ -31,17 +31,21 @@ import {
   getConfiguration,
   loadConfiguration,
   updateConfiguration,
+  type FilesystemConfiguration,
 } from "./configuration.js";
 
 export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
   id: string = PLUGIN_ID;
   name: string = PLUGIN_NAME;
   #browseRoot: Array<BrowseResponse>;
-  #musicFolder: string;
+  #configuration: FilesystemConfiguration;
 
   constructor(context: Context) {
     super(context);
-    this.#musicFolder = DEFAULT_MUSIC_FOLDER;
+    this.#configuration = {
+      musicFolder: DEFAULT_MUSIC_FOLDER,
+      smartMergeArtists: true,
+    };
     const albumsFolder = new Folder();
     albumsFolder.name = "Albums";
 
@@ -68,26 +72,30 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
 
   async scan(): Promise<void> {
     // making this run asynchronously in order not to block to the API request.
-    FileSystemScan.scan(this.context, this.id, this.#musicFolder);
+    FileSystemScan.scan(
+      this.context,
+      this.id,
+      this.#configuration.musicFolder,
+      this.#configuration.smartMergeArtists,
+    );
   }
 
   loadConfiguration = async (): Promise<void> => {
-    this.#musicFolder = await loadConfiguration(
+    this.#configuration = await loadConfiguration(
       this.getDatabase(),
       this.category,
       this.id,
-      DEFAULT_MUSIC_FOLDER,
     );
   };
 
   getConfiguration = async (): Promise<PluginConfigurationSettings> => {
-    return getConfiguration(this.#musicFolder);
+    return getConfiguration(this.#configuration);
   };
 
   updateConfiguration = async (
     settings: PluginConfigurationValues,
   ): Promise<void> => {
-    this.#musicFolder = await updateConfiguration(
+    this.#configuration = await updateConfiguration(
       this.getDatabase(),
       this.category,
       this.id,

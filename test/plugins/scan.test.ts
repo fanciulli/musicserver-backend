@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   parseFile: vi.fn(),
 
   artistFind: vi.fn(),
+  artistFindCaseInsensitive: vi.fn(),
   artistInsert: vi.fn(),
   artistUpdate: vi.fn(),
   artistMarkAllAsNotExisting: vi.fn(),
@@ -62,6 +63,10 @@ vi.mock("../../src/types/db/artist.js", () => ({
 
     static find(...args: unknown[]) {
       return mocks.artistFind(...args);
+    }
+
+    static findCaseInsensitive(...args: unknown[]) {
+      return mocks.artistFindCaseInsensitive(...args);
     }
 
     static markAllAsNotExisting(...args: unknown[]) {
@@ -292,6 +297,7 @@ describe("Successfully adds new data", () => {
     mocks.parseFile.mockResolvedValue(makeMetadata());
 
     mocks.artistFind.mockResolvedValue(null);
+    mocks.artistFindCaseInsensitive.mockResolvedValue(null);
     mocks.albumFind.mockResolvedValue(null);
     mocks.songFind.mockResolvedValue(null);
 
@@ -369,6 +375,7 @@ describe("Existing data is preserved and updated", () => {
     mocks.parseFile.mockResolvedValue(makeMetadata());
 
     mocks.artistFind.mockResolvedValue(existingArtist);
+    mocks.artistFindCaseInsensitive.mockResolvedValue(existingArtist);
     mocks.albumFind.mockResolvedValue(existingAlbum);
     mocks.songFind.mockResolvedValue(existingSong);
   });
@@ -463,5 +470,100 @@ describe("Stale data is removed", () => {
       DB_CLIENT,
       PLUGIN_ID,
     );
+  });
+});
+
+describe("Case-insensitive artist merge", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.artistMarkAllAsNotExisting.mockResolvedValue(undefined);
+    mocks.albumMarkAllAsNotExisting.mockResolvedValue(undefined);
+    mocks.songMarkAllAsNotExisting.mockResolvedValue(undefined);
+    mocks.artistDeleteNotExisting.mockResolvedValue(undefined);
+    mocks.albumDeleteNotExisting.mockResolvedValue(undefined);
+    mocks.songDeleteNotExisting.mockResolvedValue(undefined);
+    mocks.artistInsert.mockResolvedValue(undefined);
+    mocks.albumInsert.mockResolvedValue(undefined);
+    mocks.songInsert.mockResolvedValue(undefined);
+    mocks.albumFind.mockResolvedValue(null);
+    mocks.songFind.mockResolvedValue(null);
+    mocks.listFiles.mockResolvedValue(["/music/song.mp3"]);
+  });
+
+  it("looks up artists case-insensitively when merging is enabled", async () => {
+    mocks.parseFile.mockResolvedValue(
+      makeMetadata({ albumartists: ["ARTIST NAME"] }),
+    );
+    mocks.artistFindCaseInsensitive.mockResolvedValue(null);
+
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER, true);
+
+    expect(mocks.artistFindCaseInsensitive).toHaveBeenCalledWith(
+      DB_CLIENT,
+      "ARTIST NAME",
+      PLUGIN_ID,
+    );
+    expect(mocks.artistFind).not.toHaveBeenCalled();
+  });
+
+  it("reuses the existing entry and upgrades a discarded all-caps name", async () => {
+    const existingArtist = {
+      id: "artist-id-1",
+      name: "ARTIST NAME",
+      pluginId: PLUGIN_ID,
+      exists: false,
+      update: vi.fn().mockResolvedValue(undefined),
+    };
+
+    mocks.parseFile.mockResolvedValue(
+      makeMetadata({ albumartists: ["Artist Name"] }),
+    );
+    mocks.artistFindCaseInsensitive.mockResolvedValue(existingArtist);
+
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER, true);
+
+    expect(mocks.artistInsert).not.toHaveBeenCalled();
+    expect(existingArtist.exists).toBe(true);
+    expect(existingArtist.name).toBe("Artist Name");
+    expect(existingArtist.update).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the better-cased stored name when the incoming name is all caps", async () => {
+    const existingArtist = {
+      id: "artist-id-1",
+      name: "Artist Name",
+      pluginId: PLUGIN_ID,
+      exists: false,
+      update: vi.fn().mockResolvedValue(undefined),
+    };
+
+    mocks.parseFile.mockResolvedValue(
+      makeMetadata({ albumartists: ["ARTIST NAME"] }),
+    );
+    mocks.artistFindCaseInsensitive.mockResolvedValue(existingArtist);
+
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER, true);
+
+    expect(mocks.artistInsert).not.toHaveBeenCalled();
+    expect(existingArtist.name).toBe("Artist Name");
+  });
+
+  it("uses exact-name lookup and does not merge when disabled", async () => {
+    mocks.parseFile.mockResolvedValue(
+      makeMetadata({ albumartists: ["ARTIST NAME"] }),
+    );
+    mocks.artistFind.mockResolvedValue(null);
+
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER, false);
+
+    expect(mocks.artistFind).toHaveBeenCalledWith(
+      DB_CLIENT,
+      "ARTIST NAME",
+      PLUGIN_ID,
+    );
+    expect(mocks.artistFindCaseInsensitive).not.toHaveBeenCalled();
+    expect(mocks.artistInsert).toHaveBeenCalledOnce();
+    const insertedArtist = mocks.artistInsert.mock.calls[0][1];
+    expect(insertedArtist.name).toBe("ARTIST NAME");
   });
 });

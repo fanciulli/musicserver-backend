@@ -53,9 +53,13 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
     await plugin.loadConfiguration();
 
     await expect(plugin.getConfiguration()).resolves.toEqual({
-      variables: [{ musicFolder: "string" }],
+      variables: [
+        { musicFolder: "string" },
+        { smartMergeArtists: "boolean" },
+      ],
       values: {
         musicFolder: "/db/music",
+        smartMergeArtists: true,
       },
     });
   });
@@ -71,9 +75,13 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
     await plugin.loadConfiguration();
 
     await expect(plugin.getConfiguration()).resolves.toEqual({
-      variables: [{ musicFolder: "string" }],
+      variables: [
+        { musicFolder: "string" },
+        { smartMergeArtists: "boolean" },
+      ],
       values: {
         musicFolder: "/music",
+        smartMergeArtists: true,
       },
     });
   });
@@ -87,9 +95,13 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
     await plugin.updateConfiguration({ musicFolder: "/mnt/music" });
 
     await expect(plugin.getConfiguration()).resolves.toEqual({
-      variables: [{ musicFolder: "string" }],
+      variables: [
+        { musicFolder: "string" },
+        { smartMergeArtists: "boolean" },
+      ],
       values: {
         musicFolder: "/mnt/music",
+        smartMergeArtists: true,
       },
     });
     expect(mocks.upsertPluginConfig).toHaveBeenCalledWith(
@@ -98,8 +110,55 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
       "filesystem-music-source",
       {
         musicFolder: "/mnt/music",
+        smartMergeArtists: true,
       },
     );
+  });
+
+  it("persists the smartMergeArtists flag when provided", async () => {
+    const plugin = new FilesystemMusicSourcePlugin({
+      database: "db-client",
+      logger: { info: vi.fn() },
+    } as any);
+
+    await plugin.updateConfiguration({
+      musicFolder: "/mnt/music",
+      smartMergeArtists: false,
+    });
+
+    await expect(plugin.getConfiguration()).resolves.toEqual({
+      variables: [
+        { musicFolder: "string" },
+        { smartMergeArtists: "boolean" },
+      ],
+      values: {
+        musicFolder: "/mnt/music",
+        smartMergeArtists: false,
+      },
+    });
+    expect(mocks.upsertPluginConfig).toHaveBeenCalledWith(
+      "db-client",
+      "music_sources",
+      "filesystem-music-source",
+      {
+        musicFolder: "/mnt/music",
+        smartMergeArtists: false,
+      },
+    );
+  });
+
+  it("rejects a non-boolean smartMergeArtists value", async () => {
+    const plugin = new FilesystemMusicSourcePlugin({
+      database: "db-client",
+      logger: { info: vi.fn() },
+    } as any);
+
+    await expect(
+      plugin.updateConfiguration({
+        musicFolder: "/mnt/music",
+        smartMergeArtists: "yes",
+      }),
+    ).rejects.toThrow("smartMergeArtists must be a boolean");
   });
 
   it("rejects invalid musicFolder configuration", async () => {
@@ -130,6 +189,7 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
       context,
       "filesystem-music-source",
       "/data/audio",
+      true,
     );
   });
 });
