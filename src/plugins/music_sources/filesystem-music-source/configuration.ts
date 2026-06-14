@@ -56,6 +56,10 @@ export function getConfiguration(
       { [MUSIC_FOLDER_KEY]: "string" },
       { [MERGE_ARTISTS_KEY]: "boolean" },
     ],
+    labels: {
+      [MUSIC_FOLDER_KEY]: "Music Folder",
+      [MERGE_ARTISTS_KEY]: "Smart Merge Artists",
+    },
     values: {
       [MUSIC_FOLDER_KEY]: config.musicFolder,
       [MERGE_ARTISTS_KEY]: config.smartMergeArtists,

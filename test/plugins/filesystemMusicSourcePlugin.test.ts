@@ -57,6 +57,10 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
         { musicFolder: "string" },
         { smartMergeArtists: "boolean" },
       ],
+      labels: {
+        musicFolder: "Music Folder",
+        smartMergeArtists: "Smart Merge Artists",
+      },
       values: {
         musicFolder: "/db/music",
         smartMergeArtists: true,
@@ -79,6 +83,10 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
         { musicFolder: "string" },
         { smartMergeArtists: "boolean" },
       ],
+      labels: {
+        musicFolder: "Music Folder",
+        smartMergeArtists: "Smart Merge Artists",
+      },
       values: {
         musicFolder: "/music",
         smartMergeArtists: true,
@@ -99,6 +107,10 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
         { musicFolder: "string" },
         { smartMergeArtists: "boolean" },
       ],
+      labels: {
+        musicFolder: "Music Folder",
+        smartMergeArtists: "Smart Merge Artists",
+      },
       values: {
         musicFolder: "/mnt/music",
         smartMergeArtists: true,
@@ -131,6 +143,10 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
         { musicFolder: "string" },
         { smartMergeArtists: "boolean" },
       ],
+      labels: {
+        musicFolder: "Music Folder",
+        smartMergeArtists: "Smart Merge Artists",
+      },
       values: {
         musicFolder: "/mnt/music",
         smartMergeArtists: false,
