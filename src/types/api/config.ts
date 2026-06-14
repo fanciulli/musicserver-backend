@@ -31,7 +31,9 @@ export const ConfigUpdateSchema = {
     properties: {
       values: {
         type: "object",
-        additionalProperties: { type: ["string", "boolean"] },
+        // Per-value types (string | boolean) are validated by the registry in
+        // configService; an Ajv union here is ignored under strict mode anyway.
+        additionalProperties: true,
       },
     },
   },
