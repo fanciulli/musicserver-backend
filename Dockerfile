@@ -8,6 +8,7 @@ RUN npm install
 COPY tsconfig.json ./
 COPY src ./src
 
+# npm run build compiles TS and copies src/wizards (JSON + images) into dist/wizards
 RUN npm run build
 RUN npm prune --omit=dev
 

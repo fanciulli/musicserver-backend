@@ -7,8 +7,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test --config=test/e2e/playwright.config.ts",
-    "start": "npx tsc -p tsconfig.json; cd dist; node index.js",
-    "build": "npx tsc -p tsconfig.json",
+    "start": "npm run build; cd dist; node index.js",
+    "build": "npx tsc -p tsconfig.json && node -e \"require('fs').cpSync('src/wizards','dist/wizards',{recursive:true})\"",
     "knip": "knip"
   },
   "author": "Massimiliano Fanciulli",

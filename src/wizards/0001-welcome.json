@@ -1,0 +1,17 @@
+{
+  "id": "welcome-v1",
+  "steps": [
+    {
+      "image": "welcome-step-1.svg",
+      "text": "Welcome to MusicServer! Let's take a quick tour of what you can do from this admin console."
+    },
+    {
+      "image": "welcome-step-2.svg",
+      "text": "Add and configure plugins to import your music library from different sources."
+    },
+    {
+      "image": "welcome-step-3.svg",
+      "text": "You're all set. Browse your library, manage API keys and enjoy your music!"
+    }
+  ]
+}
