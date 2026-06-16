@@ -202,7 +202,6 @@ export class FileSystemScan {
   ): Promise<Array<ArtistDbModel>> {
     const artists = extractArtists(fileMetadata);
 
-    console.log(`Album ${artists?.join(", ")}`);
     if (artists) {
       const dbArtists = [];
       for (let artist of artists) {
