@@ -21,10 +21,7 @@ export class ServerConfigDBModel {
     return collection.find({}).toArray();
   }
 
-  static async upsertMany(
-    db: Db,
-    entries: ServerConfigEntry[],
-  ): Promise<void> {
+  static async upsertMany(db: Db, entries: ServerConfigEntry[]): Promise<void> {
     const collection = db.collection<ServerConfigEntry>(COLLECTION_NAME);
     for (const entry of entries) {
       await collection.updateOne(
@@ -35,3 +32,5 @@ export class ServerConfigDBModel {
     }
   }
 }
+
+export function init(db: Db): void {}
