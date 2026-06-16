@@ -200,14 +200,13 @@ export class FileSystemScan {
     fileMetadata: IAudioMetadata,
     smartMergeArtists: boolean,
   ): Promise<Array<ArtistDbModel>> {
-    const artists = fileMetadata.common?.albumartists;
+    const artists = extractArtists(fileMetadata);
 
+    console.log(`Album ${artists?.join(", ")}`);
     if (artists) {
       const dbArtists = [];
       for (let artist of artists) {
-        const cacheKey = smartMergeArtists
-          ? artist.toLowerCase()
-          : artist;
+        const cacheKey = smartMergeArtists ? artist.toLowerCase() : artist;
         const cachedArtist = FileSystemScan.#artistMap.get(cacheKey);
 
         const artistInDb = cachedArtist
@@ -323,4 +322,27 @@ export class FileSystemScan {
     song.metadata["filePath"] = filePath;
     song.exists = true;
   }
+}
+function extractArtists(fileMetadata: IAudioMetadata) {
+  const albumArtists: string[] | undefined = fileMetadata.common?.albumartists;
+  if (albumArtists && albumArtists.length > 0) {
+    return albumArtists;
+  }
+
+  const albumArtist: string | undefined = fileMetadata.common?.albumartist;
+  if (albumArtist) {
+    return [albumArtist];
+  }
+
+  const artists: string[] | undefined = fileMetadata.common?.artists;
+  if (artists && artists.length > 0) {
+    return artists;
+  }
+
+  const artist: string | undefined = fileMetadata.common?.artist;
+  if (artist) {
+    return [artist];
+  }
+
+  return undefined;
 }
