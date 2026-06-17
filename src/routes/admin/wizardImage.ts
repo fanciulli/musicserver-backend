@@ -21,6 +21,7 @@ const CONTENT_TYPE_BY_EXTENSION: Record<string, string> = {
   ".svg": MimeTypes.IMAGE_SVG_XML,
 };
 
+// TODO: Replace this and the albumart retrieval with a common solution.
 export default class WizardImage extends Route {
   method = HttpMethods.GET;
   url = "/admin/wizards/images/:filename";
