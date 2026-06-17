@@ -146,4 +146,43 @@ describe("WizardsNext", () => {
       steps: [{ image: "a.svg", text: "only step" }],
     });
   });
+
+  it("serves two wizards one after the other across calls", async () => {
+    mocks.listWizardFiles.mockResolvedValue(["/w/0001.json", "/w/0002.json"]);
+    mocks.loadWizard.mockImplementation(async (file: string) =>
+      file === "/w/0001.json"
+        ? { id: "first", steps: [{ image: "a.svg", text: "a" }] }
+        : { id: "second", steps: [{ image: "b.svg", text: "b" }] },
+    );
+
+    // Track shown wizards so the mocks behave like the real persistence
+    // layer across the two sequential requests.
+    const shown = new Set<string>();
+    mocks.hasBeenShown.mockImplementation(
+      async (_db: unknown, _user: string, id: string) => shown.has(id),
+    );
+    mocks.markShown.mockImplementation(
+      async (_db: unknown, _user: string, id: string) => {
+        if (shown.has(id)) {
+          return false;
+        }
+        shown.add(id);
+        return true;
+      },
+    );
+
+    const firstResponse = createResponse();
+    await createRoute().handler(createRequest(), firstResponse);
+    expect(firstResponse.send).toHaveBeenCalledWith({
+      id: "first",
+      steps: [{ image: "a.svg", text: "a" }],
+    });
+
+    const secondResponse = createResponse();
+    await createRoute().handler(createRequest(), secondResponse);
+    expect(secondResponse.send).toHaveBeenCalledWith({
+      id: "second",
+      steps: [{ image: "b.svg", text: "b" }],
+    });
+  });
 });

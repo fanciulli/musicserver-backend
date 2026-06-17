@@ -105,6 +105,28 @@ describe("WizardImage", () => {
     expect(mocks.readFile).not.toHaveBeenCalled();
   });
 
+  it("returns 404 for a filename with invalid characters", async () => {
+    const response = createResponse();
+
+    await createRoute().handler(
+      { params: { filename: "bad name!.png" } },
+      response,
+    );
+
+    expect(response.code).toHaveBeenCalledWith(404);
+    expect(mocks.readFile).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 for a filename longer than 64 characters", async () => {
+    const response = createResponse();
+    const longName = `${"a".repeat(65)}.png`;
+
+    await createRoute().handler({ params: { filename: longName } }, response);
+
+    expect(response.code).toHaveBeenCalledWith(404);
+    expect(mocks.readFile).not.toHaveBeenCalled();
+  });
+
   it("returns 404 when the file does not exist", async () => {
     mocks.readFile.mockRejectedValue(new Error("ENOENT"));
     const response = createResponse();
