@@ -5,9 +5,13 @@ meta {
 }
 
 post {
-  url: http://{{host}}:{{port}}/scan
+  url: http://{{host}}:{{port}}/admin/scan
   body: json
   auth: inherit
+}
+
+headers {
+  Authorization: Bearer YWRtaW4.be5938903763a794dcbde5b3643ec1c1a15fe82db849aee243e36175310d1a84
 }
 
 body:json {
