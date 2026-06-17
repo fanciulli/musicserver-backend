@@ -66,8 +66,18 @@ npm install
 If `npm install` fails with an `ERESOLVE` peer-dependency conflict, a Dependabot
 bump is incomplete (a package and its peer must move in lockstep — e.g.
 `vitest` and `@vitest/coverage-v8` must share the exact same version). Confirm
-with `npm view <pkg>@<version> peerDependencies` and, with the user's
-agreement, align the lagging package to the matching version. Re-run
+the relationship with `npm view <pkg>@<version> peerDependencies`.
+
+Resolve it **in dependency order — update the core package first, then its
+peers** — so the peers are aligned to a version that already exists. For the
+vitest toolchain:
+
+1. Bump `vitest` to the target version first (this is the Dependabot bump that
+   triggered the conflict, e.g. 4.1.9).
+2. Then bump `@vitest/coverage-v8` to the **same** version as `vitest`
+   (4.1.9), since it pins an exact `vitest` peer.
+
+Apply analogous ordering for any other lockstep group, then re-run
 `npm install`.
 
 ### 4. Run the tests with coverage
