@@ -1,0 +1,29 @@
+{
+  "id": "welcome",
+  "steps": [
+    {
+      "image": "welcome.svg",
+      "text": "Welcome to MusicServer! Let's take a quick tour."
+    },
+    {
+      "image": "database.svg",
+      "text": "The database will let you browse your music library."
+    },
+    {
+      "image": "plugins.svg",
+      "text": "Add and configure plugins to import your music library from different sources."
+    },
+    {
+      "image": "api-keys.svg",
+      "text": "Manage keys for allowing access to music APIs from external applications."
+    },
+    {
+      "image": "logs.svg",
+      "text": "Understand what's happening inside Music Server. We hope you never need this!"
+    },
+    {
+      "image": "all-set.svg",
+      "text": "You're all set. Enjoy Music Server."
+    }
+  ]
+}
