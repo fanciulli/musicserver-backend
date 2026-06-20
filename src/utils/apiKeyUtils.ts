@@ -2,13 +2,17 @@ import { createHash, randomBytes } from "node:crypto";
 import { ApiKeyCheckStatus } from "fastify-auth-by-api-key";
 import type { Db } from "mongodb";
 
-const COLLECTION_NAME = "api_keys";
+const COLLECTION_NAME = "apiKeys";
 
 export function hashApiKey(key: string): string {
   return createHash("sha256").update(key).digest("hex");
 }
 
-export function generateApiKey(): { key: string; prefix: string; hash: string } {
+export function generateApiKey(): {
+  key: string;
+  prefix: string;
+  hash: string;
+} {
   const key = `ms_${randomBytes(32).toString("hex")}`;
   const prefix = key.substring(0, 10);
   const hash = hashApiKey(key);
