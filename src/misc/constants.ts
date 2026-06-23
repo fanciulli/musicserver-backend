@@ -19,6 +19,10 @@ export enum HttpHeaders {
 export enum MimeTypes {
   APPLICATION_OCTET_STREAM = "application/octet-stream",
   IMAGE_SVG_XML = "image/svg+xml",
+  IMAGE_PNG = "image/png",
+  IMAGE_JPEG = "image/jpeg",
+  IMAGE_WEBP = "image/webp",
+  IMAGE_GIF = "image/gif",
   TEXT_PLAIN = "text/plain",
 }
 

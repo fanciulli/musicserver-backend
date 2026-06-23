@@ -1,0 +1,16 @@
+meta {
+  name: Get Next Wizard
+  type: http
+  seq: 9
+}
+
+get {
+  url: http://{{host}}:{{port}}/admin/wizards/next
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
