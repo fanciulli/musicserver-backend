@@ -30,6 +30,6 @@
     "mongodb": "7.3.0",
     "music-metadata": "11.13.0",
     "selfsigned": "^5.5.0",
-    "uuid": "14.0.0"
+    "uuid": "14.0.1"
   }
 }
