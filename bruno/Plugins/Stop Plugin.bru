@@ -1,18 +1,18 @@
 meta {
-  name: Browse
+  name: Stop Plugin
   type: http
-  seq: 1
+  seq: 3
 }
 
 post {
-  url: http://{{host}}:{{port}}/music/browse
+  url: http://{{host}}:{{port}}/admin/plugins/stop
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "path": "filesystem-music-source://"
+    "pluginId": "filesystem-music-source"
   }
 }
 

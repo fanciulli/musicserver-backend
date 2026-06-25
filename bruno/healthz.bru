@@ -1,13 +1,13 @@
 meta {
-  name: healthz
+  name: Healthz
   type: http
-  seq: 2
+  seq: 1
 }
 
 get {
   url: http://{{host}}:{{port}}/healthz
   body: none
-  auth: inherit
+  auth: none
 }
 
 settings {

@@ -1,11 +1,11 @@
 meta {
-  name: Get Summary
+  name: List API Keys
   type: http
-  seq: 1
+  seq: 2
 }
 
 get {
-  url: http://{{host}}:{{port}}/admin/db/summary
+  url: http://{{host}}:{{port}}/admin/api-keys
   body: none
   auth: inherit
 }

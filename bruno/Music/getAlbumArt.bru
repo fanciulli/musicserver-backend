@@ -1,13 +1,13 @@
 meta {
   name: Get Album Art
   type: http
-  seq: 5
+  seq: 4
 }
 
 get {
   url: http://{{host}}:{{port}}/music/albumart?id=filesystem-music-source://songs/c0e44518-c583-4281-b98a-94cde4b2e75e
   body: none
-  auth: inherit
+  auth: none
 }
 
 params:query {

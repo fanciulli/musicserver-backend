@@ -4,6 +4,26 @@ info:
   description: >
     REST API for the Music Server - a self-hosted, plugin-based music streaming
     server built on Fastify and MongoDB.
+
+
+    ## Authentication
+
+
+    The API uses two authentication schemes:
+
+
+    - **API key** (`ApiKeyAuth`) protects the client-facing music endpoints.
+      Send the key in the `x-api-key` header (it may also be supplied as an
+      `apiKey` query parameter). API keys are issued through the admin
+      `/admin/api-keys` endpoints.
+
+    - **Session token** (`SessionAuth`) protects the administrative endpoints.
+      Obtain a token from `POST /admin/login` and send it as a Bearer token in
+      the `Authorization` header.
+
+
+    A handful of endpoints are public and require no authentication
+    (`/healthz`, `/music/albumart` and `/admin/login`).
   version: 0.0.1
   license:
     name: ISC
@@ -15,12 +35,22 @@ servers:
 tags:
   - name: Health
     description: Server health checks
+  - name: Auth
+    description: Administrator authentication and account management
   - name: Music
     description: Music library browsing, scanning and streaming
+  - name: Library
+    description: Indexed library inspection (artists, albums, songs)
   - name: Admin
     description: Admin operations and logs
   - name: Plugins
     description: Plugin lifecycle management
+  - name: API Keys
+    description: API key management
+  - name: Notifications
+    description: Administrator notifications
+  - name: Wizards
+    description: Onboarding wizards
 
 paths:
   /healthz:
@@ -29,6 +59,7 @@ paths:
       description: Returns the operational status of the server.
       operationId: getHealth
       tags: [Health]
+      security: []
       responses:
         "200":
           description: Server is up and running
@@ -38,6 +69,80 @@ paths:
                 $ref: "#/components/schemas/HealthResponse"
               example:
                 status: OK
+
+  /admin/login:
+    post:
+      summary: Administrator login
+      description: >
+        Authenticates an administrator with username and password and returns a
+        session token. The token must be supplied as a Bearer token in the
+        `Authorization` header for all session-protected endpoints.
+        Repeated failed attempts from the same client are rate limited.
+      operationId: login
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            example:
+              username: "admin"
+              password: "password"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Invalid username or password
+        "429":
+          description: Too many failed attempts; try again later
+
+  /admin/logout:
+    post:
+      summary: Administrator logout
+      description: Invalidates the current administrator session.
+      operationId: logout
+      tags: [Auth]
+      security:
+        - SessionAuth: []
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+              example:
+                success: true
+        "401":
+          description: Missing or invalid session token
+
+  /admin/change-password:
+    post:
+      summary: Change administrator password
+      description: >
+        Updates the administrator password. Requires the current password.
+        All existing sessions for the user are invalidated on success.
+      operationId: changePassword
+      tags: [Auth]
+      security:
+        - SessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Password changed successfully
+        "401":
+          description: Missing/invalid session token or wrong current password
 
   /music/browse:
     post:
@@ -50,6 +155,8 @@ paths:
         delegates to the corresponding plugin.
       operationId: browse
       tags: [Music]
+      security:
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -91,6 +198,8 @@ paths:
                     album: "Some Album"
                     duration: 213
                     trackNumber: 3
+        "401":
+          description: Missing or invalid API key
         "404":
           description: Music source plugin not found
           content:
@@ -108,14 +217,56 @@ paths:
               example:
                 error: "Plugin filesystem-music-source is not started"
 
-  /music/scan:
+  /music/search:
+    post:
+      summary: Search the music library
+      description: >
+        Searches the music library across all active music-source plugins, or
+        within a single plugin when `scheme` is provided.
+      operationId: search
+      tags: [Music]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchRequest"
+            example:
+              query: "nirvana"
+              category: "album"
+              scheme: "filesystem-music-source"
+      responses:
+        "200":
+          description: Flat array of matching items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BrowseItem"
+        "401":
+          description: Missing or invalid API key
+        "404":
+          description: Specified plugin not found or not searchable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Specified plugin not found or not searchable"
+
+  /admin/scan:
     post:
       summary: Scan a music source plugin
       description: >
         Triggers a full library scan for the specified plugin.
         The plugin indexes all music files and persists the results in MongoDB.
       operationId: scan
-      tags: [Music]
+      tags: [Music, Admin]
+      security:
+        - SessionAuth: []
       requestBody:
         required: true
         content:
@@ -126,13 +277,15 @@ paths:
               id: "filesystem-music-source"
       responses:
         "200":
-          description: Scan completed successfully
+          description: Scan initiated successfully
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/StatusResponse"
               example:
-                status: "Scan completed"
+                status: "Scan initiated"
+        "401":
+          description: Missing or invalid session token
         "404":
           description: Music source plugin not found
           content:
@@ -158,6 +311,8 @@ paths:
         Supports partial playback through the optional `Range` request header.
       operationId: stream
       tags: [Music]
+      security:
+        - ApiKeyAuth: []
       parameters:
         - name: id
           in: query
@@ -243,6 +398,8 @@ paths:
               schema:
                 type: string
                 format: binary
+        "401":
+          description: Missing or invalid API key
         "404":
           description: Song or plugin not found
           content:
@@ -263,9 +420,12 @@ paths:
   /music/albumart:
     get:
       summary: Get album cover art
-      description: Returns the cover art image for the specified album.
+      description: >
+        Returns the cover art image for the specified album. This endpoint is
+        public and does not require authentication.
       operationId: getAlbumArt
       tags: [Music]
+      security: []
       parameters:
         - name: id
           in: query
@@ -276,9 +436,15 @@ paths:
           example: "filesystem-music-source://albumart/550e8400-e29b-41d4-a716-446655440000"
       responses:
         "200":
-          description: Binary image data
+          description: >
+            Binary image data. When no album art is found a default SVG
+            placeholder is returned (`image/svg+xml`).
           content:
             application/octet-stream:
+              schema:
+                type: string
+                format: binary
+            image/svg+xml:
               schema:
                 type: string
                 format: binary
@@ -299,12 +465,116 @@ paths:
               example:
                 error: "Plugin filesystem-music-source is not started"
 
+  /admin/db/summary:
+    get:
+      summary: Library summary
+      description: Returns the number of indexed artists, albums and songs.
+      operationId: getDbSummary
+      tags: [Library]
+      security:
+        - SessionAuth: []
+      responses:
+        "200":
+          description: Library counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DbSummary"
+              example:
+                artists: 42
+                albums: 128
+                songs: 1536
+        "401":
+          description: Missing or invalid session token
+
+  /admin/db/artists:
+    get:
+      summary: List indexed artists
+      description: Returns all artists stored in the library index.
+      operationId: getDbArtists
+      tags: [Library]
+      security:
+        - SessionAuth: []
+      responses:
+        "200":
+          description: List of artists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Artist"
+        "401":
+          description: Missing or invalid session token
+
+  /admin/db/artists/{artistId}/albums:
+    get:
+      summary: List albums for an artist
+      description: Returns the albums that belong to the given artist.
+      operationId: getDbAlbums
+      tags: [Library]
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: artistId
+          in: path
+          required: true
+          description: Artist UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of albums
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Album"
+        "401":
+          description: Missing or invalid session token
+        "404":
+          description: Artist not found
+
+  /admin/db/albums/{albumId}/songs:
+    get:
+      summary: List songs for an album
+      description: Returns the songs that belong to the given album.
+      operationId: getDbSongs
+      tags: [Library]
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          description: Album UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of songs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DbSong"
+        "401":
+          description: Missing or invalid session token
+        "404":
+          description: Album not found
+
   /admin/plugins:
     get:
       summary: List all plugins
       description: Returns all registered plugins and their current lifecycle status.
       operationId: listPlugins
       tags: [Admin, Plugins]
+      security:
+        - SessionAuth: []
       responses:
         "200":
           description: List of plugins
@@ -319,6 +589,8 @@ paths:
                   name: "Filesystem Music Source"
                   category: "music_sources"
                   status: "started"
+        "401":
+          description: Missing or invalid session token
 
   /admin/plugins/start:
     post:
@@ -326,6 +598,8 @@ paths:
       description: Starts a previously stopped or loaded plugin.
       operationId: startPlugin
       tags: [Admin, Plugins]
+      security:
+        - SessionAuth: []
       requestBody:
         required: true
         content:
@@ -343,6 +617,8 @@ paths:
                 $ref: "#/components/schemas/StatusResponse"
               example:
                 status: "Plugin started"
+        "401":
+          description: Missing or invalid session token
         "404":
           description: Plugin not found
           content:
@@ -358,6 +634,8 @@ paths:
       description: Stops a currently running plugin.
       operationId: stopPlugin
       tags: [Admin, Plugins]
+      security:
+        - SessionAuth: []
       requestBody:
         required: true
         content:
@@ -375,6 +653,8 @@ paths:
                 $ref: "#/components/schemas/StatusResponse"
               example:
                 status: "Plugin stopped"
+        "401":
+          description: Missing or invalid session token
         "404":
           description: Plugin not found
           content:
@@ -390,6 +670,8 @@ paths:
       description: Returns current configuration settings for a plugin.
       operationId: getPluginConfiguration
       tags: [Admin, Plugins]
+      security:
+        - SessionAuth: []
       parameters:
         - name: pluginId
           in: path
@@ -404,6 +686,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PluginConfiguration"
+        "401":
+          description: Missing or invalid session token
         "404":
           description: Plugin not found
           content:
@@ -417,6 +701,8 @@ paths:
       description: Updates plugin settings and returns the persisted configuration.
       operationId: updatePluginConfiguration
       tags: [Admin, Plugins]
+      security:
+        - SessionAuth: []
       parameters:
         - name: pluginId
           in: path
@@ -443,12 +729,155 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid session token
         "404":
           description: Plugin not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/api-keys:
+    get:
+      summary: List API keys
+      description: >
+        Returns all issued API keys. The plaintext key is never returned;
+        only a non-sensitive prefix is included.
+      operationId: listApiKeys
+      tags: [Admin, API Keys]
+      security:
+        - SessionAuth: []
+      responses:
+        "200":
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiKey"
+        "401":
+          description: Missing or invalid session token
+    post:
+      summary: Create an API key
+      description: >
+        Creates a new API key. The plaintext key is returned **only once** in
+        the response and cannot be retrieved later.
+      operationId: createApiKey
+      tags: [Admin, API Keys]
+      security:
+        - SessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApiKeyCreateRequest"
+            example:
+              name: "My Client"
+              durationDays: 365
+      responses:
+        "200":
+          description: Created API key (includes the plaintext key)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKeyCreateResponse"
+        "401":
+          description: Missing or invalid session token
+
+  /admin/api-keys/{id}:
+    delete:
+      summary: Delete an API key
+      description: Revokes and deletes the API key with the given ID.
+      operationId: deleteApiKey
+      tags: [Admin, API Keys]
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: API key ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: API key deleted
+        "401":
+          description: Missing or invalid session token
+        "404":
+          description: API key not found
+
+  /admin/notifications:
+    get:
+      summary: List notifications
+      description: Returns the notifications visible to the current administrator.
+      operationId: listNotifications
+      tags: [Admin, Notifications]
+      security:
+        - SessionAuth: []
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        "401":
+          description: Missing or invalid session token
+
+  /admin/notifications/{id}/read:
+    post:
+      summary: Mark a notification as read
+      description: Marks the given notification as read for the current administrator.
+      operationId: markNotificationRead
+      tags: [Admin, Notifications]
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Notification ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Notification marked as read
+        "401":
+          description: Missing or invalid session token
+        "404":
+          description: Notification not found
+
+  /admin/notifications/{id}:
+    delete:
+      summary: Delete a notification
+      description: Deletes the given notification.
+      operationId: deleteNotification
+      tags: [Admin, Notifications]
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Notification ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Notification deleted
+        "401":
+          description: Missing or invalid session token
+        "404":
+          description: Notification not found
 
   /admin/logs:
     get:
@@ -458,6 +887,8 @@ paths:
         for the current day.
       operationId: getAdminLogs
       tags: [Admin]
+      security:
+        - SessionAuth: []
       parameters:
         - name: id
           in: query
@@ -474,6 +905,8 @@ paths:
             text/plain:
               schema:
                 type: string
+        "401":
+          description: Missing or invalid session token
         "404":
           description: Log file not found
           content:
@@ -483,7 +916,100 @@ paths:
               example:
                 error: "Log file not found"
 
+  /admin/wizards/next:
+    get:
+      summary: Get the next onboarding wizard
+      description: >
+        Returns the next onboarding wizard that has not yet been shown to the
+        current administrator, then marks it as shown. Responds with `204` when
+        there are no more wizards to display.
+      operationId: getNextWizard
+      tags: [Admin, Wizards]
+      security:
+        - SessionAuth: []
+      responses:
+        "200":
+          description: Next wizard to display
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wizard"
+        "204":
+          description: No further wizards to display
+        "401":
+          description: Missing or invalid session token
+
+  /admin/wizards/images/{filename}:
+    get:
+      summary: Get a wizard image
+      description: >
+        Returns an image referenced by a wizard step. The file name is
+        restricted to a single safe file inside the wizard images folder.
+      operationId: getWizardImage
+      tags: [Admin, Wizards]
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          description: >
+            Image file name. Limited to letters, digits, dots, hyphens and
+            underscores (max 64 characters).
+          schema:
+            type: string
+            maxLength: 64
+            pattern: "^[a-zA-Z0-9._-]+$"
+          example: "filesystem-music-source.png"
+      responses:
+        "200":
+          description: Binary image data
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/gif:
+              schema:
+                type: string
+                format: binary
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Missing or invalid session token
+        "404":
+          description: Image not found or invalid file name
+
 components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: >
+        API key issued through the admin API. May also be supplied as an
+        `apiKey` query parameter.
+    SessionAuth:
+      type: http
+      scheme: bearer
+      description: >
+        Session token returned by `POST /admin/login`, sent as a Bearer token
+        in the `Authorization` header.
+
   schemas:
     HealthResponse:
       type: object
@@ -492,6 +1018,57 @@ components:
         status:
           type: string
           example: OK
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 4
+          maxLength: 16
+          example: "admin"
+        password:
+          type: string
+          minLength: 8
+          maxLength: 64
+          format: password
+          example: "password"
+
+    LoginResponse:
+      type: object
+      required: [token, expiresAt]
+      properties:
+        token:
+          type: string
+          description: Session token to use as a Bearer token.
+        expiresAt:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp at which the session expires.
+
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+          minLength: 8
+          maxLength: 64
+          format: password
+        newPassword:
+          type: string
+          minLength: 8
+          maxLength: 64
+          format: password
+
+    SuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          example: true
 
     BrowseRequest:
       type: object
@@ -577,6 +1154,74 @@ components:
           description: Plugin ID to scan
           example: "filesystem-music-source"
 
+    SearchRequest:
+      type: object
+      required: [query, category]
+      properties:
+        query:
+          type: string
+          description: Search term
+          example: "nirvana"
+        category:
+          type: string
+          enum: [album, artist, song]
+          description: Type of content to search for
+        scheme:
+          type: string
+          description: >
+            Restricts the search to a single plugin identified by its scheme.
+          example: "filesystem-music-source"
+
+    DbSummary:
+      type: object
+      properties:
+        artists:
+          type: number
+        albums:
+          type: number
+        songs:
+          type: number
+
+    Artist:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        pluginId:
+          type: string
+          format: uuid
+
+    Album:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        pluginId:
+          type: string
+          format: uuid
+
+    DbSong:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        pluginId:
+          type: string
+          format: uuid
+        trackNumber:
+          type: number
+        duration:
+          type: number
+
     PluginListItem:
       type: object
       required: [id, name, category, status]
@@ -625,6 +1270,10 @@ components:
       properties:
         variables:
           $ref: "#/components/schemas/PluginConfigurationVariables"
+        labels:
+          type: object
+          additionalProperties:
+            type: string
         values:
           $ref: "#/components/schemas/PluginConfigurationValues"
 
@@ -644,6 +1293,110 @@ components:
       properties:
         settings:
           $ref: "#/components/schemas/PluginConfigurationValues"
+
+    ApiKey:
+      type: object
+      required: [id, name, keyPrefix, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "My Client"
+        keyPrefix:
+          type: string
+          description: Non-sensitive prefix used to identify the key.
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Expiry timestamp, or `null` if the key never expires.
+
+    ApiKeyCreateRequest:
+      type: object
+      required: [name, durationDays]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+          example: "My Client"
+        durationDays:
+          type: integer
+          minimum: 1
+          nullable: true
+          description: >
+            Number of days until the key expires, or `null` for a key that
+            never expires.
+          example: 365
+
+    ApiKeyCreateResponse:
+      type: object
+      required: [id, name, key, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        key:
+          type: string
+          description: >
+            The plaintext API key. Returned only once on creation and never
+            again.
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    Notification:
+      type: object
+      required: [id, title, message, type, createdAt, read]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        message:
+          type: string
+        type:
+          type: string
+          enum: [info, success, warning, error]
+        createdAt:
+          type: string
+          format: date-time
+        read:
+          type: boolean
+
+    WizardStep:
+      type: object
+      required: [image, text]
+      properties:
+        image:
+          type: string
+          description: >
+            Image file name, retrievable from `/admin/wizards/images/{filename}`.
+        text:
+          type: string
+
+    Wizard:
+      type: object
+      required: [id, steps]
+      properties:
+        id:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/WizardStep"
 
     StatusResponse:
       type: object

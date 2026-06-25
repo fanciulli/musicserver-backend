@@ -1,11 +1,11 @@
 meta {
-  name: Get Summary
+  name: List Notifications
   type: http
   seq: 1
 }
 
 get {
-  url: http://{{host}}:{{port}}/admin/db/summary
+  url: http://{{host}}:{{port}}/admin/notifications
   body: none
   auth: inherit
 }
