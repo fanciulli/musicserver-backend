@@ -20,7 +20,7 @@
     "@types/node": "25.9.3",
     "@vitest/coverage-v8": "4.1.9",
     "eslint": "10.5.0",
-    "globals": "17.6.0",
+    "globals": "17.7.0",
     "typescript": "^6.0.3",
     "vitest": "4.1.9"
   },
@@ -30,6 +30,6 @@
     "mongodb": "7.3.0",
     "music-metadata": "11.13.0",
     "selfsigned": "^5.5.0",
-    "uuid": "14.0.0"
+    "uuid": "14.0.1"
   }
 }
