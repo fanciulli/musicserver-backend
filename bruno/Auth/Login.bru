@@ -1,0 +1,29 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://{{host}}:{{port}}/admin/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "admin",
+    "password": "password"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200 && res.getBody() && res.getBody().token) {
+    bru.setEnvVar("authToken", res.getBody().token);
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

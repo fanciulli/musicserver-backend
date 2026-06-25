@@ -1,0 +1,29 @@
+meta {
+  name: Create API Key
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://{{host}}:{{port}}/admin/api-keys
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "My Client",
+    "durationDays": 365
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200 && res.getBody() && res.getBody().key) {
+    bru.setEnvVar("apiKey", res.getBody().key);
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

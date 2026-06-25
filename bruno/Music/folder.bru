@@ -1,8 +1,14 @@
 meta {
   name: Music
-  seq: 4
+  seq: 3
 }
 
 auth {
-  mode: inherit
+  mode: apikey
+}
+
+auth:apikey {
+  key: x-api-key
+  value: {{apiKey}}
+  placement: header
 }
