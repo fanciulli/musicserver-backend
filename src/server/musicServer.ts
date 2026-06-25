@@ -64,7 +64,8 @@ export class MusicServer {
     const rc = new RouteController(this.#logger!, context);
     await rc.registerRoutes(this.#fastifyInstance);
 
-    this.#fastifyInstance!.listen({ port: 3000, host: "0.0.0.0" }, (err) => {
+    const port = Number.parseInt(process.env.PORT ?? "3000", 10) || 3000;
+    this.#fastifyInstance!.listen({ port, host: "0.0.0.0" }, (err) => {
       if (err) {
         console.log(`Cannot start Music Server becase: ${err.message}`);
         process.exit(1);
