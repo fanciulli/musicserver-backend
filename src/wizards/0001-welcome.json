@@ -7,19 +7,39 @@
     },
     {
       "image": "database.svg",
-      "text": "The database will let you browse your music library."
+      "text": "Database will give you some statistics of your music library and let you browse it by Artist/Album/Song."
     },
     {
       "image": "plugins.svg",
-      "text": "Add and configure plugins to import your music library from different sources."
+      "text": "Plugins will let you add and configure plugins to import your music library from different sources."
     },
     {
       "image": "api-keys.svg",
-      "text": "Manage keys for allowing access to music APIs from external applications."
+      "text": "Api Keys allows managing keys for granting access to music APIs from external applications."
     },
     {
       "image": "logs.svg",
-      "text": "Understand what's happening inside Music Server. We hope you never need this!"
+      "text": "Logs is for understanding what's happening inside Music Server. We hope you never need this!"
+    },
+    {
+      "image": "filesystem.svg",
+      "text": "Now, few steps on how to configure the Filesystem Music Plugin to start using Music Server."
+    },
+    {
+      "image": "plugins.svg",
+      "text": "Head over the Plugins section and activate the Filesystem Music Plugin by clicking on \"Start\"."
+    },
+    {
+      "image": "configuration.svg",
+      "text": "Click on \"Configure\" and set the path to your music library. Optionally decide whether to optimize your library in case of Artists name case mismatch."
+    },
+    {
+      "image": "scan.svg",
+      "text": "Click on the \"Scan\" button to analyze your library. The scan of your library will take a while, take a look at notifications to know when it is completed."
+    },
+    {
+      "image": "database.svg",
+      "text": "Click on \"Database\" and browse your library. You're done, you just need a plugin for Music Server (e.g. the Volumio one) to enjoy your library!"
     },
     {
       "image": "all-set.svg",
