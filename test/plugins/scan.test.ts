@@ -34,6 +34,7 @@ const mocks = vi.hoisted(() => ({
   songUpdate: vi.fn(),
   songMarkAllAsNotExisting: vi.fn(),
   songDeleteNotExisting: vi.fn(),
+  songCount: vi.fn(),
 
   send: vi.fn(),
 }));
@@ -156,6 +157,10 @@ vi.mock("../../src/types/db/song.js", () => ({
 
     static deleteNotExisting(...args: unknown[]) {
       return mocks.songDeleteNotExisting(...args);
+    }
+
+    static count(...args: unknown[]) {
+      return mocks.songCount(...args);
     }
   },
 }));
@@ -453,6 +458,62 @@ describe("Existing data is preserved and updated", () => {
       PLUGIN_ID,
       existingAlbum.id,
     );
+  });
+});
+
+describe("Completion notification track count", () => {
+  const completionMessage = () => {
+    const completionCall = mocks.send.mock.calls.find(
+      (call) => call[2]?.title === "Library scan completed",
+    );
+    return completionCall?.[2]?.message;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.artistMarkAllAsNotExisting.mockResolvedValue(undefined);
+    mocks.albumMarkAllAsNotExisting.mockResolvedValue(undefined);
+    mocks.songMarkAllAsNotExisting.mockResolvedValue(undefined);
+    mocks.artistDeleteNotExisting.mockResolvedValue(undefined);
+    mocks.albumDeleteNotExisting.mockResolvedValue(undefined);
+    mocks.songDeleteNotExisting.mockResolvedValue(undefined);
+    mocks.artistInsert.mockResolvedValue(undefined);
+    mocks.albumInsert.mockResolvedValue(undefined);
+    mocks.songInsert.mockResolvedValue(undefined);
+    mocks.artistFind.mockResolvedValue(null);
+    mocks.artistFindCaseInsensitive.mockResolvedValue(null);
+    mocks.albumFind.mockResolvedValue(null);
+    mocks.songFind.mockResolvedValue(null);
+    mocks.listFiles.mockResolvedValue(["/music/song.mp3"]);
+    mocks.parseFile.mockResolvedValue(makeMetadata());
+  });
+
+  it("reports the song count from the database for the scanned plugin", async () => {
+    mocks.songCount.mockResolvedValue(7);
+
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
+
+    expect(mocks.songCount).toHaveBeenCalledWith(DB_CLIENT, PLUGIN_ID);
+    expect(completionMessage()).toBe("7 tracks indexed");
+  });
+
+  it("counts the database after stale entries have been removed", async () => {
+    const callOrder: string[] = [];
+    mocks.songDeleteNotExisting.mockImplementation(() => {
+      callOrder.push("deleteNotExisting");
+      return Promise.resolve();
+    });
+    mocks.songCount.mockImplementation(() => {
+      callOrder.push("count");
+      return Promise.resolve(0);
+    });
+
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
+
+    expect(callOrder.indexOf("deleteNotExisting")).toBeLessThan(
+      callOrder.indexOf("count"),
+    );
+    expect(completionMessage()).toBe("0 tracks indexed");
   });
 });
 
