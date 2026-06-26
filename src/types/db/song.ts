@@ -241,9 +241,10 @@ export class SongDbModel {
     await collection.deleteMany({ pluginId: pluginId, exists: false });
   }
 
-  static async count(db: Db): Promise<number> {
+  static async count(db: Db, pluginId?: string): Promise<number> {
     const collection = db.collection<SongDbModel>(COLLECTION_NAME);
-    return collection.countDocuments();
+    const filter = pluginId !== undefined ? { pluginId: pluginId } : {};
+    return collection.countDocuments(filter);
   }
 
 }

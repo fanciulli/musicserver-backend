@@ -93,3 +93,40 @@ describe("SongDbModel.findSongsByAlbumId", () => {
     );
   });
 });
+
+describe("SongDbModel.count", () => {
+  let countDocumentsMock: ReturnType<typeof vi.fn>;
+  let collectionMock: { countDocuments: ReturnType<typeof vi.fn> };
+  let dbMock: { collection: ReturnType<typeof vi.fn> };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    countDocumentsMock = vi.fn().mockResolvedValue(0);
+    collectionMock = {
+      countDocuments: countDocumentsMock,
+    };
+    dbMock = {
+      collection: vi.fn().mockReturnValue(collectionMock),
+    };
+  });
+
+  it("counts all songs when no pluginId is provided", async () => {
+    countDocumentsMock.mockResolvedValue(42);
+
+    const result = await SongDbModel.count(dbMock as any);
+
+    expect(dbMock.collection).toHaveBeenCalledWith("songs");
+    expect(countDocumentsMock).toHaveBeenCalledWith({});
+    expect(result).toBe(42);
+  });
+
+  it("counts only the given plugin's songs when pluginId is provided", async () => {
+    countDocumentsMock.mockResolvedValue(7);
+
+    const result = await SongDbModel.count(dbMock as any, "plugin-1");
+
+    expect(countDocumentsMock).toHaveBeenCalledWith({ pluginId: "plugin-1" });
+    expect(result).toBe(7);
+  });
+});
