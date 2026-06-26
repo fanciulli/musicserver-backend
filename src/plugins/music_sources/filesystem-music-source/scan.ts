@@ -53,7 +53,7 @@ export class FileSystemScan {
 
     await previousScan;
     const startTime = Date.now();
-    let scannedSongs = 0;
+    const indexedSongIds = new Set<string>();
     try {
       logger.info(`Starting scan of music folder ${musicFolder}`);
       await NotificationDbModel.send(db, null, {
@@ -86,7 +86,7 @@ export class FileSystemScan {
             fileMetadata,
             artists,
           );
-          await FileSystemScan.#upsertSong(
+          const song = await FileSystemScan.#upsertSong(
             db,
             pluginId,
             fileMetadata,
@@ -94,7 +94,9 @@ export class FileSystemScan {
             artists,
             filePath,
           );
-          scannedSongs++;
+          if (song?.id !== undefined) {
+            indexedSongIds.add(song.id);
+          }
         } catch (ex: any) {
           if (ex instanceof UnsupportedFileTypeError) {
             logger.debug(
@@ -116,7 +118,7 @@ export class FileSystemScan {
 
       await NotificationDbModel.send(db, null, {
         title: "Library scan completed",
-        message: `${scannedSongs} tracks indexed`,
+        message: `${indexedSongIds.size} tracks indexed`,
         type: NotificationTypes.SUCCESS,
       });
     } catch (ex: any) {

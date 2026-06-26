@@ -456,6 +456,77 @@ describe("Existing data is preserved and updated", () => {
   });
 });
 
+describe("Completion notification track count", () => {
+  const completionMessage = () => {
+    const completionCall = mocks.send.mock.calls.find(
+      (call) => call[2]?.title === "Library scan completed",
+    );
+    return completionCall?.[2]?.message;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.artistMarkAllAsNotExisting.mockResolvedValue(undefined);
+    mocks.albumMarkAllAsNotExisting.mockResolvedValue(undefined);
+    mocks.songMarkAllAsNotExisting.mockResolvedValue(undefined);
+    mocks.artistDeleteNotExisting.mockResolvedValue(undefined);
+    mocks.albumDeleteNotExisting.mockResolvedValue(undefined);
+    mocks.songDeleteNotExisting.mockResolvedValue(undefined);
+    mocks.artistInsert.mockResolvedValue(undefined);
+    mocks.albumInsert.mockResolvedValue(undefined);
+    mocks.songInsert.mockResolvedValue(undefined);
+    mocks.artistFind.mockResolvedValue(null);
+    mocks.artistFindCaseInsensitive.mockResolvedValue(null);
+    mocks.albumFind.mockResolvedValue(null);
+    mocks.songFind.mockResolvedValue(null);
+  });
+
+  it("reports the number of inserted songs", async () => {
+    mocks.listFiles.mockResolvedValue(["/music/a.mp3", "/music/b.mp3"]);
+    mocks.parseFile
+      .mockResolvedValueOnce(makeMetadata({ title: "Song A" }))
+      .mockResolvedValueOnce(makeMetadata({ title: "Song B" }));
+
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
+
+    expect(completionMessage()).toBe("2 tracks indexed");
+  });
+
+  it("does not count files without a title that are never persisted", async () => {
+    mocks.listFiles.mockResolvedValue(["/music/a.mp3", "/music/untitled.mp3"]);
+    mocks.parseFile
+      .mockResolvedValueOnce(makeMetadata({ title: "Song A" }))
+      .mockResolvedValueOnce(makeMetadata({ title: undefined }));
+
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
+
+    expect(mocks.songInsert).toHaveBeenCalledOnce();
+    expect(completionMessage()).toBe("1 tracks indexed");
+  });
+
+  it("counts files that collapse onto the same song document only once", async () => {
+    const existingSong = {
+      id: "song-id-1",
+      name: "Test Song",
+      pluginId: PLUGIN_ID,
+      albumId: "album-id-1",
+      exists: false,
+      metadata: {},
+      update: vi.fn().mockResolvedValue(undefined),
+    };
+
+    mocks.listFiles.mockResolvedValue(["/music/a.mp3", "/music/b.mp3"]);
+    mocks.parseFile.mockResolvedValue(makeMetadata());
+    // Both files resolve to the same existing song document.
+    mocks.songFind.mockResolvedValue(existingSong);
+
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
+
+    expect(mocks.songInsert).not.toHaveBeenCalled();
+    expect(completionMessage()).toBe("1 tracks indexed");
+  });
+});
+
 describe("Stale data is removed", () => {
   it("marks before scanning and deletes non-existing entries after empty scan", async () => {
     vi.clearAllMocks();
