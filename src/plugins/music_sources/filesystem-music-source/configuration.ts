@@ -11,15 +11,26 @@ import type {
   PluginConfigurationValues,
 } from "../../../types/plugins/plugin.js";
 import { PluginConfigDBModel } from "../../../types/db/pluginConfig.js";
-import { DEFAULT_MUSIC_FOLDER } from "./constants.js";
+import {
+  DEFAULT_ALBUM_COVER_FILENAMES,
+  DEFAULT_MERGE_ARTISTS,
+  DEFAULT_MUSIC_FOLDER,
+} from "./constants.js";
 
 const MUSIC_FOLDER_KEY = "musicFolder";
 const MERGE_ARTISTS_KEY = "smartMergeArtists";
-const DEFAULT_MERGE_ARTISTS = true;
+const ALBUM_COVER_FILENAMES_KEY = "albumCoverFileNames";
+
+const LABEL_MUSIC_FOLDER = "Music folder";
+const LABEL_MERGE_ARTISTS = "Smart merge artists";
+const LABEL_ALBUM_COVER_FILENAMES = "Album covers file names";
+
+const coverFileNamesRegex = /^$|^[\w.-]+\.\w+(,[\w.-]+\.\w+)*$/;
 
 export interface FilesystemConfiguration {
   musicFolder: string;
   smartMergeArtists: boolean;
+  albumCoverFileNames: string;
 }
 
 export async function loadConfiguration(
@@ -34,17 +45,20 @@ export async function loadConfiguration(
     return {
       musicFolder: DEFAULT_MUSIC_FOLDER,
       smartMergeArtists: DEFAULT_MERGE_ARTISTS,
+      albumCoverFileNames: DEFAULT_ALBUM_COVER_FILENAMES,
     };
   }
 
-  const musicFolder = pluginConfig.settings[MUSIC_FOLDER_KEY];
+  const smartMergeArtists = loadSmartMergeArtists(pluginConfig);
+  const musicFolder = loadMusicFolder(pluginConfig);
+  const albumCoverFileNames = loadAlbumCoversFileNames(pluginConfig);
+
   validateMusicFolder(musicFolder);
 
   return {
     musicFolder,
-    smartMergeArtists: resolveMergeArtists(
-      pluginConfig.settings[MERGE_ARTISTS_KEY],
-    ),
+    smartMergeArtists,
+    albumCoverFileNames,
   };
 }
 
@@ -55,14 +69,17 @@ export function getConfiguration(
     variables: [
       { [MUSIC_FOLDER_KEY]: "string" },
       { [MERGE_ARTISTS_KEY]: "boolean" },
+      { [ALBUM_COVER_FILENAMES_KEY]: "string" },
     ],
     labels: {
-      [MUSIC_FOLDER_KEY]: "Music Folder",
-      [MERGE_ARTISTS_KEY]: "Smart Merge Artists",
+      [MUSIC_FOLDER_KEY]: LABEL_MUSIC_FOLDER,
+      [MERGE_ARTISTS_KEY]: LABEL_MERGE_ARTISTS,
+      [ALBUM_COVER_FILENAMES_KEY]: LABEL_ALBUM_COVER_FILENAMES,
     },
     values: {
       [MUSIC_FOLDER_KEY]: config.musicFolder,
       [MERGE_ARTISTS_KEY]: config.smartMergeArtists,
+      [ALBUM_COVER_FILENAMES_KEY]: config.albumCoverFileNames,
     },
   };
 }
@@ -76,34 +93,64 @@ export async function updateConfiguration(
   const musicFolder = settings[MUSIC_FOLDER_KEY];
   validateMusicFolder(musicFolder);
 
-  const smartMergeArtists = resolveMergeArtists(
-    settings[MERGE_ARTISTS_KEY],
-  );
+  const smartMergeArtists = settings[MERGE_ARTISTS_KEY];
+  validateSmartMergeArtists(smartMergeArtists);
+
+  const albumCoverFileNames = settings[ALBUM_COVER_FILENAMES_KEY];
+  validateAlbumCoverFilenames(albumCoverFileNames);
 
   await PluginConfigDBModel.upsertSettings(database, category, pluginId, {
     [MUSIC_FOLDER_KEY]: musicFolder,
     [MERGE_ARTISTS_KEY]: smartMergeArtists,
+    [ALBUM_COVER_FILENAMES_KEY]: albumCoverFileNames,
   });
 
-  return { musicFolder, smartMergeArtists };
+  return { musicFolder, smartMergeArtists, albumCoverFileNames };
 }
 
 function validateMusicFolder(
   musicFolder: unknown,
 ): asserts musicFolder is string {
   if (typeof musicFolder !== "string" || musicFolder.trim() === "") {
-    throw new Error("musicFolder must be a non-empty string");
+    throw new Error(`${LABEL_MUSIC_FOLDER} must be a non-empty string`);
   }
 }
 
-function resolveMergeArtists(value: unknown): boolean {
-  if (value === undefined) {
-    return DEFAULT_MERGE_ARTISTS;
+function validateSmartMergeArtists(
+  smartMergeArtists: unknown,
+): asserts smartMergeArtists is boolean {
+  if (typeof smartMergeArtists !== "boolean") {
+    throw new Error(`${LABEL_MERGE_ARTISTS} must be a boolean`);
+  }
+}
+
+function validateAlbumCoverFilenames(
+  albumCoverFileNames: unknown,
+): asserts albumCoverFileNames is string {
+  if (typeof albumCoverFileNames !== "string") {
+    throw new Error(
+      `${LABEL_ALBUM_COVER_FILENAMES} must be a non-empty string`,
+    );
   }
 
-  if (typeof value !== "boolean") {
-    throw new Error("smartMergeArtists must be a boolean");
+  if (!coverFileNamesRegex.test(albumCoverFileNames)) {
+    throw new Error(
+      `${LABEL_ALBUM_COVER_FILENAMES} must be a comma separated list of file names`,
+    );
   }
+}
 
-  return value;
+function loadAlbumCoversFileNames(pluginConfig: PluginConfigDBModel): string {
+  const fileNames = pluginConfig.settings[ALBUM_COVER_FILENAMES_KEY];
+  return fileNames ? (fileNames as string) : DEFAULT_ALBUM_COVER_FILENAMES;
+}
+
+function loadMusicFolder(pluginConfig: PluginConfigDBModel): string {
+  const folder = pluginConfig.settings[MUSIC_FOLDER_KEY];
+  return folder ? (folder as string) : DEFAULT_MUSIC_FOLDER;
+}
+
+function loadSmartMergeArtists(pluginConfig: PluginConfigDBModel): boolean {
+  const mergeArtists = pluginConfig.settings[MERGE_ARTISTS_KEY];
+  return mergeArtists ? (mergeArtists as boolean) : DEFAULT_MERGE_ARTISTS;
 }

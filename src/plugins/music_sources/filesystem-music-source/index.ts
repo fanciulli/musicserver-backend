@@ -19,7 +19,13 @@ import { extractPathSections } from "../../../utils/pathUtils.js";
 import { browseAlbums } from "./albumsBrowse.js";
 import { browseArtists } from "./artistsBrowse.js";
 import { browseSongs } from "./songsBrowse.js";
-import { DEFAULT_MUSIC_FOLDER, PLUGIN_ID, PLUGIN_NAME } from "./constants.js";
+import {
+  DEFAULT_MUSIC_FOLDER,
+  DEFAULT_MERGE_ARTISTS,
+  DEFAULT_ALBUM_COVER_FILENAMES,
+  PLUGIN_ID,
+  PLUGIN_NAME,
+} from "./constants.js";
 import { AlbumDbModel } from "../../../types/db/album.js";
 import type { Context } from "../../../types/context.js";
 import type {
@@ -44,7 +50,8 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     super(context);
     this.#configuration = {
       musicFolder: DEFAULT_MUSIC_FOLDER,
-      smartMergeArtists: true,
+      smartMergeArtists: DEFAULT_MERGE_ARTISTS,
+      albumCoverFileNames: DEFAULT_ALBUM_COVER_FILENAMES,
     };
     const albumsFolder = new Folder();
     albumsFolder.name = "Albums";
@@ -72,12 +79,7 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
 
   async scan(): Promise<void> {
     // making this run asynchronously in order not to block to the API request.
-    FileSystemScan.scan(
-      this.context,
-      this.id,
-      this.#configuration.musicFolder,
-      this.#configuration.smartMergeArtists,
-    );
+    FileSystemScan.scan(this.context, this.id, this.#configuration);
   }
 
   loadConfiguration = async (): Promise<void> => {

@@ -14,6 +14,7 @@ const MUSIC_FOLDER = "/music";
 
 const mocks = vi.hoisted(() => ({
   listFiles: vi.fn(),
+  fileExists: vi.fn(),
   parseFile: vi.fn(),
 
   artistFind: vi.fn(),
@@ -53,6 +54,7 @@ vi.mock("../../src/types/db/notification.js", () => ({
 
 vi.mock("../../src/utils/fsUtils.js", () => ({
   listFiles: (...args: unknown[]) => mocks.listFiles(...args),
+  fileExists: (...args: unknown[]) => mocks.fileExists(...args),
 }));
 
 vi.mock("music-metadata", () => ({
@@ -170,8 +172,15 @@ import { FileSystemScan } from "../../src/plugins/music_sources/filesystem-music
 const makeContext = (): Context =>
   ({
     database: DB_CLIENT,
-    logger: { info: vi.fn(), error: vi.fn() },
+    logger: { info: vi.fn(), error: vi.fn(), debug: vi.fn() },
   }) as unknown as Context;
+
+const makeConfiguration = (overrides: Partial<{ musicFolder: string; smartMergeArtists: boolean; albumCoverFileNames: string }> = {}) => ({
+  musicFolder: MUSIC_FOLDER,
+  smartMergeArtists: true,
+  albumCoverFileNames: "cover.jpg,folder.jpg,front.jpg",
+  ...overrides,
+});
 
 const makeMetadata = (overrides: Record<string, any> = {}) => ({
   common: {
@@ -214,6 +223,7 @@ const waitFor = async (predicate: () => boolean, attempts = 20) => {
 describe("FileSystemScan.scan – lifecycle", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.fileExists.mockResolvedValue(false);
     mocks.artistMarkAllAsNotExisting.mockResolvedValue(undefined);
     mocks.albumMarkAllAsNotExisting.mockResolvedValue(undefined);
     mocks.songMarkAllAsNotExisting.mockResolvedValue(undefined);
@@ -225,12 +235,12 @@ describe("FileSystemScan.scan – lifecycle", () => {
 
   it("throws when musicFolder is empty", async () => {
     await expect(
-      FileSystemScan.scan(makeContext(), PLUGIN_ID, "  "),
+      FileSystemScan.scan(makeContext(), PLUGIN_ID, makeConfiguration({ musicFolder: "  " })),
     ).rejects.toThrow("musicFolder must be configured before scan");
   });
 
   it("marks all entries as not existing at the start and deletes them at the end of scan", async () => {
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, makeConfiguration());
 
     expect(mocks.artistMarkAllAsNotExisting).toHaveBeenCalledWith(
       DB_CLIENT,
@@ -260,7 +270,7 @@ describe("FileSystemScan.scan – lifecycle", () => {
   });
 
   it("sends start and completion notifications around a scan", async () => {
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER, true);
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, makeConfiguration({ smartMergeArtists: true }));
 
     expect(mocks.send).toHaveBeenCalledWith(
       DB_CLIENT,
@@ -292,12 +302,12 @@ describe("FileSystemScan.scan – lifecycle", () => {
     const firstScan = FileSystemScan.scan(
       makeContext(),
       PLUGIN_ID,
-      MUSIC_FOLDER,
+      makeConfiguration(),
     );
     const secondScan = FileSystemScan.scan(
       makeContext(),
       PLUGIN_ID,
-      MUSIC_FOLDER,
+      makeConfiguration(),
     );
 
     try {
@@ -320,6 +330,7 @@ describe("FileSystemScan.scan – lifecycle", () => {
 describe("Successfully adds new data", () => {
   it("Inserts new artist, album and song", async () => {
     vi.clearAllMocks();
+    mocks.fileExists.mockResolvedValue(false);
     mocks.artistMarkAllAsNotExisting.mockResolvedValue(undefined);
     mocks.albumMarkAllAsNotExisting.mockResolvedValue(undefined);
     mocks.songMarkAllAsNotExisting.mockResolvedValue(undefined);
@@ -338,7 +349,7 @@ describe("Successfully adds new data", () => {
     mocks.albumFind.mockResolvedValue(null);
     mocks.songFind.mockResolvedValue(null);
 
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, makeConfiguration());
 
     expect(mocks.artistInsert).toHaveBeenCalledOnce();
     const insertedArtist = mocks.artistInsert.mock.calls[0][1];
@@ -397,6 +408,7 @@ describe("Existing data is preserved and updated", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.fileExists.mockResolvedValue(false);
     mocks.artistMarkAllAsNotExisting.mockResolvedValue(undefined);
     mocks.albumMarkAllAsNotExisting.mockResolvedValue(undefined);
     mocks.songMarkAllAsNotExisting.mockResolvedValue(undefined);
@@ -418,7 +430,7 @@ describe("Existing data is preserved and updated", () => {
   });
 
   it("Updates existing artist, album and song", async () => {
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, makeConfiguration());
 
     expect(existingArtist.exists).toBe(true);
     expect(existingArtist.update).toHaveBeenCalledOnce();
@@ -438,7 +450,7 @@ describe("Existing data is preserved and updated", () => {
       makeMetadata({ track: { no: 5 }, disk: { no: 2 } }),
     );
 
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, makeConfiguration());
 
     expect(existingSong.trackNumber).toBe(5);
     expect(existingSong.diskNumber).toBe(2);
@@ -450,7 +462,7 @@ describe("Existing data is preserved and updated", () => {
   });
 
   it("finds song by name and albumId to ensure correct matching", async () => {
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, makeConfiguration());
 
     expect(mocks.songFind).toHaveBeenCalledWith(
       DB_CLIENT,
@@ -471,6 +483,7 @@ describe("Completion notification track count", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.fileExists.mockResolvedValue(false);
     mocks.artistMarkAllAsNotExisting.mockResolvedValue(undefined);
     mocks.albumMarkAllAsNotExisting.mockResolvedValue(undefined);
     mocks.songMarkAllAsNotExisting.mockResolvedValue(undefined);
@@ -491,7 +504,7 @@ describe("Completion notification track count", () => {
   it("reports the song count from the database for the scanned plugin", async () => {
     mocks.songCount.mockResolvedValue(7);
 
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, makeConfiguration());
 
     expect(mocks.songCount).toHaveBeenCalledWith(DB_CLIENT, PLUGIN_ID);
     expect(completionMessage()).toBe("7 tracks indexed");
@@ -508,7 +521,7 @@ describe("Completion notification track count", () => {
       return Promise.resolve(0);
     });
 
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, makeConfiguration());
 
     expect(callOrder.indexOf("deleteNotExisting")).toBeLessThan(
       callOrder.indexOf("count"),
@@ -520,6 +533,7 @@ describe("Completion notification track count", () => {
 describe("Stale data is removed", () => {
   it("marks before scanning and deletes non-existing entries after empty scan", async () => {
     vi.clearAllMocks();
+    mocks.fileExists.mockResolvedValue(false);
     mocks.artistMarkAllAsNotExisting.mockResolvedValue(undefined);
     mocks.albumMarkAllAsNotExisting.mockResolvedValue(undefined);
     mocks.songMarkAllAsNotExisting.mockResolvedValue(undefined);
@@ -542,7 +556,7 @@ describe("Stale data is removed", () => {
       return Promise.resolve();
     });
 
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER);
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, makeConfiguration());
 
     expect(callOrder.indexOf("markArtists")).toBeLessThan(
       callOrder.indexOf("listFiles"),
@@ -569,6 +583,7 @@ describe("Stale data is removed", () => {
 describe("Case-insensitive artist merge", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.fileExists.mockResolvedValue(false);
     mocks.artistMarkAllAsNotExisting.mockResolvedValue(undefined);
     mocks.albumMarkAllAsNotExisting.mockResolvedValue(undefined);
     mocks.songMarkAllAsNotExisting.mockResolvedValue(undefined);
@@ -589,7 +604,7 @@ describe("Case-insensitive artist merge", () => {
     );
     mocks.artistFindCaseInsensitive.mockResolvedValue(null);
 
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER, true);
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, makeConfiguration({ smartMergeArtists: true }));
 
     expect(mocks.artistFindCaseInsensitive).toHaveBeenCalledWith(
       DB_CLIENT,
@@ -613,7 +628,7 @@ describe("Case-insensitive artist merge", () => {
     );
     mocks.artistFindCaseInsensitive.mockResolvedValue(existingArtist);
 
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER, true);
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, makeConfiguration({ smartMergeArtists: true }));
 
     expect(mocks.artistInsert).not.toHaveBeenCalled();
     expect(existingArtist.exists).toBe(true);
@@ -635,7 +650,7 @@ describe("Case-insensitive artist merge", () => {
     );
     mocks.artistFindCaseInsensitive.mockResolvedValue(existingArtist);
 
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER, true);
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, makeConfiguration({ smartMergeArtists: true }));
 
     expect(mocks.artistInsert).not.toHaveBeenCalled();
     expect(existingArtist.name).toBe("Artist Name");
@@ -647,7 +662,7 @@ describe("Case-insensitive artist merge", () => {
     );
     mocks.artistFind.mockResolvedValue(null);
 
-    await FileSystemScan.scan(makeContext(), PLUGIN_ID, MUSIC_FOLDER, false);
+    await FileSystemScan.scan(makeContext(), PLUGIN_ID, makeConfiguration({ smartMergeArtists: false }));
 
     expect(mocks.artistFind).toHaveBeenCalledWith(
       DB_CLIENT,
