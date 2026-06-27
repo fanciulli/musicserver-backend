@@ -31,6 +31,8 @@ vi.mock("../../src/types/db/pluginConfig.js", () => ({
 
 import { default as FilesystemMusicSourcePlugin } from "../../src/plugins/music_sources/filesystem-music-source/index.js";
 
+const DEFAULT_ALBUM_COVER_FILENAMES = "cover.jpg,folder.jpg,front.jpg";
+
 describe("FilesystemMusicSourcePlugin configuration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -56,14 +58,17 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
       variables: [
         { musicFolder: "string" },
         { smartMergeArtists: "boolean" },
+        { albumCoverFileNames: "string" },
       ],
       labels: {
-        musicFolder: "Music Folder",
-        smartMergeArtists: "Smart Merge Artists",
+        musicFolder: "Music folder",
+        smartMergeArtists: "Smart merge artists",
+        albumCoverFileNames: "Album covers file names",
       },
       values: {
         musicFolder: "/db/music",
         smartMergeArtists: true,
+        albumCoverFileNames: DEFAULT_ALBUM_COVER_FILENAMES,
       },
     });
   });
@@ -82,14 +87,17 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
       variables: [
         { musicFolder: "string" },
         { smartMergeArtists: "boolean" },
+        { albumCoverFileNames: "string" },
       ],
       labels: {
-        musicFolder: "Music Folder",
-        smartMergeArtists: "Smart Merge Artists",
+        musicFolder: "Music folder",
+        smartMergeArtists: "Smart merge artists",
+        albumCoverFileNames: "Album covers file names",
       },
       values: {
         musicFolder: "/music",
         smartMergeArtists: true,
+        albumCoverFileNames: DEFAULT_ALBUM_COVER_FILENAMES,
       },
     });
   });
@@ -100,20 +108,27 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
       logger: { info: vi.fn() },
     } as any);
 
-    await plugin.updateConfiguration({ musicFolder: "/mnt/music" });
+    await plugin.updateConfiguration({
+      musicFolder: "/mnt/music",
+      smartMergeArtists: true,
+      albumCoverFileNames: DEFAULT_ALBUM_COVER_FILENAMES,
+    });
 
     await expect(plugin.getConfiguration()).resolves.toEqual({
       variables: [
         { musicFolder: "string" },
         { smartMergeArtists: "boolean" },
+        { albumCoverFileNames: "string" },
       ],
       labels: {
-        musicFolder: "Music Folder",
-        smartMergeArtists: "Smart Merge Artists",
+        musicFolder: "Music folder",
+        smartMergeArtists: "Smart merge artists",
+        albumCoverFileNames: "Album covers file names",
       },
       values: {
         musicFolder: "/mnt/music",
         smartMergeArtists: true,
+        albumCoverFileNames: DEFAULT_ALBUM_COVER_FILENAMES,
       },
     });
     expect(mocks.upsertPluginConfig).toHaveBeenCalledWith(
@@ -123,6 +138,7 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
       {
         musicFolder: "/mnt/music",
         smartMergeArtists: true,
+        albumCoverFileNames: DEFAULT_ALBUM_COVER_FILENAMES,
       },
     );
   });
@@ -136,20 +152,24 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
     await plugin.updateConfiguration({
       musicFolder: "/mnt/music",
       smartMergeArtists: false,
+      albumCoverFileNames: DEFAULT_ALBUM_COVER_FILENAMES,
     });
 
     await expect(plugin.getConfiguration()).resolves.toEqual({
       variables: [
         { musicFolder: "string" },
         { smartMergeArtists: "boolean" },
+        { albumCoverFileNames: "string" },
       ],
       labels: {
-        musicFolder: "Music Folder",
-        smartMergeArtists: "Smart Merge Artists",
+        musicFolder: "Music folder",
+        smartMergeArtists: "Smart merge artists",
+        albumCoverFileNames: "Album covers file names",
       },
       values: {
         musicFolder: "/mnt/music",
         smartMergeArtists: false,
+        albumCoverFileNames: DEFAULT_ALBUM_COVER_FILENAMES,
       },
     });
     expect(mocks.upsertPluginConfig).toHaveBeenCalledWith(
@@ -159,6 +179,7 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
       {
         musicFolder: "/mnt/music",
         smartMergeArtists: false,
+        albumCoverFileNames: DEFAULT_ALBUM_COVER_FILENAMES,
       },
     );
   });
@@ -173,8 +194,9 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
       plugin.updateConfiguration({
         musicFolder: "/mnt/music",
         smartMergeArtists: "yes",
+        albumCoverFileNames: DEFAULT_ALBUM_COVER_FILENAMES,
       }),
-    ).rejects.toThrow("smartMergeArtists must be a boolean");
+    ).rejects.toThrow("Smart merge artists must be a boolean");
   });
 
   it("rejects invalid musicFolder configuration", async () => {
@@ -184,8 +206,12 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
     } as any);
 
     await expect(
-      plugin.updateConfiguration({ musicFolder: "" }),
-    ).rejects.toThrow("musicFolder must be a non-empty string");
+      plugin.updateConfiguration({
+        musicFolder: "",
+        smartMergeArtists: true,
+        albumCoverFileNames: DEFAULT_ALBUM_COVER_FILENAMES,
+      }),
+    ).rejects.toThrow("Music folder must be a non-empty string");
   });
 
   it("uses configured musicFolder during scan", async () => {
@@ -198,14 +224,21 @@ describe("FilesystemMusicSourcePlugin configuration", () => {
 
     const plugin = new FilesystemMusicSourcePlugin(context);
 
-    await plugin.updateConfiguration({ musicFolder: "/data/audio" });
+    await plugin.updateConfiguration({
+      musicFolder: "/data/audio",
+      smartMergeArtists: true,
+      albumCoverFileNames: DEFAULT_ALBUM_COVER_FILENAMES,
+    });
     await plugin.scan();
 
     expect(mocks.fileSystemScan).toHaveBeenCalledWith(
       context,
       "filesystem-music-source",
-      "/data/audio",
-      true,
+      {
+        musicFolder: "/data/audio",
+        smartMergeArtists: true,
+        albumCoverFileNames: DEFAULT_ALBUM_COVER_FILENAMES,
+      },
     );
   });
 });

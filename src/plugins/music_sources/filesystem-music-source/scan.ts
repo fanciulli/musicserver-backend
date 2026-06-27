@@ -14,7 +14,7 @@ import {
 } from "../../../types/db/notification.js";
 import type { Context } from "../../../types/context.js";
 import type { Db } from "mongodb";
-import { listFiles } from "../../../utils/fsUtils.js";
+import { fileExists, listFiles } from "../../../utils/fsUtils.js";
 import {
   CouldNotDetermineFileTypeError,
   parseFile,
@@ -23,6 +23,10 @@ import {
 } from "music-metadata";
 import { v4 } from "uuid";
 import { linkArtists, pickBestArtistName } from "./utils.js";
+import type { FilesystemConfiguration } from "./configuration.js";
+import path from "node:path";
+import { readFile } from "node:fs/promises";
+import { SCAN_SKIP_EXTENSION, SCAN_SKIP_FILES } from "./constants.js";
 
 export class FileSystemScan {
   static #scanQueue: Promise<void> = Promise.resolve();
@@ -31,13 +35,17 @@ export class FileSystemScan {
     ArtistDbModel
   >();
   static #albumMap: Map<string, AlbumDbModel> = new Map<string, AlbumDbModel>();
+  static #checkedCoverAlbum: Set<string> = new Set<string>();
 
   static async scan(
     context: Context,
     pluginId: string,
-    musicFolder: string,
-    smartMergeArtists: boolean = true,
+    configuration: FilesystemConfiguration,
   ): Promise<void> {
+    const musicFolder = configuration.musicFolder;
+    const smartMergeArtists = configuration.smartMergeArtists;
+    const albumCoverFileNames = configuration.albumCoverFileNames.split(",");
+
     if (musicFolder.trim() === "") {
       throw new Error("musicFolder must be configured before scan");
     }
@@ -65,13 +73,21 @@ export class FileSystemScan {
       await AlbumDbModel.markAllAsNotExisting(db, pluginId);
       await SongDbModel.markAllAsNotExisting(db, pluginId);
 
-      const files = await listFiles(musicFolder);
+      const files = await listFiles(
+        musicFolder,
+        SCAN_SKIP_FILES,
+        SCAN_SKIP_EXTENSION,
+      );
       const totalFiles = files.length;
       logger.info(`${totalFiles} files to scan.`);
 
       for (let filePath of files) {
         try {
+          const fileExtension = path.extname(filePath).toLowerCase();
+          const fileName = path.basename(filePath);
+
           const fileMetadata: IAudioMetadata = await parseFile(filePath);
+          const folder = path.dirname(filePath);
 
           const artists = await FileSystemScan.#upsertArtits(
             db,
@@ -84,6 +100,8 @@ export class FileSystemScan {
             pluginId,
             fileMetadata,
             artists,
+            albumCoverFileNames,
+            folder,
           );
           await FileSystemScan.#upsertSong(
             db,
@@ -135,6 +153,37 @@ export class FileSystemScan {
 
       FileSystemScan.#artistMap.clear();
       FileSystemScan.#albumMap.clear();
+      FileSystemScan.#checkedCoverAlbum.clear();
+    }
+  }
+
+  static async setAlbumCover(
+    fileMetadata: IAudioMetadata,
+    album: AlbumDbModel,
+    albumCoverFileNames: string[],
+    folder: string,
+  ) {
+    if (album.cover === undefined) {
+      const coverImage = fileMetadata.common?.picture?.[0]?.data;
+      if (coverImage) {
+        album.cover = Buffer.from(coverImage).toString("base64");
+      } else {
+        for (const fileName of albumCoverFileNames) {
+          const fileFullPath = path.join(folder, fileName);
+          if (FileSystemScan.#checkedCoverAlbum.has(fileFullPath)) {
+            break;
+          } else {
+            FileSystemScan.#checkedCoverAlbum.add(fileFullPath);
+            const exists = await fileExists(fileFullPath);
+            if (exists) {
+              const contents = await readFile(fileFullPath, {});
+              album.cover = contents.toString("base64");
+
+              break;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -143,6 +192,8 @@ export class FileSystemScan {
     pluginId: string,
     fileMetadata: IAudioMetadata,
     artists: ArtistDbModel[],
+    albumCoverFileNames: string[],
+    folder: string,
   ): Promise<AlbumDbModel | undefined> {
     const name = fileMetadata.common?.album;
 
@@ -158,12 +209,12 @@ export class FileSystemScan {
         : await AlbumDbModel.find(db, name, pluginId, artistIds);
       if (albumInDb) {
         albumInDb.exists = true;
-        if (albumInDb.cover === undefined) {
-          const coverImage = fileMetadata.common?.picture?.[0]?.data;
-          if (coverImage) {
-            albumInDb.cover = Buffer.from(coverImage).toString("base64");
-          }
-        }
+        await FileSystemScan.setAlbumCover(
+          fileMetadata,
+          albumInDb,
+          albumCoverFileNames,
+          folder,
+        );
         await albumInDb.update(db);
 
         if (!cachedAlbum) {
@@ -177,10 +228,13 @@ export class FileSystemScan {
         album.pluginId = pluginId;
         album.exists = true;
         album.artists = artistIds;
-        const coverImage = fileMetadata.common?.picture?.[0]?.data;
-        if (coverImage) {
-          album.cover = Buffer.from(coverImage).toString("base64");
-        }
+
+        await FileSystemScan.setAlbumCover(
+          fileMetadata,
+          album,
+          albumCoverFileNames,
+          folder,
+        );
         if (!cachedAlbum) {
           FileSystemScan.#albumMap.set(cachedAlbumKey, album);
         }
