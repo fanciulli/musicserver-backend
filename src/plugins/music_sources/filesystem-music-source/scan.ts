@@ -83,9 +83,6 @@ export class FileSystemScan {
 
       for (let filePath of files) {
         try {
-          const fileExtension = path.extname(filePath).toLowerCase();
-          const fileName = path.basename(filePath);
-
           const fileMetadata: IAudioMetadata = await parseFile(filePath);
           const folder = path.dirname(filePath);
 

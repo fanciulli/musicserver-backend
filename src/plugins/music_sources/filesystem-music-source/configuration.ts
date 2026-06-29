@@ -128,9 +128,7 @@ function validateAlbumCoverFilenames(
   albumCoverFileNames: unknown,
 ): asserts albumCoverFileNames is string {
   if (typeof albumCoverFileNames !== "string") {
-    throw new Error(
-      `${LABEL_ALBUM_COVER_FILENAMES} must be a non-empty string`,
-    );
+    throw new Error(`${LABEL_ALBUM_COVER_FILENAMES} must be a string`);
   }
 
   if (!coverFileNamesRegex.test(albumCoverFileNames)) {
@@ -142,15 +140,19 @@ function validateAlbumCoverFilenames(
 
 function loadAlbumCoversFileNames(pluginConfig: PluginConfigDBModel): string {
   const fileNames = pluginConfig.settings[ALBUM_COVER_FILENAMES_KEY];
-  return fileNames ? (fileNames as string) : DEFAULT_ALBUM_COVER_FILENAMES;
+  return fileNames !== undefined
+    ? (fileNames as string)
+    : DEFAULT_ALBUM_COVER_FILENAMES;
 }
 
 function loadMusicFolder(pluginConfig: PluginConfigDBModel): string {
   const folder = pluginConfig.settings[MUSIC_FOLDER_KEY];
-  return folder ? (folder as string) : DEFAULT_MUSIC_FOLDER;
+  return folder !== undefined ? (folder as string) : DEFAULT_MUSIC_FOLDER;
 }
 
 function loadSmartMergeArtists(pluginConfig: PluginConfigDBModel): boolean {
   const mergeArtists = pluginConfig.settings[MERGE_ARTISTS_KEY];
-  return mergeArtists ? (mergeArtists as boolean) : DEFAULT_MERGE_ARTISTS;
+  return mergeArtists !== undefined
+    ? (mergeArtists as boolean)
+    : DEFAULT_MERGE_ARTISTS;
 }
