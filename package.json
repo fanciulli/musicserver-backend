@@ -1,6 +1,6 @@
 {
   "name": "musicserver",
-  "version": "0.0.1",
+  "version": "1.0.0-alpha2",
   "description": "A music server with pluggable capbilities",
   "main": "index.js",
   "scripts": {
