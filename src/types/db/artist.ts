@@ -61,7 +61,7 @@ export class ArtistDbModel {
     const filter = {
       id: { $in: ids },
     };
-    const artists = await (await collection.find(filter)).toArray();
+    const artists = await collection.find(filter).sort({ name: 1 }).toArray();
     return artists.map((artist) => ArtistDbModel.fromJson(artist));
   }
 
@@ -75,6 +75,7 @@ export class ArtistDbModel {
       .find({
         pluginId: pluginId,
       })
+      .sort({ name: 1 })
       .toArray();
 
     return artists.map((artist) => ArtistDbModel.fromJson(artist));
@@ -92,6 +93,7 @@ export class ArtistDbModel {
         pluginId: pluginId,
         name: { $regex: `^${letter}.*`, $options: "i" },
       })
+      .sort({ name: 1 })
       .toArray();
 
     return artists.map((artist) => ArtistDbModel.fromJson(artist));
@@ -159,6 +161,7 @@ export class ArtistDbModel {
         pluginId: pluginId,
         name: { $regex: escapeRegex(normalizedQuery), $options: "i" },
       })
+      .sort({ name: 1 })
       .toArray();
 
     return artists.map((artist) => ArtistDbModel.fromJson(artist));

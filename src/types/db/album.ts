@@ -148,6 +148,7 @@ export class AlbumDbModel {
       .find({
         pluginId: pluginId,
       })
+      .sort({ name: 1 })
       .toArray();
 
     return albums.map((album) => AlbumDbModel.fromJson(album));
@@ -165,6 +166,7 @@ export class AlbumDbModel {
         pluginId: pluginId,
         name: { $regex: `^${letter}.*`, $options: "i" },
       })
+      .sort({ name: 1 })
       .toArray();
 
     return albums.map((album) => AlbumDbModel.fromJson(album));
@@ -182,6 +184,7 @@ export class AlbumDbModel {
         pluginId: pluginId,
         artists: artistId,
       })
+      .sort({ name: 1 })
       .toArray();
 
     return albums.map((album) => AlbumDbModel.fromJson(album));
@@ -203,6 +206,7 @@ export class AlbumDbModel {
         pluginId: pluginId,
         name: { $regex: escapeRegex(normalizedQuery), $options: "i" },
       })
+      .sort({ name: 1 })
       .toArray();
 
     return albums.map((album) => AlbumDbModel.fromJson(album));
