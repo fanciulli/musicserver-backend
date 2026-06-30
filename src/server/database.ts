@@ -8,6 +8,7 @@
 import { MongoClient, Db } from "mongodb";
 import { listFiles } from "../utils/fsUtils.js";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 export class Database {
   client?: Db;
@@ -29,7 +30,7 @@ export class Database {
     const modelFiles = await listFiles(folder);
 
     for (const modelFile of modelFiles) {
-      const modelModule = await import(modelFile);
+      const modelModule = await import(pathToFileURL(modelFile).href);
       await modelModule.init(this.client);
     }
   }

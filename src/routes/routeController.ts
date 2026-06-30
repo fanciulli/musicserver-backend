@@ -11,6 +11,7 @@ import type { FastifyInstance } from "fastify";
 import { Route } from "../types/route.js";
 import { listFiles } from "../utils/fsUtils.js";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { apiKeyPlugin } from "fastify-auth-by-api-key";
 import { validateApiKey } from "../utils/apiKeyUtils.js";
 import {
@@ -46,7 +47,7 @@ export class RouteController {
     const allRoutes: Route[] = [];
 
     for (const routeFile of routeFiles) {
-      const routeModule = await import(routeFile);
+      const routeModule = await import(pathToFileURL(routeFile).href);
       const route: Route = new routeModule.default(this.#context);
       allRoutes.push(route);
     }

@@ -7,6 +7,7 @@
  */
 import { Plugin } from "../types/plugins/plugin.js";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { PluginDBModel, PluginStatus } from "../types/db/plugin.js";
 import { PluginConfigDBModel } from "../types/db/pluginConfig.js";
 import { Context } from "../types/context.js";
@@ -73,7 +74,7 @@ class PluginList {
   }
 
   async #loadPluginFromFolder(pluginIndexFile: string): Promise<Plugin> {
-    const pluginModule = await import(pluginIndexFile);
+    const pluginModule = await import(pathToFileURL(pluginIndexFile).href);
     const pluginClass = pluginModule.default;
     const pluginInstance: Plugin = new pluginClass(this.#context);
 
