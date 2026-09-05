@@ -4,8 +4,8 @@
   "description": "A music server with pluggable capbilities",
   "main": "index.js",
   "scripts": {
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test": "NODE_OPTIONS=--openssl-legacy-provider vitest run",
+    "test:coverage": "NODE_OPTIONS=--openssl-legacy-provider vitest run --coverage",
     "test:e2e": "playwright test --config=test/e2e/playwright.config.ts",
     "start": "npm run build; cd dist; node index.js",
     "build": "npx tsc -p tsconfig.json && node -e \"require('fs').cpSync('src/wizards','dist/wizards',{recursive:true})\"",
@@ -16,6 +16,7 @@
   "type": "module",
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@marsaud/smb2": "^0.18.0",
     "@playwright/test": "^1.61.0",
     "@types/node": "25.9.3",
     "@vitest/coverage-v8": "4.1.9",

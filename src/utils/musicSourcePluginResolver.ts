@@ -7,10 +7,8 @@
  */
 import { PluginDBModel, PluginStatus } from "../types/db/plugin.js";
 import type { Context } from "../types/context.js";
-import {
-  MusicSourcePlugin,
-  MUSIC_SOURCE_PLUGIN_CATEGORY,
-} from "../types/plugins/music_sources.js";
+import { MusicSourcePlugin } from "../types/plugins/music_sources.js";
+import { MUSIC_SOURCE_PLUGIN_CATEGORY } from "../types/plugins/plugin.js";
 
 export type PluginResolutionError = {
   status: number;
