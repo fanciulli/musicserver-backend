@@ -33,6 +33,12 @@ From day one, the server is built around the concept of **plugins**.
 Every music source is a plugin that can be installed without modifying the core server.
 This design allows the server to be expanded with new capabilities simply by dropping a new plugin into the configured plugin folder — no rebuild required.
 
+Besides music-source plugins, the server also supports **sharing** plugins. The bundled
+**Sonos SMB Share** plugin exposes the library as a read-only, anonymous SMB2/SMB3 share
+(artist → album → song) that Sonos speakers can mount directly over the network, listening
+on port `445` by default. See [docs/plugins/sonos-smb.md](docs/plugins/sonos-smb.md) for
+configuration and setup details.
+
 Key technologies:
 
 | Technology     | Role               |
@@ -108,4 +114,5 @@ npm run test:coverage
 | [docs/building-blocks.md](docs/building-blocks.md) | Component descriptions          |
 | [docs/api-reference.md](docs/api-reference.md)     | REST API reference              |
 | [docs/openapi.yaml](docs/openapi.yaml)             | OpenAPI 3.0 specification       |
+| [docs/plugins/sonos-smb.md](docs/plugins/sonos-smb.md) | Sonos SMB sharing plugin    |
 | [docs/adr/](docs/adr/)                             | Architectural Decision Records  |

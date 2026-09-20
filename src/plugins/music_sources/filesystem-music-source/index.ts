@@ -179,10 +179,7 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
     }
   }
 
-  async stream(
-    path: string,
-    from?: number,
-  ): Promise<[Readable, number | undefined]> {
+  async stream(path: string, from?: number): Promise<[Readable, number]> {
     const id = path.split("/").slice(-1)[0];
     const song = await SongDbModel.findById(this.getDatabase(), id);
     if (song && song.metadata) {

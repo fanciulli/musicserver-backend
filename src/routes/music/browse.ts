@@ -7,10 +7,8 @@
  */
 import { Route } from "../../types/route.js";
 import { HttpMethods } from "../../misc/constants.js";
-import {
-  MUSIC_SOURCE_PLUGIN_CATEGORY,
-  MusicSourcePlugin,
-} from "../../types/plugins/music_sources.js";
+import { MusicSourcePlugin } from "../../types/plugins/music_sources.js";
+import { MUSIC_SOURCE_PLUGIN_CATEGORY } from "../../types/plugins/plugin.js";
 import {
   BrowseResponse,
   BrowseSchema,

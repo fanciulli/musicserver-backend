@@ -8,6 +8,9 @@
 import { Context } from "../context.js";
 import { Db } from "mongodb";
 
+export const MUSIC_SOURCE_PLUGIN_CATEGORY = "music_sources";
+export const DEVICE_CONNECTORS_PLUGIN_CATEGORY = "device_connectors";
+
 export type PluginConfigurationVariables = Array<Record<string, string>>;
 
 export type PluginConfigurationLabels = Record<string, string>;
