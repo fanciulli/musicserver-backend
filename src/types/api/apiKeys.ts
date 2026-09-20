@@ -25,6 +25,7 @@ export const ApiKeySchema = {
     id: { type: "string" },
     name: { type: "string" },
     key: { type: "string" },
+    keyPrefix: { type: "string" },
     createdAt: { type: "string" },
     expiresAt: { type: ["string", "null"] },
   },

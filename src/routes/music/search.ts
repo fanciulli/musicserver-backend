@@ -15,10 +15,8 @@ import {
   getPluginById,
   type PluginResolutionResult,
 } from "../../utils/musicSourcePluginResolver.js";
-import {
-  MUSIC_SOURCE_PLUGIN_CATEGORY,
-  type MusicSourcePlugin,
-} from "../../types/plugins/music_sources.js";
+import { type MusicSourcePlugin } from "../../types/plugins/music_sources.js";
+import { MUSIC_SOURCE_PLUGIN_CATEGORY } from "../../types/plugins/plugin.js";
 
 export default class SearchRoute extends Route {
   method = HttpMethods.POST;
