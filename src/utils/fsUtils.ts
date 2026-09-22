@@ -60,3 +60,12 @@ export async function fileExists(filePath: string): Promise<boolean> {
     return false;
   }
 }
+
+export async function folderExists(folderPath: string): Promise<boolean> {
+  try {
+    const stats = await fs.stat(folderPath);
+    return stats.isDirectory();
+  } catch {
+    return false;
+  }
+}

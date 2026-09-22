@@ -12,6 +12,7 @@ import type {
 } from "../../../types/plugins/plugin.js";
 import { PluginConfigDBModel } from "../../../types/db/pluginConfig.js";
 import { DEFAULT_LASTFM_API_KEY, DEFAULT_ROOT_FOLDER } from "./constants.js";
+import { folderExists } from "../../../utils/fsUtils.js";
 
 const ROOT_FOLDER_KEY = "rootFolder";
 const LASTFM_API_KEY_KEY = "lastFmApiKey";
@@ -42,7 +43,7 @@ export async function loadConfiguration(
   const rootFolder = loadRootFolder(pluginConfig);
   const lastFmApiKey = loadLastFmApiKey(pluginConfig);
 
-  validateRootFolder(rootFolder);
+  await validateRootFolder(rootFolder);
 
   return { rootFolder, lastFmApiKey };
 }
@@ -72,8 +73,7 @@ export async function updateConfiguration(
   pluginId: string,
   settings: PluginConfigurationValues,
 ): Promise<AlbumArtConfiguration> {
-  const rootFolder = settings[ROOT_FOLDER_KEY];
-  validateRootFolder(rootFolder);
+  const rootFolder = await validateRootFolder(settings[ROOT_FOLDER_KEY]);
 
   const lastFmApiKey = settings[LASTFM_API_KEY_KEY];
   validateLastFmApiKey(lastFmApiKey);
@@ -86,12 +86,18 @@ export async function updateConfiguration(
   return { rootFolder, lastFmApiKey };
 }
 
-function validateRootFolder(
-  rootFolder: unknown,
-): asserts rootFolder is string {
+async function validateRootFolder(rootFolder: unknown): Promise<string> {
   if (typeof rootFolder !== "string" || rootFolder.trim() === "") {
     throw new Error(`${LABEL_ROOT_FOLDER} must be a non-empty string`);
   }
+
+  if (!(await folderExists(rootFolder))) {
+    throw new Error(
+      `${LABEL_ROOT_FOLDER} "${rootFolder}" does not exist or is not a folder`,
+    );
+  }
+
+  return rootFolder;
 }
 
 function validateLastFmApiKey(

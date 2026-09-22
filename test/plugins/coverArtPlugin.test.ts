@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   fileExists: vi.fn(),
+  folderExists: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn(),
   mkdir: vi.fn(),
@@ -19,6 +20,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../../src/utils/fsUtils.js", () => ({
   fileExists: (...args: unknown[]) => mocks.fileExists(...args),
+  folderExists: (...args: unknown[]) => mocks.folderExists(...args),
 }));
 
 vi.mock("node:fs/promises", () => ({
@@ -55,6 +57,7 @@ describe("CoverArtPlugin", () => {
     vi.clearAllMocks();
     mocks.findPluginConfig.mockResolvedValue(undefined);
     mocks.upsertPluginConfig.mockResolvedValue(undefined);
+    mocks.folderExists.mockResolvedValue(true);
   });
 
   describe("configuration", () => {
@@ -98,6 +101,21 @@ describe("CoverArtPlugin", () => {
       ).rejects.toThrow("Root folder must be a non-empty string");
     });
 
+    it("rejects a rootFolder that does not exist on disk", async () => {
+      mocks.folderExists.mockResolvedValue(false);
+      const plugin = createPlugin();
+
+      await expect(
+        plugin.updateConfiguration({
+          rootFolder: "/does/not/exist",
+          lastFmApiKey: "",
+        }),
+      ).rejects.toThrow(
+        'Root folder "/does/not/exist" does not exist or is not a folder',
+      );
+      expect(mocks.upsertPluginConfig).not.toHaveBeenCalled();
+    });
+
     it("updates and persists configuration", async () => {
       const plugin = createPlugin();
 
@@ -106,12 +124,26 @@ describe("CoverArtPlugin", () => {
         lastFmApiKey: "secret",
       });
 
+      expect(mocks.folderExists).toHaveBeenCalledWith("/data/art");
       expect(mocks.upsertPluginConfig).toHaveBeenCalledWith(
         "db-client",
         "system",
         "coverart",
         { rootFolder: "/data/art", lastFmApiKey: "secret" },
       );
+    });
+
+    it("updates in-memory configuration after a successful update", async () => {
+      const plugin = createPlugin();
+
+      await plugin.updateConfiguration({
+        rootFolder: "/data/art",
+        lastFmApiKey: "secret",
+      });
+
+      await expect(plugin.getConfiguration()).resolves.toMatchObject({
+        values: { rootFolder: "/data/art", lastFmApiKey: "secret" },
+      });
     });
   });
 
