@@ -12,8 +12,8 @@ import { PluginDBModel, PluginStatus } from "../../src/types/db/plugin.js";
 import type { Context } from "../../src/types/context.js";
 
 class FakeAlbumArtPlugin extends AlbumArtPlugin {
-  id = "albumart-service";
-  name = "Album Art Service";
+  id = "coverart";
+  name = "Cover Art";
   async getArt() {
     return undefined;
   }

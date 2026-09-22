@@ -27,7 +27,7 @@ import {
 import { buildArtPath, writeArt } from "./artPath.js";
 import { fetchArtFromLastFm } from "./lastfm.js";
 
-export default class AlbumArtServicePlugin extends AlbumArtPlugin {
+export default class CoverArtPlugin extends AlbumArtPlugin {
   id: string = PLUGIN_ID;
   name: string = PLUGIN_NAME;
   #configuration: AlbumArtConfiguration;

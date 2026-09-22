@@ -8,8 +8,8 @@ import { AlbumArtPlugin } from "../../../../src/types/plugins/albumArt.js";
 import { DEFAULT_COVER_JPEG } from "../../../../src/plugins/device_connectors/sonos-smb/library/defaultCover.js";
 
 class FakeAlbumArtPlugin extends AlbumArtPlugin {
-  id = "albumart-service";
-  name = "Album Art Service";
+  id = "coverart";
+  name = "Cover Art";
   #art: Uint8Array | undefined;
   constructor(art: Uint8Array | undefined) {
     super({} as any);

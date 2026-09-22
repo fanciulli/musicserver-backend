@@ -6,7 +6,7 @@
  * GitHub: https://github.com/fanciulli
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fetchArtFromLastFm } from "../../src/plugins/system/albumart-service/lastfm.js";
+import { fetchArtFromLastFm } from "../../src/plugins/system/coverart/lastfm.js";
 
 describe("fetchArtFromLastFm", () => {
   beforeEach(() => {

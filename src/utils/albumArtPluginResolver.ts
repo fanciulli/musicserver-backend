@@ -7,7 +7,7 @@
  */
 import { PluginDBModel, PluginStatus } from "../types/db/plugin.js";
 import { AlbumArtPlugin } from "../types/plugins/albumArt.js";
-import { PLUGIN_ID as ALBUM_ART_PLUGIN_ID } from "../plugins/system/albumart-service/constants.js";
+import { PLUGIN_ID as COVER_ART_PLUGIN_ID } from "../plugins/system/coverart/constants.js";
 import type { Context } from "../types/context.js";
 
 /**
@@ -18,7 +18,7 @@ import type { Context } from "../types/context.js";
 export async function getStartedAlbumArtPlugin(
   context: Context,
 ): Promise<AlbumArtPlugin | undefined> {
-  const plugin = context.pluginManager?.getPluginById(ALBUM_ART_PLUGIN_ID);
+  const plugin = context.pluginManager?.getPluginById(COVER_ART_PLUGIN_ID);
   if (!(plugin instanceof AlbumArtPlugin)) {
     return undefined;
   }

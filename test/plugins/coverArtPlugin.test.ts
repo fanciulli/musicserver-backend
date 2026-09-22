@@ -27,7 +27,7 @@ vi.mock("node:fs/promises", () => ({
   mkdir: (...args: unknown[]) => mocks.mkdir(...args),
 }));
 
-vi.mock("../../src/plugins/system/albumart-service/lastfm.js", () => ({
+vi.mock("../../src/plugins/system/coverart/lastfm.js", () => ({
   fetchArtFromLastFm: (...args: unknown[]) => mocks.fetchArtFromLastFm(...args),
 }));
 
@@ -38,19 +38,19 @@ vi.mock("../../src/types/db/pluginConfig.js", () => ({
   },
 }));
 
-import { default as AlbumArtServicePlugin } from "../../src/plugins/system/albumart-service/index.js";
+import { default as CoverArtPlugin } from "../../src/plugins/system/coverart/index.js";
 
 const UUID = "f81d4fae-7dec-11d0-a765-00a0c91e6bf6";
 const ART_PATH = `/albumart/f8/1d/${UUID}`;
 
 function createPlugin() {
-  return new AlbumArtServicePlugin({
+  return new CoverArtPlugin({
     database: "db-client",
     logger: { info: vi.fn(), warn: vi.fn() },
   } as any);
 }
 
-describe("AlbumArtServicePlugin", () => {
+describe("CoverArtPlugin", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.findPluginConfig.mockResolvedValue(undefined);
@@ -109,7 +109,7 @@ describe("AlbumArtServicePlugin", () => {
       expect(mocks.upsertPluginConfig).toHaveBeenCalledWith(
         "db-client",
         "system",
-        "albumart-service",
+        "coverart",
         { rootFolder: "/data/art", lastFmApiKey: "secret" },
       );
     });

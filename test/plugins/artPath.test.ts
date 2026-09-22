@@ -20,7 +20,7 @@ vi.mock("node:fs/promises", () => ({
 import {
   buildArtPath,
   writeArt,
-} from "../../src/plugins/system/albumart-service/artPath.js";
+} from "../../src/plugins/system/coverart/artPath.js";
 
 describe("buildArtPath", () => {
   it("splits the uuid into two subfolders as described in the spec", () => {
