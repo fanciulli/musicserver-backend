@@ -172,7 +172,7 @@ import { FileSystemScan } from "../../src/plugins/music_sources/filesystem-music
 const makeContext = (): Context =>
   ({
     database: DB_CLIENT,
-    logger: { info: vi.fn(), error: vi.fn(), debug: vi.fn() },
+    logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
   }) as unknown as Context;
 
 const makeConfiguration = (overrides: Partial<{ musicFolder: string; smartMergeArtists: boolean; albumCoverFileNames: string }> = {}) => ({

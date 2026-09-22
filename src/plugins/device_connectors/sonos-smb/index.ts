@@ -43,7 +43,7 @@ export default class SonosSmbPlugin extends Plugin {
     this.context.logger.info(`Starting plugin ${this.category}/${this.id}`);
 
     const server = new SmbServer({
-      library: new LibraryTree(this.getDatabase()),
+      library: new LibraryTree(this.context),
       logger: this.context.logger,
       getShareName: () => this.#config.shareName,
       getCredentials: () => ({

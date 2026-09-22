@@ -33,6 +33,7 @@ import type {
   PluginConfigurationValues,
 } from "../../../types/plugins/plugin.js";
 import { ArtistDbModel } from "../../../types/db/artist.js";
+import { getStartedAlbumArtPlugin } from "../../../utils/albumArtPluginResolver.js";
 import {
   getConfiguration,
   loadConfiguration,
@@ -206,15 +207,16 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
       albumId = song.albumId;
     }
 
-    if (albumId) {
-      const albumCover = await AlbumDbModel.findCoverById(db, albumId);
-      if (!albumCover) {
-        return undefined;
-      } else {
-        return Buffer.from(albumCover, "base64");
-      }
-    } else {
+    if (!albumId) {
       return undefined;
     }
+
+    const albumArtPlugin = await getStartedAlbumArtPlugin(this.context);
+    if (!albumArtPlugin) {
+      return undefined;
+    }
+
+    const art = await albumArtPlugin.getArt(albumId, "album");
+    return art ? Buffer.from(art) : undefined;
   }
 }

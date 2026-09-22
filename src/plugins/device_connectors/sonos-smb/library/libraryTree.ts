@@ -6,11 +6,13 @@
  * GitHub: https://github.com/fanciulli
  */
 import type { Db } from "mongodb";
+import type { Context } from "../../../../types/context.js";
 import { ArtistDbModel } from "../../../../types/db/artist.js";
 import { AlbumDbModel } from "../../../../types/db/album.js";
 import { SongDbModel } from "../../../../types/db/song.js";
 import { dedupe, songFileName } from "./naming.js";
 import { DEFAULT_COVER_JPEG } from "./defaultCover.js";
+import { getStartedAlbumArtPlugin } from "../../../../utils/albumArtPluginResolver.js";
 
 export interface LibNode {
   kind: "root" | "artist" | "album" | "song" | "cover";
@@ -38,7 +40,11 @@ function isCoverFilename(segment: string): boolean {
  * path resolution used by the SMB directory/file handlers.
  */
 export class LibraryTree {
-  constructor(private readonly db: Db) {}
+  private readonly db: Db;
+
+  constructor(private readonly context: Context) {
+    this.db = context.database;
+  }
 
   async listChildren(node: LibNode): Promise<LibNode[]> {
     switch (node.kind) {
@@ -61,8 +67,14 @@ export class LibraryTree {
    * always served.
    */
   async getCover(albumId: string): Promise<Buffer> {
-    const cover = await AlbumDbModel.findCoverById(this.db, albumId);
-    return cover ? Buffer.from(cover, "base64") : DEFAULT_COVER_JPEG;
+    const albumArtPlugin = await getStartedAlbumArtPlugin(this.context);
+    if (albumArtPlugin) {
+      const art = await albumArtPlugin.getArt(albumId, "album");
+      if (art) {
+        return Buffer.from(art);
+      }
+    }
+    return DEFAULT_COVER_JPEG;
   }
 
   private async listArtists(): Promise<LibNode[]> {

@@ -24,6 +24,8 @@ import {
 import { v4 } from "uuid";
 import { linkArtists, pickBestArtistName } from "./utils.js";
 import type { FilesystemConfiguration } from "./configuration.js";
+import type { AlbumArtPlugin } from "../../../types/plugins/albumArt.js";
+import { getStartedAlbumArtPlugin } from "../../../utils/albumArtPluginResolver.js";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { SCAN_SKIP_EXTENSION, SCAN_SKIP_FILES } from "./constants.js";
@@ -36,6 +38,7 @@ export class FileSystemScan {
   >();
   static #albumMap: Map<string, AlbumDbModel> = new Map<string, AlbumDbModel>();
   static #checkedCoverAlbum: Set<string> = new Set<string>();
+  static #storedCoverAlbums: Set<string> = new Set<string>();
 
   static async scan(
     context: Context,
@@ -58,6 +61,13 @@ export class FileSystemScan {
 
     const db: Db = context.database;
     const logger = context.logger;
+
+    const albumArtPlugin = await getStartedAlbumArtPlugin(context);
+    if (!albumArtPlugin) {
+      logger.warn(
+        "Album art service plugin is not available; scan will not store album covers",
+      );
+    }
 
     await previousScan;
     const startTime = Date.now();
@@ -99,6 +109,7 @@ export class FileSystemScan {
             artists,
             albumCoverFileNames,
             folder,
+            albumArtPlugin,
           );
           await FileSystemScan.#upsertSong(
             db,
@@ -151,36 +162,45 @@ export class FileSystemScan {
       FileSystemScan.#artistMap.clear();
       FileSystemScan.#albumMap.clear();
       FileSystemScan.#checkedCoverAlbum.clear();
+      FileSystemScan.#storedCoverAlbums.clear();
     }
   }
 
-  static async setAlbumCover(
+  static async storeAlbumCover(
+    albumArtPlugin: AlbumArtPlugin | undefined,
     fileMetadata: IAudioMetadata,
     album: AlbumDbModel,
     albumCoverFileNames: string[],
     folder: string,
   ) {
-    if (album.cover === undefined) {
-      const coverImage = fileMetadata.common?.picture?.[0]?.data;
-      if (coverImage) {
-        album.cover = Buffer.from(coverImage).toString("base64");
-      } else {
-        for (const fileName of albumCoverFileNames) {
-          const fileFullPath = path.join(folder, fileName);
-          if (FileSystemScan.#checkedCoverAlbum.has(fileFullPath)) {
-            break;
-          } else {
-            FileSystemScan.#checkedCoverAlbum.add(fileFullPath);
-            const exists = await fileExists(fileFullPath);
-            if (exists) {
-              const contents = await readFile(fileFullPath, {});
-              album.cover = contents.toString("base64");
+    if (!albumArtPlugin || album.id === undefined) {
+      return;
+    }
+    if (FileSystemScan.#storedCoverAlbums.has(album.id)) {
+      return;
+    }
 
-              break;
-            }
-          }
+    let art: Uint8Array | undefined;
+    const coverImage = fileMetadata.common?.picture?.[0]?.data;
+    if (coverImage) {
+      art = Buffer.from(coverImage);
+    } else {
+      for (const fileName of albumCoverFileNames) {
+        const fileFullPath = path.join(folder, fileName);
+        if (FileSystemScan.#checkedCoverAlbum.has(fileFullPath)) {
+          break;
+        }
+        FileSystemScan.#checkedCoverAlbum.add(fileFullPath);
+        if (await fileExists(fileFullPath)) {
+          art = await readFile(fileFullPath, {});
+          break;
         }
       }
+    }
+
+    if (art) {
+      await albumArtPlugin.storeArt({ uuid: album.id, art });
+      FileSystemScan.#storedCoverAlbums.add(album.id);
     }
   }
 
@@ -191,6 +211,7 @@ export class FileSystemScan {
     artists: ArtistDbModel[],
     albumCoverFileNames: string[],
     folder: string,
+    albumArtPlugin: AlbumArtPlugin | undefined,
   ): Promise<AlbumDbModel | undefined> {
     const name = fileMetadata.common?.album;
 
@@ -206,7 +227,8 @@ export class FileSystemScan {
         : await AlbumDbModel.find(db, name, pluginId, artistIds);
       if (albumInDb) {
         albumInDb.exists = true;
-        await FileSystemScan.setAlbumCover(
+        await FileSystemScan.storeAlbumCover(
+          albumArtPlugin,
           fileMetadata,
           albumInDb,
           albumCoverFileNames,
@@ -226,7 +248,8 @@ export class FileSystemScan {
         album.exists = true;
         album.artists = artistIds;
 
-        await FileSystemScan.setAlbumCover(
+        await FileSystemScan.storeAlbumCover(
+          albumArtPlugin,
           fileMetadata,
           album,
           albumCoverFileNames,
