@@ -184,4 +184,57 @@ describe("AlbumArtServicePlugin", () => {
       expect(mocks.writeFile).not.toHaveBeenCalled();
     });
   });
+
+  describe("storeArt", () => {
+    it("writes the provided art directly to disk", async () => {
+      const plugin = createPlugin();
+      const art = new Uint8Array([1, 2, 3]);
+
+      await plugin.storeArt({ uuid: UUID, art });
+
+      expect(mocks.fetchArtFromLastFm).not.toHaveBeenCalled();
+      expect(mocks.mkdir).toHaveBeenCalledWith("/albumart/f8/1d", {
+        recursive: true,
+      });
+      expect(mocks.writeFile).toHaveBeenCalledWith(ART_PATH, art);
+    });
+
+    it("downloads the art from Last.fm and stores it", async () => {
+      mocks.fetchArtFromLastFm.mockResolvedValue(new Uint8Array([9, 9, 9]));
+
+      const plugin = createPlugin();
+      await plugin.storeArt({
+        uuid: UUID,
+        artistName: "Some Artist",
+        albumName: "Some Album",
+      });
+
+      expect(mocks.fetchArtFromLastFm).toHaveBeenCalledWith(
+        "",
+        "album",
+        "Some Artist",
+        "Some Album",
+        expect.anything(),
+      );
+      expect(mocks.writeFile).toHaveBeenCalledWith(
+        ART_PATH,
+        new Uint8Array([9, 9, 9]),
+      );
+    });
+
+    it("throws when the remote fetch cannot find any art", async () => {
+      mocks.fetchArtFromLastFm.mockResolvedValue(undefined);
+
+      const plugin = createPlugin();
+
+      await expect(
+        plugin.storeArt({
+          uuid: UUID,
+          artistName: "Some Artist",
+          albumName: "Some Album",
+        }),
+      ).rejects.toThrow("No album art found on Last.fm");
+      expect(mocks.writeFile).not.toHaveBeenCalled();
+    });
+  });
 });

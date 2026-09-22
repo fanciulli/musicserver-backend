@@ -5,9 +5,12 @@
  *
  * GitHub: https://github.com/fanciulli
  */
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { AlbumArtPlugin, type ArtType } from "../../../types/plugins/albumArt.js";
+import { readFile } from "node:fs/promises";
+import {
+  AlbumArtPlugin,
+  type ArtType,
+  type StoreArtParams,
+} from "../../../types/plugins/albumArt.js";
 import { fileExists } from "../../../utils/fsUtils.js";
 import type { Context } from "../../../types/context.js";
 import type {
@@ -21,7 +24,7 @@ import {
   updateConfiguration,
   type AlbumArtConfiguration,
 } from "./configuration.js";
-import { buildArtPath } from "./artPath.js";
+import { buildArtPath, writeArt } from "./artPath.js";
 import { fetchArtFromLastFm } from "./lastfm.js";
 
 export default class AlbumArtServicePlugin extends AlbumArtPlugin {
@@ -88,9 +91,31 @@ export default class AlbumArtServicePlugin extends AlbumArtPlugin {
       return undefined;
     }
 
-    await mkdir(path.dirname(artPath), { recursive: true });
-    await writeFile(artPath, art);
+    await writeArt(this.#configuration.rootFolder, uuid, art);
 
     return art;
+  }
+
+  async storeArt(params: StoreArtParams): Promise<void> {
+    if ("art" in params) {
+      await writeArt(this.#configuration.rootFolder, params.uuid, params.art);
+      return;
+    }
+
+    const art = await fetchArtFromLastFm(
+      this.#configuration.lastFmApiKey,
+      "album",
+      params.artistName,
+      params.albumName,
+      this.context.logger,
+    );
+
+    if (!art) {
+      throw new Error(
+        `No album art found on Last.fm for ${params.artistName} - ${params.albumName}`,
+      );
+    }
+
+    await writeArt(this.#configuration.rootFolder, params.uuid, art);
   }
 }
