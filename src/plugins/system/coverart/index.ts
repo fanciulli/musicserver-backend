@@ -17,7 +17,7 @@ import type {
   PluginConfigurationSettings,
   PluginConfigurationValues,
 } from "../../../types/plugins/plugin.js";
-import { PLUGIN_ID, PLUGIN_NAME, DEFAULT_ROOT_FOLDER, DEFAULT_LASTFM_API_KEY } from "./constants.js";
+import { PLUGIN_ID, PLUGIN_NAME, DEFAULT_ROOT_FOLDER } from "./constants.js";
 import {
   getConfiguration,
   loadConfiguration,
@@ -25,7 +25,7 @@ import {
   type AlbumArtConfiguration,
 } from "./configuration.js";
 import { buildArtPath, writeArt } from "./artPath.js";
-import { fetchArtFromLastFm } from "./lastfm.js";
+import { fetchArtFromDeezer } from "./deezer.js";
 
 export default class CoverArtPlugin extends AlbumArtPlugin {
   id: string = PLUGIN_ID;
@@ -36,7 +36,6 @@ export default class CoverArtPlugin extends AlbumArtPlugin {
     super(context);
     this.#configuration = {
       rootFolder: DEFAULT_ROOT_FOLDER,
-      lastFmApiKey: DEFAULT_LASTFM_API_KEY,
     };
   }
 
@@ -75,12 +74,11 @@ export default class CoverArtPlugin extends AlbumArtPlugin {
       return await readFile(artPath);
     }
 
-    if (!artistName || !albumName) {
+    if (!artistName || (artType === "album" && !albumName)) {
       return undefined;
     }
 
-    const art = await fetchArtFromLastFm(
-      this.#configuration.lastFmApiKey,
+    const art = await fetchArtFromDeezer(
       artType,
       artistName,
       albumName,
@@ -102,20 +100,27 @@ export default class CoverArtPlugin extends AlbumArtPlugin {
       return;
     }
 
-    const art = await fetchArtFromLastFm(
-      this.#configuration.lastFmApiKey,
-      "album",
+    const albumName = "albumName" in params ? params.albumName : undefined;
+    const artType: ArtType = albumName ? "album" : "artist";
+
+    const art = await fetchArtFromDeezer(
+      artType,
       params.artistName,
-      params.albumName,
+      albumName,
       this.context.logger,
     );
 
     if (!art) {
-      throw new Error(
-        `No album art found on Last.fm for ${params.artistName} - ${params.albumName}`,
-      );
+      const target = albumName
+        ? `${params.artistName} - ${albumName}`
+        : params.artistName;
+      throw new Error(`No ${artType} art found on Deezer for ${target}`);
     }
 
     await writeArt(this.#configuration.rootFolder, params.uuid, art);
+  }
+
+  async hasArt(uuid: string): Promise<boolean> {
+    return fileExists(buildArtPath(this.#configuration.rootFolder, uuid));
   }
 }

@@ -12,12 +12,16 @@ export const SYSTEM_PLUGIN_CATEGORY = "system";
 export type ArtType = "album" | "artist";
 
 export type StoreArtByData = { uuid: string; art: Uint8Array };
-export type StoreArtByLookup = {
+export type StoreArtByAlbumLookup = {
   uuid: string;
   artistName: string;
   albumName: string;
 };
-export type StoreArtParams = StoreArtByData | StoreArtByLookup;
+export type StoreArtByArtistLookup = { uuid: string; artistName: string };
+export type StoreArtParams =
+  | StoreArtByData
+  | StoreArtByAlbumLookup
+  | StoreArtByArtistLookup;
 
 export abstract class AlbumArtPlugin extends Plugin {
   category: string = SYSTEM_PLUGIN_CATEGORY;
@@ -30,4 +34,6 @@ export abstract class AlbumArtPlugin extends Plugin {
   ): Promise<Uint8Array | undefined>;
 
   abstract storeArt(params: StoreArtParams): Promise<void>;
+
+  abstract hasArt(uuid: string): Promise<boolean>;
 }

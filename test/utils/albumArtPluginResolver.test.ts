@@ -18,6 +18,9 @@ class FakeAlbumArtPlugin extends AlbumArtPlugin {
     return undefined;
   }
   async storeArt() {}
+  async hasArt() {
+    return false;
+  }
 }
 
 function makeContext(plugin: unknown): Context {

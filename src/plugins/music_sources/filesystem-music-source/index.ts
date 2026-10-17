@@ -216,7 +216,18 @@ export default class FilesystemMusicSourcePlugin extends MusicSourcePlugin {
       return undefined;
     }
 
-    const art = await albumArtPlugin.getArt(albumId, "album");
+    const album = await AlbumDbModel.findById(db, albumId);
+    const artistId = album?.artists?.[0];
+    const artist = artistId
+      ? await ArtistDbModel.findById(db, artistId)
+      : undefined;
+
+    const art = await albumArtPlugin.getArt(
+      albumId,
+      "album",
+      artist?.name,
+      album?.name,
+    );
     return art ? Buffer.from(art) : undefined;
   }
 }

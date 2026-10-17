@@ -69,7 +69,18 @@ export class LibraryTree {
   async getCover(albumId: string): Promise<Buffer> {
     const albumArtPlugin = await getStartedAlbumArtPlugin(this.context);
     if (albumArtPlugin) {
-      const art = await albumArtPlugin.getArt(albumId, "album");
+      const album = await AlbumDbModel.findById(this.db, albumId);
+      const artistId = album?.artists?.[0];
+      const artist = artistId
+        ? await ArtistDbModel.findById(this.db, artistId)
+        : undefined;
+
+      const art = await albumArtPlugin.getArt(
+        albumId,
+        "album",
+        artist?.name,
+        album?.name,
+      );
       if (art) {
         return Buffer.from(art);
       }

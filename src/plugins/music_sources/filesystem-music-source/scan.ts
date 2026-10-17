@@ -14,6 +14,7 @@ import {
 } from "../../../types/db/notification.js";
 import type { Context } from "../../../types/context.js";
 import type { Db } from "mongodb";
+import type { Logger as PinoLogger } from "pino";
 import { fileExists, listFiles } from "../../../utils/fsUtils.js";
 import {
   CouldNotDetermineFileTypeError,
@@ -39,6 +40,8 @@ export class FileSystemScan {
   static #albumMap: Map<string, AlbumDbModel> = new Map<string, AlbumDbModel>();
   static #checkedCoverAlbum: Set<string> = new Set<string>();
   static #storedCoverAlbums: Set<string> = new Set<string>();
+  static #storedArtistArt: Set<string> = new Set<string>();
+  static #logger?: PinoLogger;
 
   static async scan(
     context: Context,
@@ -61,6 +64,7 @@ export class FileSystemScan {
 
     const db: Db = context.database;
     const logger = context.logger;
+    FileSystemScan.#logger = logger;
 
     const albumArtPlugin = await getStartedAlbumArtPlugin(context);
     if (!albumArtPlugin) {
@@ -101,6 +105,7 @@ export class FileSystemScan {
             pluginId,
             fileMetadata,
             smartMergeArtists,
+            albumArtPlugin,
           );
           const album = await FileSystemScan.#upsertAlbum(
             db,
@@ -163,6 +168,8 @@ export class FileSystemScan {
       FileSystemScan.#albumMap.clear();
       FileSystemScan.#checkedCoverAlbum.clear();
       FileSystemScan.#storedCoverAlbums.clear();
+      FileSystemScan.#storedArtistArt.clear();
+      FileSystemScan.#logger = undefined;
     }
   }
 
@@ -172,11 +179,16 @@ export class FileSystemScan {
     album: AlbumDbModel,
     albumCoverFileNames: string[],
     folder: string,
+    artists: ArtistDbModel[] = [],
   ) {
     if (!albumArtPlugin || album.id === undefined) {
       return;
     }
     if (FileSystemScan.#storedCoverAlbums.has(album.id)) {
+      return;
+    }
+    if (await albumArtPlugin.hasArt(album.id)) {
+      FileSystemScan.#storedCoverAlbums.add(album.id);
       return;
     }
 
@@ -201,7 +213,56 @@ export class FileSystemScan {
     if (art) {
       await albumArtPlugin.storeArt({ uuid: album.id, art });
       FileSystemScan.#storedCoverAlbums.add(album.id);
+      return;
     }
+
+    const artistName = artists[0]?.name;
+    if (artistName) {
+      try {
+        await albumArtPlugin.storeArt({
+          uuid: album.id,
+          artistName,
+          albumName: album.name,
+        });
+      } catch (ex: any) {
+        FileSystemScan.#logger?.debug(
+          `Could not fetch album art online for ${artistName} - ${album.name}: ${ex?.message}`,
+        );
+      }
+      // Mark as processed regardless: a miss must not trigger an online
+      // lookup for every remaining track of the same album.
+      FileSystemScan.#storedCoverAlbums.add(album.id);
+    }
+  }
+
+  static async storeArtistCover(
+    albumArtPlugin: AlbumArtPlugin | undefined,
+    artist: ArtistDbModel,
+  ) {
+    if (!albumArtPlugin || artist.id === undefined || !artist.name) {
+      return;
+    }
+    if (FileSystemScan.#storedArtistArt.has(artist.id)) {
+      return;
+    }
+    if (await albumArtPlugin.hasArt(artist.id)) {
+      FileSystemScan.#storedArtistArt.add(artist.id);
+      return;
+    }
+
+    try {
+      await albumArtPlugin.storeArt({
+        uuid: artist.id,
+        artistName: artist.name,
+      });
+    } catch (ex: any) {
+      FileSystemScan.#logger?.debug(
+        `Could not fetch artist art for ${artist.name}: ${ex?.message}`,
+      );
+    }
+    // Mark as processed regardless: a miss must not trigger a lookup for
+    // every remaining track by the same artist.
+    FileSystemScan.#storedArtistArt.add(artist.id);
   }
 
   static async #upsertAlbum(
@@ -233,6 +294,7 @@ export class FileSystemScan {
           albumInDb,
           albumCoverFileNames,
           folder,
+          artists,
         );
         await albumInDb.update(db);
 
@@ -254,6 +316,7 @@ export class FileSystemScan {
           album,
           albumCoverFileNames,
           folder,
+          artists,
         );
         if (!cachedAlbum) {
           FileSystemScan.#albumMap.set(cachedAlbumKey, album);
@@ -272,6 +335,7 @@ export class FileSystemScan {
     pluginId: string,
     fileMetadata: IAudioMetadata,
     smartMergeArtists: boolean,
+    albumArtPlugin: AlbumArtPlugin | undefined,
   ): Promise<Array<ArtistDbModel>> {
     const artists = FileSystemScan.#extractArtists(fileMetadata);
 
@@ -298,6 +362,7 @@ export class FileSystemScan {
           if (!cachedArtist) {
             FileSystemScan.#artistMap.set(cacheKey, artistInDb);
           }
+          await FileSystemScan.storeArtistCover(albumArtPlugin, artistInDb);
         } else {
           const dbArtist = new ArtistDbModel();
           dbArtist.id = v4();
@@ -311,6 +376,7 @@ export class FileSystemScan {
           if (!cachedArtist) {
             FileSystemScan.#artistMap.set(cacheKey, dbArtist);
           }
+          await FileSystemScan.storeArtistCover(albumArtPlugin, dbArtist);
         }
       }
 

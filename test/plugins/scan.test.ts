@@ -580,6 +580,131 @@ describe("Stale data is removed", () => {
   });
 });
 
+describe("storeAlbumCover", () => {
+  const makeAlbumArtPlugin = () => ({
+    getArt: vi.fn(),
+    storeArt: vi.fn().mockResolvedValue(undefined),
+    hasArt: vi.fn().mockResolvedValue(false),
+  });
+
+  it("falls back to an online lookup by artist/album name when no art is found locally", async () => {
+    const albumArtPlugin = makeAlbumArtPlugin();
+    const album = { id: "album-id-1", name: "Test Album" } as any;
+    const artists = [{ id: "artist-id-1", name: "Test Artist" }] as any;
+
+    await FileSystemScan.storeAlbumCover(
+      albumArtPlugin as any,
+      makeMetadata() as any,
+      album,
+      ["cover.jpg"],
+      "/music",
+      artists,
+    );
+
+    expect(albumArtPlugin.storeArt).toHaveBeenCalledWith({
+      uuid: "album-id-1",
+      artistName: "Test Artist",
+      albumName: "Test Album",
+    });
+  });
+
+  it("does not attempt an online lookup when no artist name is available", async () => {
+    const albumArtPlugin = makeAlbumArtPlugin();
+    const album = { id: "album-id-2", name: "Test Album" } as any;
+
+    await FileSystemScan.storeAlbumCover(
+      albumArtPlugin as any,
+      makeMetadata() as any,
+      album,
+      ["cover.jpg"],
+      "/music",
+      [],
+    );
+
+    expect(albumArtPlugin.storeArt).not.toHaveBeenCalled();
+  });
+
+  it("skips all work when the plugin already has the art", async () => {
+    const albumArtPlugin = makeAlbumArtPlugin();
+    albumArtPlugin.hasArt.mockResolvedValue(true);
+    const album = { id: "album-id-3", name: "Test Album" } as any;
+    const artists = [{ id: "artist-id-1", name: "Test Artist" }] as any;
+
+    await FileSystemScan.storeAlbumCover(
+      albumArtPlugin as any,
+      makeMetadata() as any,
+      album,
+      ["cover.jpg"],
+      "/music",
+      artists,
+    );
+
+    expect(albumArtPlugin.hasArt).toHaveBeenCalledWith("album-id-3");
+    expect(albumArtPlugin.storeArt).not.toHaveBeenCalled();
+  });
+
+  it("does not throw when the online lookup fails", async () => {
+    const albumArtPlugin = makeAlbumArtPlugin();
+    albumArtPlugin.storeArt.mockRejectedValue(new Error("not found"));
+    const album = { id: "album-id-4", name: "Test Album" } as any;
+    const artists = [{ id: "artist-id-1", name: "Test Artist" }] as any;
+
+    await expect(
+      FileSystemScan.storeAlbumCover(
+        albumArtPlugin as any,
+        makeMetadata() as any,
+        album,
+        ["cover.jpg"],
+        "/music",
+        artists,
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(albumArtPlugin.storeArt).toHaveBeenCalledOnce();
+  });
+});
+
+describe("storeArtistCover", () => {
+  const makeAlbumArtPlugin = () => ({
+    getArt: vi.fn(),
+    storeArt: vi.fn().mockResolvedValue(undefined),
+    hasArt: vi.fn().mockResolvedValue(false),
+  });
+
+  it("looks up artist art by name when the plugin has none", async () => {
+    const albumArtPlugin = makeAlbumArtPlugin();
+    const artist = { id: "artist-cover-1", name: "Test Artist" } as any;
+
+    await FileSystemScan.storeArtistCover(albumArtPlugin as any, artist);
+
+    expect(albumArtPlugin.hasArt).toHaveBeenCalledWith("artist-cover-1");
+    expect(albumArtPlugin.storeArt).toHaveBeenCalledWith({
+      uuid: "artist-cover-1",
+      artistName: "Test Artist",
+    });
+  });
+
+  it("skips the lookup when the plugin already has the art", async () => {
+    const albumArtPlugin = makeAlbumArtPlugin();
+    albumArtPlugin.hasArt.mockResolvedValue(true);
+    const artist = { id: "artist-cover-2", name: "Test Artist" } as any;
+
+    await FileSystemScan.storeArtistCover(albumArtPlugin as any, artist);
+
+    expect(albumArtPlugin.storeArt).not.toHaveBeenCalled();
+  });
+
+  it("does not throw when the lookup fails", async () => {
+    const albumArtPlugin = makeAlbumArtPlugin();
+    albumArtPlugin.storeArt.mockRejectedValue(new Error("not found"));
+    const artist = { id: "artist-cover-3", name: "Test Artist" } as any;
+
+    await expect(
+      FileSystemScan.storeArtistCover(albumArtPlugin as any, artist),
+    ).resolves.toBeUndefined();
+  });
+});
+
 describe("Case-insensitive artist merge", () => {
   beforeEach(() => {
     vi.clearAllMocks();

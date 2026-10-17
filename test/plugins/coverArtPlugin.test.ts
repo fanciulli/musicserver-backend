@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   readFile: vi.fn(),
   writeFile: vi.fn(),
   mkdir: vi.fn(),
-  fetchArtFromLastFm: vi.fn(),
+  fetchArtFromDeezer: vi.fn(),
   findPluginConfig: vi.fn(),
   upsertPluginConfig: vi.fn(),
 }));
@@ -29,8 +29,8 @@ vi.mock("node:fs/promises", () => ({
   mkdir: (...args: unknown[]) => mocks.mkdir(...args),
 }));
 
-vi.mock("../../src/plugins/system/coverart/lastfm.js", () => ({
-  fetchArtFromLastFm: (...args: unknown[]) => mocks.fetchArtFromLastFm(...args),
+vi.mock("../../src/plugins/system/coverart/deezer.js", () => ({
+  fetchArtFromDeezer: (...args: unknown[]) => mocks.fetchArtFromDeezer(...args),
 }));
 
 vi.mock("../../src/types/db/pluginConfig.js", () => ({
@@ -66,30 +66,28 @@ describe("CoverArtPlugin", () => {
       await plugin.loadConfiguration();
 
       await expect(plugin.getConfiguration()).resolves.toEqual({
-        variables: [{ rootFolder: "string" }, { lastFmApiKey: "string" }],
+        variables: [{ rootFolder: "string" }],
         labels: {
           rootFolder: "Root folder",
-          lastFmApiKey: "Last.fm API Key",
         },
-        values: { rootFolder: "/albumart", lastFmApiKey: "" },
+        values: { rootFolder: "/albumart" },
       });
     });
 
     it("loads configuration from DB", async () => {
       mocks.findPluginConfig.mockResolvedValue({
-        settings: { rootFolder: "/data/art", lastFmApiKey: "secret" },
+        settings: { rootFolder: "/data/art" },
       });
 
       const plugin = createPlugin();
       await plugin.loadConfiguration();
 
       await expect(plugin.getConfiguration()).resolves.toEqual({
-        variables: [{ rootFolder: "string" }, { lastFmApiKey: "string" }],
+        variables: [{ rootFolder: "string" }],
         labels: {
           rootFolder: "Root folder",
-          lastFmApiKey: "Last.fm API Key",
         },
-        values: { rootFolder: "/data/art", lastFmApiKey: "secret" },
+        values: { rootFolder: "/data/art" },
       });
     });
 
@@ -97,7 +95,7 @@ describe("CoverArtPlugin", () => {
       const plugin = createPlugin();
 
       await expect(
-        plugin.updateConfiguration({ rootFolder: "", lastFmApiKey: "" }),
+        plugin.updateConfiguration({ rootFolder: "" }),
       ).rejects.toThrow("Root folder must be a non-empty string");
     });
 
@@ -108,7 +106,6 @@ describe("CoverArtPlugin", () => {
       await expect(
         plugin.updateConfiguration({
           rootFolder: "/does/not/exist",
-          lastFmApiKey: "",
         }),
       ).rejects.toThrow(
         'Root folder "/does/not/exist" does not exist or is not a folder',
@@ -121,7 +118,6 @@ describe("CoverArtPlugin", () => {
 
       await plugin.updateConfiguration({
         rootFolder: "/data/art",
-        lastFmApiKey: "secret",
       });
 
       expect(mocks.folderExists).toHaveBeenCalledWith("/data/art");
@@ -129,7 +125,7 @@ describe("CoverArtPlugin", () => {
         "db-client",
         "system",
         "coverart",
-        { rootFolder: "/data/art", lastFmApiKey: "secret" },
+        { rootFolder: "/data/art" },
       );
     });
 
@@ -138,11 +134,10 @@ describe("CoverArtPlugin", () => {
 
       await plugin.updateConfiguration({
         rootFolder: "/data/art",
-        lastFmApiKey: "secret",
       });
 
       await expect(plugin.getConfiguration()).resolves.toMatchObject({
-        values: { rootFolder: "/data/art", lastFmApiKey: "secret" },
+        values: { rootFolder: "/data/art" },
       });
     });
   });
@@ -157,7 +152,7 @@ describe("CoverArtPlugin", () => {
 
       expect(mocks.fileExists).toHaveBeenCalledWith(ART_PATH);
       expect(mocks.readFile).toHaveBeenCalledWith(ART_PATH);
-      expect(mocks.fetchArtFromLastFm).not.toHaveBeenCalled();
+      expect(mocks.fetchArtFromDeezer).not.toHaveBeenCalled();
       expect(result).toEqual(Buffer.from([1, 2, 3]));
     });
 
@@ -168,12 +163,12 @@ describe("CoverArtPlugin", () => {
       const result = await plugin.getArt(UUID, "album");
 
       expect(result).toBeUndefined();
-      expect(mocks.fetchArtFromLastFm).not.toHaveBeenCalled();
+      expect(mocks.fetchArtFromDeezer).not.toHaveBeenCalled();
     });
 
-    it("downloads and stores the art from Last.fm on a miss", async () => {
+    it("downloads and stores the art from Deezer on a miss", async () => {
       mocks.fileExists.mockResolvedValue(false);
-      mocks.fetchArtFromLastFm.mockResolvedValue(new Uint8Array([9, 9, 9]));
+      mocks.fetchArtFromDeezer.mockResolvedValue(new Uint8Array([9, 9, 9]));
 
       const plugin = createPlugin();
       const result = await plugin.getArt(
@@ -183,8 +178,7 @@ describe("CoverArtPlugin", () => {
         "Some Album",
       );
 
-      expect(mocks.fetchArtFromLastFm).toHaveBeenCalledWith(
-        "",
+      expect(mocks.fetchArtFromDeezer).toHaveBeenCalledWith(
         "album",
         "Some Artist",
         "Some Album",
@@ -200,16 +194,31 @@ describe("CoverArtPlugin", () => {
       expect(result).toEqual(new Uint8Array([9, 9, 9]));
     });
 
+    it("looks up artist art on Deezer with only an artist name", async () => {
+      mocks.fileExists.mockResolvedValue(false);
+      mocks.fetchArtFromDeezer.mockResolvedValue(new Uint8Array([7, 7, 7]));
+
+      const plugin = createPlugin();
+      const result = await plugin.getArt(UUID, "artist", "Some Artist");
+
+      expect(mocks.fetchArtFromDeezer).toHaveBeenCalledWith(
+        "artist",
+        "Some Artist",
+        undefined,
+        expect.anything(),
+      );
+      expect(result).toEqual(new Uint8Array([7, 7, 7]));
+    });
+
     it("returns undefined when the remote fetch cannot find any art", async () => {
       mocks.fileExists.mockResolvedValue(false);
-      mocks.fetchArtFromLastFm.mockResolvedValue(undefined);
+      mocks.fetchArtFromDeezer.mockResolvedValue(undefined);
 
       const plugin = createPlugin();
       const result = await plugin.getArt(
         UUID,
         "artist",
         "Some Artist",
-        "Some Album",
       );
 
       expect(result).toBeUndefined();
@@ -224,15 +233,15 @@ describe("CoverArtPlugin", () => {
 
       await plugin.storeArt({ uuid: UUID, art });
 
-      expect(mocks.fetchArtFromLastFm).not.toHaveBeenCalled();
+      expect(mocks.fetchArtFromDeezer).not.toHaveBeenCalled();
       expect(mocks.mkdir).toHaveBeenCalledWith("/albumart/f8/1d", {
         recursive: true,
       });
       expect(mocks.writeFile).toHaveBeenCalledWith(ART_PATH, art);
     });
 
-    it("downloads the art from Last.fm and stores it", async () => {
-      mocks.fetchArtFromLastFm.mockResolvedValue(new Uint8Array([9, 9, 9]));
+    it("downloads album art from Deezer and stores it", async () => {
+      mocks.fetchArtFromDeezer.mockResolvedValue(new Uint8Array([9, 9, 9]));
 
       const plugin = createPlugin();
       await plugin.storeArt({
@@ -241,8 +250,7 @@ describe("CoverArtPlugin", () => {
         albumName: "Some Album",
       });
 
-      expect(mocks.fetchArtFromLastFm).toHaveBeenCalledWith(
-        "",
+      expect(mocks.fetchArtFromDeezer).toHaveBeenCalledWith(
         "album",
         "Some Artist",
         "Some Album",
@@ -254,8 +262,26 @@ describe("CoverArtPlugin", () => {
       );
     });
 
+    it("downloads artist art from Deezer with only an artist name", async () => {
+      mocks.fetchArtFromDeezer.mockResolvedValue(new Uint8Array([5, 5, 5]));
+
+      const plugin = createPlugin();
+      await plugin.storeArt({ uuid: UUID, artistName: "Some Artist" });
+
+      expect(mocks.fetchArtFromDeezer).toHaveBeenCalledWith(
+        "artist",
+        "Some Artist",
+        undefined,
+        expect.anything(),
+      );
+      expect(mocks.writeFile).toHaveBeenCalledWith(
+        ART_PATH,
+        new Uint8Array([5, 5, 5]),
+      );
+    });
+
     it("throws when the remote fetch cannot find any art", async () => {
-      mocks.fetchArtFromLastFm.mockResolvedValue(undefined);
+      mocks.fetchArtFromDeezer.mockResolvedValue(undefined);
 
       const plugin = createPlugin();
 
@@ -265,8 +291,27 @@ describe("CoverArtPlugin", () => {
           artistName: "Some Artist",
           albumName: "Some Album",
         }),
-      ).rejects.toThrow("No album art found on Last.fm");
+      ).rejects.toThrow("No album art found on Deezer");
       expect(mocks.writeFile).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("hasArt", () => {
+    it("returns true when the art file exists", async () => {
+      mocks.fileExists.mockResolvedValue(true);
+
+      const plugin = createPlugin();
+
+      await expect(plugin.hasArt(UUID)).resolves.toBe(true);
+      expect(mocks.fileExists).toHaveBeenCalledWith(ART_PATH);
+    });
+
+    it("returns false when the art file does not exist", async () => {
+      mocks.fileExists.mockResolvedValue(false);
+
+      const plugin = createPlugin();
+
+      await expect(plugin.hasArt(UUID)).resolves.toBe(false);
     });
   });
 });

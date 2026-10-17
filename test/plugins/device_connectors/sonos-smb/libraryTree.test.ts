@@ -19,6 +19,9 @@ class FakeAlbumArtPlugin extends AlbumArtPlugin {
     return this.#art;
   }
   async storeArt() {}
+  async hasArt() {
+    return this.#art !== undefined;
+  }
 }
 
 function contextWith(plugin: unknown) {
@@ -63,6 +66,15 @@ describe("LibraryTree", () => {
       vi.spyOn(PluginDBModel, "find").mockResolvedValue({
         status: PluginStatus.STARTED,
       } as any);
+      vi.spyOn(AlbumDbModel, "findById").mockResolvedValue({
+        id: "al1",
+        name: "Abbey Road",
+        artists: ["ar1"],
+      } as any);
+      vi.spyOn(ArtistDbModel, "findById").mockResolvedValue({
+        id: "ar1",
+        name: "Beatles",
+      } as any);
       const tree = new LibraryTree(contextWith(new FakeAlbumArtPlugin(art)));
 
       expect(await tree.getCover("al1")).toEqual(Buffer.from(art));
@@ -71,6 +83,15 @@ describe("LibraryTree", () => {
     it("falls back to the default cover when the plugin has no art", async () => {
       vi.spyOn(PluginDBModel, "find").mockResolvedValue({
         status: PluginStatus.STARTED,
+      } as any);
+      vi.spyOn(AlbumDbModel, "findById").mockResolvedValue({
+        id: "al1",
+        name: "Abbey Road",
+        artists: ["ar1"],
+      } as any);
+      vi.spyOn(ArtistDbModel, "findById").mockResolvedValue({
+        id: "ar1",
+        name: "Beatles",
       } as any);
       const tree = new LibraryTree(
         contextWith(new FakeAlbumArtPlugin(undefined)),
